@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP SAMD21J18A-AU
+D TQFP64, 256K Flash, 32K RAM, 48MHz, CortexM0+
+K ARM 32bit Microcontroller 48MHz CortexM0+
+F http://ww1.microchip.com/downloads/en/DeviceDoc/40001882A.pdf
+$ENDCMP
+#
+#End Doc Library
