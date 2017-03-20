@@ -1,5 +1,9 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP IC_CPLD_XC2C64A
+D Xilinx CoolRunner-II XC2C64A CPLD
+$ENDCMP
+#
 $CMP SAMD21J18A-AU
 D TQFP64, 256K Flash, 32K RAM, 48MHz, CortexM0+
 K ARM 32bit Microcontroller 48MHz CortexM0+
