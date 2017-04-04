@@ -106,3 +106,8 @@ are powered via a 1.8V regulator.
 
 The microcontroller USB interface is electrically isolated from the board power
 supply.
+
+Block diagram
+-------------
+
+![](docs/block.png)
