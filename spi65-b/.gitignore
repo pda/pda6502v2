@@ -67,3 +67,21 @@ xlnx_auto_0_xdb/
 xst/
 _ngo/
 _xmsgs/
+
+# pda additions
+*.chk
+*.cxt
+*.gyd
+*.jed
+*.log
+*.mfd
+*.nga
+*.pnx
+*.rpt
+*.tim
+*.tspec
+*.vm6
+*.xml
+*_build.xml
+*_html/
+tmperr.err
