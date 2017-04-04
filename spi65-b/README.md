@@ -7,11 +7,13 @@ which is a VHDL reimplimentation (with modifications) of
 [65SPI by Daryl Rictor][65spi].
 
 SPI65/B is designed for a Xilinx XC9572 CPLD (5V, 72 macrocells), so should
-work on a newer XC9572XL (3.3V), but probably not on a XC2C64A (64 macrocells)
-or any other hand-solderable CoolRunner-II variant.
+work unmodified on a newer XC9572XL (3.3V). It also appears to fit a newer
+Xilinx CoolRunner-II XC2C64A-VQ44, although D7 signal moves to make way for
+VCCIO1. That change has been made in `SPI65-B.ucf` here, as well as rotating
+the pin numbers by 6 to suit VQ44 instead of PC44.
 
 The following information is (C) 2011-2012 André Fachat, but reproduced here
-for posterity.
+for posterity, and may not reflect changes made in this fork.
 
 [spi65b]: http://6502.org/users/andre/spi65b/index.html
 [65spi]: http://sbc.rictor.org/65spi.html
