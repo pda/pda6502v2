@@ -1,91 +1,95 @@
 graph block {
-
   node [shape = box];
 
-  6502 [label = "6502\nCPU"];
-  6522 [label = "6522\nVIA"];
-  6551 [label = "6551\nACIA"];
-  ADEC [label = "ADDR\nDECODER\nCPLD"];
-  SPI  [label = "SPI\nCPLD"];
+  6502 [label = "CPU\n6502"];
 
+  // microcontroller
+  subgraph cluster_a {
+    style = invisible;
+    SAMD21 [label = "Microcontroller\nSAMD21"];
+    FLASH [label = "Flash\nstorage"];
+    DISPLAY [label = "Display\nsysinfo"];
+    USB [shape = oval];
+    SAMD21 -- FLASH;
+    SAMD21 -- DISPLAY;
+    FLASH -- USB [style = invisible]; // push USB down
+  }
+
+	// bus groups
   {
+    rank = same;
     node [style = dotted];
     BUS [label = "System Bus\nADDR[0..15]\nDATA[0..7]\nRWB"];
     CLK [label = "System Clock\n0 - 10 MHz"];
     IRQ [label = "Interrupt"];
+    RESET [label = "Reset"];
   }
 
-  subgraph cluster_c {
-    style = invisible
+  ADEC [label = "ADDR\nDECODER\nCPLD"];
+
+	// system bus devices
+  {
+    rank = same;
     SRAM;
-    6522;
-    6551;
-    SPI;
-  }
-
-  subgraph cluster_d {
-    style = invisible
-    SAMD21;
-    FLASH;
-    USB [shape = oval];
+		VIA [label = "6522\nVIA"];
+		SPI [label = "SPI65/B\nCPLD"];
   }
 
   // IO ports
-  subgraph cluster_e {
-    style = invisible;
+  {
+    rank = same;
     node [shape = oval];
-    GPIO;
-    UART;
-    SPI_IO;
+    GPIO [label = "GPIO\n2 x 8-bit"];
+    SPI_PORT [label = "SPI x 4"];
   }
 
+  ADEC -- SRAM [label = CS];
+  ADEC -- VIA [label = CS];
+  ADEC -- SPI [label = CS];
+
+  6502 -- SAMD21 [label = BE];
+  6502 -- SAMD21 [label = RDY];
+
   {
-    6522 -- GPIO;
-    6551 -- UART;
-    SPI  -- SPI_IO;
+    VIA -- GPIO;
+    SPI -- SPI_PORT [label = "SPI";];
+    SPI_PORT -- SPI [label = "IRQ"; color = red;];
     SAMD21 -- USB;
   }
 
   {
     edge [color = blue];
-    BUS -- 6502;
-    BUS -- 6522;
-    BUS -- 6551;
+    6502 -- BUS;
+    SAMD21 -- BUS;
     BUS -- ADEC;
-    BUS -- SAMD21;
     BUS -- SPI;
     BUS -- SRAM;
+    BUS -- VIA;
   }
 
   {
     edge [color = green];
-    SAMD21 -- CLK [label = "SAMD21\ngenerates CLK"];
+    SAMD21 -- CLK;
     CLK -- 6502;
-    CLK -- 6522;
-    CLK -- 6551;
+    CLK -- VIA;
     CLK -- SPI;
     CLK -- ADEC;
   }
 
   {
-    edge [color = red];
-    IRQ -- 6502
-    IRQ -- 6522
-    IRQ -- 6551
-    IRQ -- SPI
+    edge [color = orange];
+    SAMD21 -- RESET;
+    RESET -- 6502;
+    RESET -- SPI;
+    RESET -- VIA;
+    RESET -- ADEC;
   }
 
-  ADEC -- SRAM [label = CS];
-  ADEC -- 6522 [label = CS];
-  ADEC -- 6551 [label = CS];
-  ADEC -- SPI  [label = CS];
-
-  SAMD21 -- 6502 [label = BE];
-  SAMD21 -- 6502 [label = RESB];
-  SAMD21 -- 6502 [label = RDY];
-
-  SAMD21 -- FLASH [label = SPI];
-  SAMD21 -- 6551 [label = UART];
-
+  {
+    edge [color = red];
+    6502 -- IRQ;
+    IRQ -- VIA;
+    IRQ -- SPI;
+  }
 
 }
