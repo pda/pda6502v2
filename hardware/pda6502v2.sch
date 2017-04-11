@@ -34,7 +34,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 1
+Sheet 1 2
 Title ""
 Date ""
 Rev ""
@@ -44,4 +44,10 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Sheet
+S 3400 2200 1500 1500
+U 58EB910B
+F0 "chipset" 60
+F1 "chipset.sch" 60
+$EndSheet
 $EndSCHEMATC
