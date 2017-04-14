@@ -10,4 +10,8 @@ K ARM 32bit Microcontroller 48MHz CortexM0+
 F http://ww1.microchip.com/downloads/en/DeviceDoc/40001882A.pdf
 $ENDCMP
 #
+$CMP W65C02S
+D WDC 6502 CMOS static core
+$ENDCMP
+#
 #End Doc Library
