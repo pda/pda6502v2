@@ -14,4 +14,8 @@ $CMP W65C02S
 D WDC 6502 CMOS static core
 $ENDCMP
 #
+$CMP W65C22S
+D WDC 6522 VIA CMOS static core
+$ENDCMP
+#
 #End Doc Library
