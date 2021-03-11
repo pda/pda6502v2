@@ -4,8 +4,7 @@ pda6502v2
 Version two (complete redesign) of https://github.com/pda/pda6502
 
 A 3.3V single board computer with 6502 CPU, 64 KiB RAM, GPIO+UART+SPI I/O, CPLD
-address decoder, and a microcontroller acting as boot loader, variable clock
-source and program monitor/debugger.
+system controller / address decoder, serial EEPROM boot loader.
 
 Version two aims to address the main pain points of version one:
 
@@ -23,59 +22,41 @@ Comparison table
 | Voltage               | 5.0V                | 3.3V                           |
 | Address decode logic  | 7400-series chips   | CPLD                           |
 | Schematic/layout tool | EAGLE               | KiCad                          |
-| Boot                  | EEPROM              | microcontroller preloads SRAM  |
-| Clock                 | 1 MHz osc           | microcontroller 0-10 MHz       |
+| Boot                  | EEPROM              | CPLD loads boostrap from flash |
+| Clock                 | 1 MHz osc           | ?                              |
 | I/O                   | GPIO                | GPIO, UART, SPI                |
 
 
-Microcontroller
----------------
+CPLD
+----
 
-A modern microcontroller (Atmel SAMD21) acts as a system controller with three
+A CPLD (Xilinx CoolRunner-II XC2C128A) acts as a system controller with two
 primary functions;
 
-### Firmware management
+### System startup
 
-The microcontroller has a USB interface allowing a host machine to
-upload/download firmware and configuration into an on-board flash chip or
-straight into system RAM.
+Startup code is stored in an on-board SPI serial EEPROM
+(e.g. Microchip AT25128 / AT25512 / AT25M01) which can be written from an
+external computer via SPI, e.g. using an off-board FTDI FT232H interface.
+
+The system controller CPLD bootstraps the system by copying a fixed
+size/location bootloader from serial EEPROM into main RAM before starting CPU.
+The bootloader may load further code/data from the serial EEPROM.
 
 This solves the main pain point of version one, in which program/bootloader
 development involved removing and rewriting an EEPROM on every development
 iteration.
 
-### System startup
+### Address logic
 
-On startup, the microcontroller copies the program/bootloader from flash memory
-into system RAM. This removes the need for an EEPROM chip, and the slow access
-times generally associated with them, allowing for simpler and more flexible
-design and faster potential system clock speed.
+Mapping of the address space to SRAM and I/O chips is also handled by the
+system controller CPLD.  This provide very low propagation time allowing for
+fast clock speed, and is in-circuit programmable for flexible address space /
+logic design without hardware changes.
 
-### Clock signal
-
-Instead of a fixed oscillator, the microcontroller generates an adjustable
-system clock signal between 0 Hz and 10 MHz. Combined with other control
-signals this allows for single-clock-stepping and bus monitoring. Programming
-the microcontroller with a 6502 instruction decoder and/or disassembler allows
-for single-instruction stepping and program debugging.
-
-At 3.3V the WDC W65C02S is expected to be stable at least to 8 MHz, subject to
-design of the circuit and connected peripherals. With fast memory and address
-decode, 10 MHz is not unrealistic.
-
-
-CPLD address logic
-------------------
-
-Mapping of the address space to SRAM and I/O chips is handled by a Xilinx
-CoolRunner-II XC2C128A-VQ100 CPLD.  This provide very low propagation time
-allowing for fast clock speed, and is in-circuit programmable for a flexible
-address space without hardware changes.
-
-The address logic CPLD has the entire address bus, data bus, and control
-signals, allowing for completely arbitrary address mapping including exposing a
-control register for state-based mapping, e.g. memory bank switching like the
-Commodore 64.
+The CPLD has the entire address bus, data bus, and control signals, allowing
+for arbitrary address mapping. For example a control register could be exposed
+for state-based mapping, e.g. memory bank switching like the Commodore 64.
 
 Minimal pin requirements:
 
@@ -117,23 +98,29 @@ VQ100 makes soldering more difficult, but sparser pin utilization means layout
 flexibility.
 
 
-CPLD SPI controller
--------------------
+I/O
+---
 
-Two more Xilinx CoolRunner-II XC2C64A-VQ44 CPLDs are mapped into the 6502
-address space and programmed as SPI masters using VHDL adapted from
+- SPI: 4 devices
+- GPIO: 2 x 8-bit ports
+- UART
+
+### CPLD SPI controller
+
+Another CPLD (Xilinx CoolRunner-II XC2C64A-VQ44) is mapped into the 6502
+address space and programmed as SPI master using VHDL adapted from
 http://6502.org/users/andre/spi65b/index.html
 
 This hardware SPI communication is orders of magnitude faster than 6522
 bit-banging, making SPI graphics output more viable.
 
+### GPIO
 
-FPGA HDMI graphics (stretch goal)
----------------------------------
+WDC W65C22S (6522) VIA provides two 8-bit GPIO ports, as well as timers etc.
 
-An FPGA could be added to the design, with HDMI output and access to the system
-RAM between clock cycles, like the VIC-II in the Commodore 64. It would read
-course-grained data (tiles, sprites) from RAM and rasterize them.
+### UART
+
+NXP SC28L91 3.3V UART PLCC44
 
 
 Power supply
@@ -143,14 +130,6 @@ The main system board expects a regulated 3.3 VDC, which may be done by a small
 add-on board or module. All internal and external signals are 3.3V. CPLD chips
 are powered via a 1.8V regulator.
 
-The microcontroller USB interface is electrically isolated from the board power
-supply.
-
-
-GPIO
-----
-
-Two WDC W65C22S (6522) VIAs provide two 8-bit GPIO ports each.
 
 
 Block diagram
