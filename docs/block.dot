@@ -1,95 +1,104 @@
 graph block {
-  node [shape = box];
+  node [shape = box, margin = 0.2]
+  ranksep = 3.0
+  nodesep = 1.0
+  splines = ortho
 
-  6502 [label = "CPU\n6502"];
+  6502 [label = "6502 CPU\nW65C02S"]
 
-  // microcontroller
+  SYSCON [label = "BIFRÖST\nSystem Controller\nCPLD"]
+
+
+  // bus groups
   subgraph cluster_a {
-    style = invisible;
-    SAMD21 [label = "Microcontroller\nSAMD21"];
-    FLASH [label = "Flash\nstorage"];
-    DISPLAY [label = "Display\nsysinfo"];
-    USB [shape = oval];
-    SAMD21 -- FLASH;
-    SAMD21 -- DISPLAY;
-    FLASH -- USB [style = invisible]; // push USB down
+    style = invisible
+    rank = same
+    node [style = dashed, width=1.4, height=1.0]
+    BUS [label = "ADDR[0..15]\nDATA[0..7]\nRWB", color = "blue"]
+    CLK [label = "CLK\n1/2/4/8 MHz", color = "green"]
+    IRQ [label = "IRQ", color = "red"]
+    RESET [label = "RESET", color = "orange"]
+    CS [label = "CS"]
   }
 
-	// bus groups
+  // system bus devices
   {
-    rank = same;
-    node [style = dotted];
-    BUS [label = "System Bus\nADDR[0..15]\nDATA[0..7]\nRWB"];
-    CLK [label = "System Clock\n0 - 10 MHz"];
-    IRQ [label = "Interrupt"];
-    RESET [label = "Reset"];
-  }
-
-  ADEC [label = "ADDR\nDECODER\nCPLD"];
-
-	// system bus devices
-  {
-    rank = same;
-    SRAM;
-		VIA [label = "6522\nVIA"];
-		SPI [label = "SPI65/B\nCPLD"];
+    rank = same
+    SRAM [label = "SRAM\n64 KiB"]
+    VIA [label = "6522 VIA\nW65C22S"]
+    UART [label = "UART\nSC28L91"]
+    SPI [label = "SPI CPLD\nSPI65/B"]
+    FLASH [label = "Serial\nEEPROM"]
   }
 
   // IO ports
   {
-    rank = same;
-    node [shape = oval];
-    GPIO [label = "GPIO\n2 x 8-bit"];
-    SPI_PORT [label = "SPI x 4"];
+    rank = same
+    node [shape = hexagon, width=1.2, height=0.8, margin=0]
+    GPIO1 [label = "GPIO\n8-bit"]
+    GPIO2 [label = "GPIO\n8-bit"]
+    SPI_PORT [label = "SPI x 3"]
+    UART_PORT [label = "UART"]
+    PROG [label = "PROG"]
   }
 
-  ADEC -- SRAM [label = CS];
-  ADEC -- VIA [label = CS];
-  ADEC -- SPI [label = CS];
+  SYSCON -- FLASH
+  FLASH -- SPI
+  FLASH -- PROG [xlabel = "SPI"]
 
-  6502 -- SAMD21 [label = BE];
-  6502 -- SAMD21 [label = RDY];
-
-  {
-    VIA -- GPIO;
-    SPI -- SPI_PORT [label = "SPI";];
-    SPI_PORT -- SPI [label = "IRQ"; color = red;];
-    SAMD21 -- USB;
-  }
+  6502 -- SYSCON [xlabel = BE]
+  6502 -- SYSCON [xlabel = RDY]
 
   {
-    edge [color = blue];
-    6502 -- BUS;
-    SAMD21 -- BUS;
-    BUS -- ADEC;
-    BUS -- SPI;
-    BUS -- SRAM;
-    BUS -- VIA;
+    VIA -- GPIO1
+    VIA -- GPIO2
+    SPI -- SPI_PORT [xlabel = "MOSI\nMISO x 3\nSS x 3\nIRQ x 3"]
+    UART -- UART_PORT [xlabel = "TX/RX"]
   }
 
   {
-    edge [color = green];
-    SAMD21 -- CLK;
-    CLK -- 6502;
-    CLK -- VIA;
-    CLK -- SPI;
-    CLK -- ADEC;
+    edge [color = blue]
+    6502 -- BUS
+    SYSCON -- BUS
+    BUS -- SYSCON
+    BUS -- SPI
+    BUS -- SRAM
+    BUS -- VIA
+    BUS -- UART
   }
 
   {
-    edge [color = orange];
-    SAMD21 -- RESET;
-    RESET -- 6502;
-    RESET -- SPI;
-    RESET -- VIA;
-    RESET -- ADEC;
+    edge [color = green]
+    SYSCON -- CLK
+    CLK -- 6502
+    CLK -- VIA
+    CLK -- UART
+    CLK -- SPI
   }
 
   {
-    edge [color = red];
-    6502 -- IRQ;
-    IRQ -- VIA;
-    IRQ -- SPI;
+    edge [color = orange]
+    RESET -- SYSCON
+    RESET -- 6502
+    RESET -- SPI
+    RESET -- VIA
+    RESET -- UART
   }
 
+  {
+    edge [color = red]
+    6502 -- IRQ
+    IRQ -- VIA
+    IRQ -- UART
+    IRQ -- SPI
+  }
+
+  {
+    edge [color = purple]
+    SYSCON -- CS
+    CS -- SRAM
+    CS -- VIA
+    CS -- UART
+    CS -- SPI
+  }
 }
