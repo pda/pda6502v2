@@ -6,7 +6,7 @@ graph block {
 
   6502 [label = "6502 CPU\nW65C02S"]
 
-  SYSCON [label = "BIFRÖST\nSystem Controller\nCPLD"]
+  SYSCON [label = "BIFRÖST\nSystem Controller\nFPGA"]
 
 
   // bus groups
@@ -27,7 +27,6 @@ graph block {
     SRAM [label = "SRAM\n64 KiB"]
     VIA [label = "6522 VIA\nW65C22S"]
     UART [label = "UART\nSC28L91"]
-    SPI [label = "SPI CPLD\nSPI65/B"]
     FLASH [label = "Serial\nEEPROM"]
   }
 
@@ -37,13 +36,12 @@ graph block {
     node [shape = hexagon, width=1.2, height=0.8, margin=0]
     GPIO1 [label = "GPIO\n8-bit"]
     GPIO2 [label = "GPIO\n8-bit"]
-    SPI_PORT [label = "SPI x 3"]
+    SPI_PORT [label = "SPI x 4"]
     UART_PORT [label = "UART"]
     PROG [label = "PROG"]
   }
 
   SYSCON -- FLASH
-  FLASH -- SPI
   FLASH -- PROG [xlabel = "SPI"]
 
   6502 -- SYSCON [xlabel = BE]
@@ -52,7 +50,7 @@ graph block {
   {
     VIA -- GPIO1
     VIA -- GPIO2
-    SPI -- SPI_PORT [xlabel = "MOSI\nMISO x 3\nSS x 3\nIRQ x 3"]
+    SYSCON -- SPI_PORT [xlabel = "MOSI\nMISO x 4\nSS x 4\nIRQ x 4"]
     UART -- UART_PORT [xlabel = "TX/RX"]
   }
 
@@ -61,7 +59,6 @@ graph block {
     6502 -- BUS
     SYSCON -- BUS
     BUS -- SYSCON
-    BUS -- SPI
     BUS -- SRAM
     BUS -- VIA
     BUS -- UART
@@ -73,14 +70,12 @@ graph block {
     CLK -- 6502
     CLK -- VIA
     CLK -- UART
-    CLK -- SPI
   }
 
   {
     edge [color = orange]
     RESET -- SYSCON
     RESET -- 6502
-    RESET -- SPI
     RESET -- VIA
     RESET -- UART
   }
@@ -90,7 +85,7 @@ graph block {
     6502 -- IRQ
     IRQ -- VIA
     IRQ -- UART
-    IRQ -- SPI
+    IRQ -- SYSCON
   }
 
   {
@@ -99,6 +94,5 @@ graph block {
     CS -- SRAM
     CS -- VIA
     CS -- UART
-    CS -- SPI
   }
 }
