@@ -30,7 +30,7 @@ Comparison table
 FPGA system controller: BIFRÖST
 -------------------------------
 
-An FPGA (Lattice ICE40HX1K-VQ100) acts as a system controller (dubbed BIFRÖST)
+An FPGA (Lattice ICE40HX1K-TQ144) acts as a system controller (dubbed BIFRÖST)
 with three primary functions;
 
 ### System startup
@@ -59,47 +59,50 @@ allowing for arbitrary address mapping. For example a control register could be
 exposed for state-based mapping, e.g. memory layer switching like the Commodore
 64.
 
-Minimal pin requirements:
+### BIFRÖST chip selection / considerations
 
-| Signal  | Pins |
-| ------- | ---- |
-| ADDR    |  16  |
-| DATA    |   8  |
-| RWB     |   1  |
-| CLK     |   1  |
-| RESET   |   1  |
-| SRAM CS |   1  |
-| VIA CS  |   2  |
-| SPI CS  |   2  |
+Any signal that can be routed through / controlled by BIFRÖST should be, so
+that design decisions are pushed from hardware schematic and into FPGA HDL
+which can be easily altered after assembly.
 
-This minimal set would fit on a XC2C64A-VQ44 CPLD with one pin to spare.
-However, some other signals are nice to have:
+BIFRÖST needs to perform:
 
-* control over all IRQ signals;
-  * also eliminates external AND logic for driven-high 6522 IRQ.
-* per-chip control over RWB signal.
+* chip-enable and mode selection (RWB etc) for each chip on the bus,
+* control over all IRQ signals,
 * RDY and SYNC signals from 6502 CPU for better single-step support etc.
 * VPB (vector pull) from 6502 CPU for interrupts.
 
 | Signal   | Pins |
 | -------- | ---- |
-| VIA IRQ  |   2  |
-| SPI IRQ  |   2  |
+| ADDR     |  16  |
+| CLK      |   1  |
 | CPU IRQ  |   1  |
-| VIA RWB  |   2  |
-| SPI RWB  |   2  |
-| SRAM RWB |   1  |
 | CPU RDY  |   1  |
 | CPU SYNC |   1  |
 | CPU VPB  |   1  |
+| DATA     |   8  |
+| RESET    |   1  |
+| RWB      |   1  |
+| SPI IRQ  |   4  |
+| SPI MISO |   4  |
+| SPI MOSI |   1  |
+| SPI SCLK |   1  |
+| SPI SEL  |   4  |
+| SRAM CS  |   2  |
+| SRAM RWB |   1  |
+| UART CS  |   1  |
+| UART IRQ |   1  |
+| UART RWB |   1  |
+| VIA CS   |   2  |
+| VIA IRQ  |   2  |
+| VIA RWB  |   2  |
 
-Brings total to 42, at which point a XC2C128A-VQ100 CPLD would be suitable,
-with plenty of spare IO and double the macrocells. The pin count and 0.5mm pin
+Brings total to 40, at which point a XC2C128A-VQ100 CPLD would be suitable,
+with plenty of spare I/O and double the macrocells. The pin count and 0.5mm pin
 spacing of VQ100 makes soldering more difficult, but sparser pin utilization
 means layout flexibility.  However the BIFRÖST system controller FPGA
 (ICE40HX1K-VQ100) has the same pin count, and should be suitable for all this
 and more.
-
 
 I/O
 ---
@@ -123,6 +126,8 @@ WDC W65C22S (6522) VIA provides two 8-bit GPIO ports, as well as timers etc.
 ### UART
 
 NXP SC28L91 3.3V UART PLCC44
+
+Useful information in http://forum.6502.org/viewtopic.php?f=4&t=4587
 
 
 Power supply
