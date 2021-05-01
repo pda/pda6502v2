@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name 65xx)(type Legacy)(uri /Users/pda/code/6502-kicad-library/65xx.lib)(options "")(descr ""))
+  (lib (name ICE40HX1K-VQ100)(type Legacy)(uri /Users/pda/code/pda6502v2/kicad/libraries/IC_Lattice%20Semiconductor_ICE40HX1K-VQ100/eec.lib)(options "")(descr ""))
+  (lib (name pda6502v2)(type Legacy)(uri ${KIPRJMOD}/pda6502v2.lib)(options "")(descr ""))
+)

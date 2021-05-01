@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP AS6C62256-55PCN
+D 32Kx8 bit Low Power CMOS Static RAM, 55ns, DIP-28
+K RAM SRAM CMOS MEMORY
+F https://www.alliancememory.com/wp-content/uploads/pdf/AS6C62256.pdf
+$ENDCMP
+#
+#End Doc Library
