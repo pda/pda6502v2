@@ -25,6 +25,7 @@ Comparison table
 | Boot                  | EEPROM              | FPGA loads boostrap from flash |
 | Clock                 | 1 MHz osc           | ?                              |
 | I/O                   | GPIO                | GPIO, UART, SPI                |
+| RAM                   | 32 KiB              | 64 KiB                         |
 
 
 FPGA system controller: BIFRÖST
@@ -103,6 +104,20 @@ spacing of VQ100 makes soldering more difficult, but sparser pin utilization
 means layout flexibility.  However the BIFRÖST system controller FPGA
 (ICE40HX1K-VQ100) has the same pin count, and should be suitable for all this
 and more.
+
+RAM
+---
+
+Alliance Memory produces AS6C62256-55PCN 32K x 8 SRAM with 55ns access time at
+2.7~5.5V in a PDIP-28 package; a pair of these provides 64 KiB RAM.
+
+(There also exists AS6C1008-55PCN model providing 128 KiB in a single PDIP-32,
+which would reduce overall cost and open the possibility of extended memory via
+BIFRÖST bank switching. Hoever, even though this project isn't attempting
+complete era-appropriateness, I don't like the vibe of 17-bit address bus, and
+would prefer a multiple chip RAM design that isn't likely to waste half its
+capacity.)
+
 
 I/O
 ---
