@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name pda6502v2)(type KiCad)(uri ${KIPRJMOD}/pda6502v2.pretty)(options "")(descr ""))
+)

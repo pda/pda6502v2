@@ -1,9 +1,59 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP AS6C4008-55PCN
+D 512Kx8 bit Low Power CMOS Static RAM, 55ns, DIP-32
+K RAM SRAM CMOS MEMORY
+F https://www.alliancememory.com/wp-content/uploads/pdf/AS6C4008.pdf
+$ENDCMP
+#
 $CMP AS6C62256-55PCN
 D 32Kx8 bit Low Power CMOS Static RAM, 55ns, DIP-28
 K RAM SRAM CMOS MEMORY
 F https://www.alliancememory.com/wp-content/uploads/pdf/AS6C62256.pdf
+$ENDCMP
+#
+$CMP AT25M01
+D Microchip SPI Serial EEPROM 128Kx8bit SOIC-8
+K EEPROM memory SPI serial
+F http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8824-SEEPROM-AT25M01-Datasheet.pdf
+$ENDCMP
+#
+$CMP DS1818
+D 3.3V EconoReset with Pushbutton
+F https://datasheets.maximintegrated.com/en/ds/DS1818.pdf
+$ENDCMP
+#
+$CMP ICE40HX1K-VQ100
+D ICE40HX1K-VQ100
+F http://www.latticesemi.com/~/media/Documents/DataSheets/iCE/iCE40LPHXFamilyDataSheet.pdf
+$ENDCMP
+#
+$CMP ICE40HX4K-TQ144
+D iCE40 HX FPGA, 3520 LUTs, 1.2V, TQFP-144
+K FPGA programmable logic
+F http://www.latticesemi.com/Products/FPGAandCPLD/iCE40
+$ENDCMP
+#
+$CMP LT3030
+D Dual 750mA/250mA Low Dropout, Low Noise, Micropower Linear Regulator
+F https://www.analog.com/media/en/technical-documentation/data-sheets/3030fa.pdf
+$ENDCMP
+#
+$CMP SC28L92A1A
+D NXP 3.3 V/5.0 V Dual Universal Asynchronous Receiver/Transmitter (DUART)
+K UART DUART
+F https://www.nxp.com/docs/en/data-sheet/SC28L92.pdf
+$ENDCMP
+#
+$CMP SC28L92A1B
+D NXP 3.3 V/5.0 V Dual Universal Asynchronous Receiver/Transmitter (DUART)
+K UART DUART
+F https://www.nxp.com/docs/en/data-sheet/SC28L92.pdf
+$ENDCMP
+#
+$CMP Vicsp
+D Power symbol creates a global label with name "Vicsp" (In Circuit System Programming)
+K power-flag
 $ENDCMP
 #
 #End Doc Library
