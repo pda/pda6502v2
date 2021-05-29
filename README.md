@@ -3,7 +3,7 @@ pda6502v2
 
 Version two (complete redesign) of https://github.com/pda/pda6502
 
-A single board computer with 6502 CPU, 64 KiB RAM, GPIO+UART+SPI I/O,
+A single board computer with 6502 CPU, 1 MiB RAM, GPIO+UART+SPI I/O,
 FPGA system controller / address decoder, serial EEPROM boot loader.
 
 Version two aims to address the main pain points of version one:
@@ -23,22 +23,21 @@ Comparison table
 | Address decode logic  | 7400-series chips   | FPGA                           |
 | Schematic/layout tool | EAGLE               | KiCad                          |
 | Boot                  | EEPROM              | FPGA loads boostrap from flash |
-| Clock                 | 1 MHz osc           | ?                              |
+| Clock                 | 1 MHz               | 10 MHz                         |
 | I/O                   | GPIO                | GPIO, UART, SPI                |
-| RAM                   | 32 KiB              | 64 KiB                         |
+| RAM                   | 32 KiB              | 1024 KiB                       |
 
 
 FPGA system controller: BIFRÖST
 -------------------------------
 
-An FPGA (Lattice ICE40HX1K-TQ144) acts as a system controller (dubbed BIFRÖST)
+An FPGA (Lattice ICE40HX4K-TQ144) acts as a system controller (dubbed BIFRÖST)
 with three primary functions;
 
 ### System startup
 
-Startup code is stored in an on-board SPI serial EEPROM (e.g. Microchip
-AT25M01) which can be written from an external computer via SPI, e.g. using an
-off-board FTDI FT232H interface.
+Startup code is stored in an on-board SPI serial EEPROM (Microchip AT25M01)
+which can be written from an external computer via SPI ICSP header.
 
 BIFRÖST bootstraps the system by copying a fixed size/location bootloader from
 serial EEPROM into main RAM before starting CPU.  The bootloader may load
@@ -62,61 +61,70 @@ exposed for state-based mapping, e.g. memory layer switching like the Commodore
 
 ### BIFRÖST chip selection / considerations
 
+BIFRÖST is implemented as a Lattice ICE40HX4K-TQ144 FPGA with a Microchip
+AT25M01 SPI flash EEPROM for configuration storage. The EEPROM also acts as
+the 6502 system ROM, loaded into RAM by BIFRÖST during boot.
+
 Any signal that can be routed through / controlled by BIFRÖST should be, so
 that design decisions are pushed from hardware schematic and into FPGA HDL
 which can be easily altered after assembly.
 
-BIFRÖST needs to perform:
+BIFRÖST needs the following signals:
 
-* chip-enable and mode selection (RWB etc) for each chip on the bus,
-* control over all IRQ signals,
-* RDY and SYNC signals from 6502 CPU for better single-step support etc.
-* VPB (vector pull) from 6502 CPU for interrupts.
+| Signal       | Pins |
+| --------     | ---- |
+| ADDR 0..15   |  16  |
+| ADDR 16..18  |   3  |
+| CLOCK        |   1  |
+| CLOCK SRC    |   1  |
+| CPU BUSEN    |   1  |
+| CPU IRQ      |   1  |
+| CPU MLOCK    |   1  |
+| CPU NMIRQ    |   1  |
+| CPU READY    |   1  |
+| CPU SETOV    |   1  |
+| CPU SYNC     |   1  |
+| CPU VECPULL  |   1  |
+| DATA         |   8  |
+| RESET        |   1  |
+| RESET (inv)  |   1  |
+| RW           |   1  |
+| SPI IRQ      |   4  |
+| SPI MISO     |   4  |
+| SPI MOSI     |   1  |
+| SPI SCLK     |   1  |
+| SPI SEL      |   4  |
+| SRAM CS      |   2  |
+| UART CS      |   1  |
+| UART IM      |   1  |
+| UART IRQ     |   1  |
+| UART RDN     |   1  |
+| UART RXAIRQ  |   1  |
+| UART RXBIRQ  |   1  |
+| UART TXAIRQ  |   1  |
+| UART TXBIRQ  |   1  |
+| UART WRN     |   1  |
+| VIA CS       |   1  |
+| VIA IRQ      |   1  |
 
-| Signal   | Pins |
-| -------- | ---- |
-| ADDR     |  16  |
-| CLK      |   1  |
-| CPU IRQ  |   1  |
-| CPU RDY  |   1  |
-| CPU SYNC |   1  |
-| CPU VPB  |   1  |
-| DATA     |   8  |
-| RESET    |   1  |
-| RWB      |   1  |
-| SPI IRQ  |   4  |
-| SPI MISO |   4  |
-| SPI MOSI |   1  |
-| SPI SCLK |   1  |
-| SPI SEL  |   4  |
-| SRAM CS  |   2  |
-| SRAM RWB |   1  |
-| UART CS  |   1  |
-| UART IRQ |   1  |
-| UART RWB |   1  |
-| VIA CS   |   2  |
-| VIA IRQ  |   2  |
-| VIA RWB  |   2  |
+This brings the total I/O pin requirement to at least 67.
 
-Brings total to 40, at which point a XC2C128A-VQ100 CPLD would be suitable,
-with plenty of spare I/O and double the macrocells. The pin count and 0.5mm pin
-spacing of VQ100 makes soldering more difficult, but sparser pin utilization
-means layout flexibility.  However the BIFRÖST system controller FPGA
-(ICE40HX1K-VQ100) has the same pin count, and should be suitable for all this
-and more.
+The ICE40HX1K-VQ100 FPGA lacks PLL which might be useful?
+The TQ144 package includes PLL and has the same 0.5 mm pitch, so shouldn't be
+materially harder to hand-solder.
 
 RAM
 ---
 
-Alliance Memory produces AS6C62256-55PCN 32K x 8 SRAM with 55ns access time at
-2.7~5.5V in a PDIP-28 package; a pair of these provides 64 KiB RAM.
+A pair of Alliance Memory AS6C4008-55PCN 512K x 8 SRAM with 55ns access time at
+2.7~5.5V in a PDIP-32 package provide 1 MiB total RAM.
 
-(There also exists AS6C1008-55PCN model providing 128 KiB in a single PDIP-32,
-which would reduce overall cost and open the possibility of extended memory via
-BIFRÖST bank switching. Hoever, even though this project isn't attempting
-complete era-appropriateness, I don't like the vibe of 17-bit address bus, and
-would prefer a multiple chip RAM design that isn't likely to waste half its
-capacity.)
+This is 16 times larger than the 6502's 16-bit address space; access to RAM
+beyond the first 64 KiB is managed by BIFRÖST.
+
+(Earlier during system design, a pair of AS6C62256 32K x 8 PDIP-28 was chosen
+to provide a less overkill and more era-appropriate 64 KiB of RAM, but the lure
+of 1 MiB RAM won in the end.)
 
 
 I/O
@@ -140,19 +148,27 @@ WDC W65C22S (6522) VIA provides two 8-bit GPIO ports, as well as timers etc.
 
 ### UART
 
-NXP SC28L91 3.3V UART PLCC44
+NXP SC28L92 3.3V dual UART (SC28L92A1A: PLC44-44 package)
 
-Useful information in http://forum.6502.org/viewtopic.php?f=4&t=4587
+Useful information on [UARTs: REPLACING THE 65C51 on 6502.org forums](http://forum.6502.org/viewtopic.php?f=4&t=4587).
 
 
-Power supply
-------------
+Power supply & reset
+--------------------
 
-The main system board expects a regulated 3.3 VDC, which may be done by a small
-add-on board or module. All internal and external signals are 3.3V. If FPGA
-and/or CPLD chips require lower voltages, these will be stepped down from the
-3.3V supply.
+LM1117-3.3 LDO linear regulator brings 4.75V–15V down to the main 3.3V / 800mA
+supply, used for all internal/external I/O.
 
+Note: replace with TLV1117; newer/cheaper drop-in replacement?
+
+LT3030 dual LDO linear regulator brings the 3.3V supply down to 2.5V / 750mA
+and 1.2V / 250mA for the additional FPGA voltage requirements.
+
+The In-Circuit System Programming (ICSP) header can power the AT25M01 SPI flash
+EEPROM (1.7–5.5V) only, isolated from the rest of the system via 1N4148 Diode.
+
+Maxim DS1818-5 “3.3V EconoReset with Pushbutton” handles holding RESET
+active-low during power-on, brown-out, and when a RESET button is pressed.
 
 
 Block diagram
