@@ -56,6 +56,12 @@ D Power symbol creates a global label with name "Vicsp" (In Circuit System Progr
 K power-flag
 $ENDCMP
 #
+$CMP W65C22SxP
+D W65C22S CMOS Versatile Interface Adapter (VIA), 20-pin I/O, 2 Timer/Counters, DIP-40
+K 6502 6522 VIA I/O
+F http://www.westerndesigncenter.com/wdc/documentation/w65c22.pdf
+$ENDCMP
+#
 $CMP XO53
 D SMT Oscillator
 K Crystal Clock Oscillator
