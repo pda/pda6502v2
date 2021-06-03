@@ -56,4 +56,10 @@ D Power symbol creates a global label with name "Vicsp" (In Circuit System Progr
 K power-flag
 $ENDCMP
 #
+$CMP XO53
+D SMT Oscillator
+K Crystal Clock Oscillator
+F https://abracon.com/Oscillators/ASFL1.pdf
+$ENDCMP
+#
 #End Doc Library
