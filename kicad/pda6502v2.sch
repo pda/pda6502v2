@@ -1688,35 +1688,22 @@ Text Label 3700 2800 0    50   ~ 0
 A17
 Text Label 3700 2900 0    50   ~ 0
 A18
-Text Label 11550 5750 0    50   ~ 0
+Text Label 10050 5750 0    50   ~ 0
 A18
-Text Label 11550 5650 0    50   ~ 0
+Text Label 10050 5650 0    50   ~ 0
 A17
-Text Label 11550 5550 0    50   ~ 0
+Text Label 10050 5550 0    50   ~ 0
 A16
-Wire Wire Line
-	11550 5750 11750 5750
-Wire Wire Line
-	11550 5650 11750 5650
-Wire Wire Line
-	11550 5550 11750 5550
 Entry Wire Line
-	11450 5650 11550 5750
+	9950 5650 10050 5750
 Entry Wire Line
-	11450 5550 11550 5650
+	9950 5550 10050 5650
 Entry Wire Line
-	11450 5450 11550 5550
-NoConn ~ 14750 5850
-NoConn ~ 14750 5750
-NoConn ~ 14750 5650
-NoConn ~ 14750 5550
-NoConn ~ 13250 4950
-NoConn ~ 13250 4850
-NoConn ~ 13250 4750
+	9950 5450 10050 5550
 NoConn ~ 15100 8800
-Text Label 11450 3750 1    50   ~ 0
+Text Label 9950 3750 1    50   ~ 0
 A[0..18]
-Text Label 13000 3800 1    50   ~ 0
+Text Label 9850 5700 1    50   ~ 0
 D[0..7]
 $Comp
 L power:GND #PWR073
@@ -1891,19 +1878,19 @@ F 3 "" H 13400 9500 50  0001 C CNN
 	1    13400 9500
 	1    0    0    -1  
 $EndComp
-Text Label 11750 6750 2    50   ~ 0
+Text Label 11750 5550 2    50   ~ 0
 UART_TXB~IRQ
-Text Label 11750 6650 2    50   ~ 0
+Text Label 11750 6050 2    50   ~ 0
 UART_TXA~IRQ
-Text Label 11750 6550 2    50   ~ 0
+Text Label 11750 5650 2    50   ~ 0
 UART_RXB~IRQ
-Text Label 11750 6450 2    50   ~ 0
-UART_RXA~IRQ
-Text Label 11750 6350 2    50   ~ 0
-UART_~RDN
-Text Label 11750 6250 2    50   ~ 0
-UART_~WRN
 Text Label 11750 6150 2    50   ~ 0
+UART_RXA~IRQ
+Text Label 11750 5750 2    50   ~ 0
+UART_~RDN
+Text Label 11750 5850 2    50   ~ 0
+UART_~WRN
+Text Label 11750 5450 2    50   ~ 0
 UART_IM
 Wire Wire Line
 	14600 7850 15550 7850
@@ -2032,54 +2019,38 @@ F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 12750 7250 50  000
 	3    13750 4750
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	13250 4250 13100 4250
-Text Label 13100 3950 0    50   ~ 0
+Text Label 9950 5850 0    50   ~ 0
 D0
-Text Label 13100 4050 0    50   ~ 0
+Text Label 9950 5950 0    50   ~ 0
 D1
-Text Label 13100 4150 0    50   ~ 0
+Text Label 9950 6050 0    50   ~ 0
 D2
-Text Label 13100 4250 0    50   ~ 0
+Text Label 9950 6150 0    50   ~ 0
 D3
-Text Label 13100 4350 0    50   ~ 0
+Text Label 9950 6250 0    50   ~ 0
 D4
-Text Label 13100 4450 0    50   ~ 0
+Text Label 9950 6350 0    50   ~ 0
 D5
-Text Label 13100 4550 0    50   ~ 0
+Text Label 9950 6450 0    50   ~ 0
 D6
-Text Label 13100 4650 0    50   ~ 0
+Text Label 9950 6550 0    50   ~ 0
 D7
-Wire Wire Line
-	13250 3950 13100 3950
-Wire Wire Line
-	13250 4050 13100 4050
-Wire Wire Line
-	13250 4150 13100 4150
-Wire Wire Line
-	13250 4350 13100 4350
-Wire Wire Line
-	13250 4450 13100 4450
-Wire Wire Line
-	13250 4550 13100 4550
-Wire Wire Line
-	13250 4650 13100 4650
 Entry Wire Line
-	13000 3850 13100 3950
+	9850 5750 9950 5850
 Entry Wire Line
-	13000 3950 13100 4050
+	9850 5850 9950 5950
 Entry Wire Line
-	13000 4050 13100 4150
+	9850 5950 9950 6050
 Entry Wire Line
-	13000 4150 13100 4250
+	9850 6050 9950 6150
 Entry Wire Line
-	13000 4250 13100 4350
+	9850 6150 9950 6250
 Entry Wire Line
-	13000 4350 13100 4450
+	9850 6250 9950 6350
 Entry Wire Line
-	13000 4450 13100 4550
+	9850 6350 9950 6450
 Entry Wire Line
-	13000 4550 13100 4650
+	9850 6450 9950 6550
 $Comp
 L pda6502v2:ICE40HX4K-TQ144 U?
 U 4 1 609BB93A
@@ -2094,100 +2065,68 @@ F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 14250 7650 50  000
 	1    0    0    -1  
 $EndComp
 Entry Wire Line
-	11450 5350 11550 5450
+	9950 5350 10050 5450
 Entry Wire Line
-	11450 5250 11550 5350
+	9950 5250 10050 5350
 Entry Wire Line
-	11450 5150 11550 5250
+	9950 5150 10050 5250
 Entry Wire Line
-	11450 5050 11550 5150
+	9950 5050 10050 5150
 Entry Wire Line
-	11450 4950 11550 5050
+	9950 4950 10050 5050
 Entry Wire Line
-	11450 4850 11550 4950
+	9950 4850 10050 4950
 Entry Wire Line
-	11450 4750 11550 4850
+	9950 4750 10050 4850
 Entry Wire Line
-	11450 4650 11550 4750
+	9950 4650 10050 4750
 Entry Wire Line
-	11450 4550 11550 4650
+	9950 4550 10050 4650
 Entry Wire Line
-	11450 4450 11550 4550
+	9950 4450 10050 4550
 Entry Wire Line
-	11450 4350 11550 4450
+	9950 4350 10050 4450
 Entry Wire Line
-	11450 4250 11550 4350
+	9950 4250 10050 4350
 Entry Wire Line
-	11450 4150 11550 4250
+	9950 4150 10050 4250
 Entry Wire Line
-	11450 4050 11550 4150
+	9950 4050 10050 4150
 Entry Wire Line
-	11450 3950 11550 4050
+	9950 3950 10050 4050
 Entry Wire Line
-	11450 3850 11550 3950
-Wire Wire Line
-	11750 5450 11550 5450
-Wire Wire Line
-	11750 5350 11550 5350
-Wire Wire Line
-	11750 5250 11550 5250
-Wire Wire Line
-	11750 5150 11550 5150
-Wire Wire Line
-	11750 5050 11550 5050
-Wire Wire Line
-	11750 4950 11550 4950
-Wire Wire Line
-	11750 4850 11550 4850
-Wire Wire Line
-	11750 4750 11550 4750
-Wire Wire Line
-	11750 4650 11550 4650
-Wire Wire Line
-	11750 4550 11550 4550
-Wire Wire Line
-	11750 4450 11550 4450
-Wire Wire Line
-	11750 4350 11550 4350
-Wire Wire Line
-	11750 4250 11550 4250
-Wire Wire Line
-	11750 4150 11550 4150
-Wire Wire Line
-	11750 4050 11550 4050
-Wire Wire Line
-	11750 3950 11550 3950
-Text Label 11550 5450 0    50   ~ 0
+	9950 3850 10050 3950
+Text Label 10050 5450 0    50   ~ 0
 A15
-Text Label 11550 5350 0    50   ~ 0
+Text Label 10050 5350 0    50   ~ 0
 A14
-Text Label 11550 5250 0    50   ~ 0
+Text Label 10050 5250 0    50   ~ 0
 A13
-Text Label 11550 5150 0    50   ~ 0
+Text Label 10050 5150 0    50   ~ 0
 A12
-Text Label 11550 5050 0    50   ~ 0
+Text Label 10050 5050 0    50   ~ 0
 A11
-Text Label 11550 4950 0    50   ~ 0
+Text Label 10050 4950 0    50   ~ 0
 A10
-Text Label 11550 4850 0    50   ~ 0
+Text Label 10050 4850 0    50   ~ 0
 A9
-Text Label 11550 4750 0    50   ~ 0
+Text Label 10050 4750 0    50   ~ 0
 A8
-Text Label 11550 4650 0    50   ~ 0
+Text Label 10050 4650 0    50   ~ 0
 A7
-Text Label 11550 4550 0    50   ~ 0
+Text Label 10050 4550 0    50   ~ 0
 A6
-Text Label 11550 4450 0    50   ~ 0
+Text Label 10050 4450 0    50   ~ 0
 A5
-Text Label 11550 4350 0    50   ~ 0
+Text Label 10050 4350 0    50   ~ 0
 A4
-Text Label 11550 4250 0    50   ~ 0
+Text Label 10050 4250 0    50   ~ 0
 A3
-Text Label 11550 4150 0    50   ~ 0
+Text Label 10050 4150 0    50   ~ 0
 A2
-Text Label 11550 4050 0    50   ~ 0
+Text Label 10050 4050 0    50   ~ 0
 A1
-Text Label 11550 3950 0    50   ~ 0
+Text Label 10050 3950 0    50   ~ 0
 A0
 $Comp
 L power:+3V3 #PWR?
@@ -2202,11 +2141,11 @@ F 3 "" H 12250 3250 50  0001 C CNN
 	1    12250 3250
 	1    0    0    -1  
 $EndComp
-Text Label 13250 5450 2    50   ~ 0
+Text Label 14750 4950 2    50   ~ 0
 RAM_~CS
 Text Label 11750 5950 2    50   ~ 0
 UART_~CS
-Text Label 13250 5150 2    50   ~ 0
+Text Label 11750 6750 2    50   ~ 0
 VIA1_~CS
 $Comp
 L Device:C_Small C14
@@ -2230,64 +2169,10 @@ F 3 "" H 11700 3450 50  0001 C CNN
 	1    11700 3450
 	1    0    0    -1  
 $EndComp
-Text Label 11750 6050 2    50   ~ 0
+Text Label 11750 5350 2    50   ~ 0
 UART_~IRQ
-Text Label 13250 5050 2    50   ~ 0
+Text Label 11750 6650 2    50   ~ 0
 VIA1_~IRQ
-Wire Wire Line
-	10250 6550 10150 6550
-Wire Wire Line
-	10250 6450 10150 6450
-Wire Wire Line
-	10250 6350 10150 6350
-Wire Wire Line
-	10250 6250 10150 6250
-Wire Wire Line
-	10250 6150 10150 6150
-Wire Wire Line
-	10250 6050 10150 6050
-Wire Wire Line
-	10250 5950 10150 5950
-Wire Wire Line
-	10250 5850 10150 5850
-Wire Wire Line
-	10250 5750 10150 5750
-Wire Wire Line
-	10250 5650 10150 5650
-Wire Wire Line
-	10250 5550 10150 5550
-Wire Wire Line
-	10250 5450 10150 5450
-Wire Wire Line
-	10250 5350 10150 5350
-Wire Wire Line
-	10250 5250 10150 5250
-Wire Wire Line
-	10250 5150 10150 5150
-Wire Wire Line
-	10250 5050 10150 5050
-Wire Wire Line
-	10250 4950 10150 4950
-Wire Wire Line
-	10250 4850 10150 4850
-Wire Wire Line
-	10250 4750 10150 4750
-Wire Wire Line
-	10250 4650 10150 4650
-Wire Wire Line
-	10250 3950 10150 3950
-Wire Wire Line
-	10250 4050 10150 4050
-Wire Wire Line
-	10250 4150 10150 4150
-Wire Wire Line
-	10250 4250 10150 4250
-Wire Wire Line
-	10250 4350 10150 4350
-Wire Wire Line
-	10250 4450 10150 4450
-Wire Wire Line
-	10250 4550 10150 4550
 Connection ~ 14700 9550
 Wire Wire Line
 	14800 9550 14700 9550
@@ -2734,31 +2619,31 @@ F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 11250 7750 50  000
 $EndComp
 NoConn ~ 13250 5650
 NoConn ~ 13250 5750
-Text Label 10150 5350 2    50   ~ 0
+Text Label 14750 5450 2    50   ~ 0
 CLOCKSRC
-Text Label 10150 5550 2    50   ~ 0
+Text Label 14750 5650 2    50   ~ 0
 RESET
-Text Label 10150 5650 2    50   ~ 0
+Text Label 14750 5750 2    50   ~ 0
 ~RESET
-Text Label 10150 5450 2    50   ~ 0
+Text Label 14750 4150 2    50   ~ 0
 ~SETOV
-Text Label 10150 5250 2    50   ~ 0
+Text Label 14750 5350 2    50   ~ 0
 CLOCK
-Text Label 10150 5050 2    50   ~ 0
+Text Label 14750 3950 2    50   ~ 0
 R~W
-Text Label 10150 5150 2    50   ~ 0
+Text Label 14750 4050 2    50   ~ 0
 BUSEN
-Text Label 10150 4850 2    50   ~ 0
+Text Label 14750 4650 2    50   ~ 0
 ~NMIRQ
-Text Label 10150 4950 2    50   ~ 0
+Text Label 14750 4750 2    50   ~ 0
 SYNC
-Text Label 10150 4650 2    50   ~ 0
+Text Label 14750 4450 2    50   ~ 0
 ~IRQ
-Text Label 10150 4750 2    50   ~ 0
+Text Label 14750 4550 2    50   ~ 0
 ~MLOCK
-Text Label 10150 4450 2    50   ~ 0
+Text Label 14750 4250 2    50   ~ 0
 ~VECPULL
-Text Label 10150 4550 2    50   ~ 0
+Text Label 14750 4350 2    50   ~ 0
 READY
 $Comp
 L Connector_Generic:Conn_02x06_Odd_Even J3
@@ -3665,9 +3550,9 @@ F 3 "~" H 3300 1000 50  0001 C CNN
 	1    3300 1000
 	1    0    0    -1  
 $EndComp
-Text Label 13250 5350 2    50   ~ 0
+Text Label 11750 6550 2    50   ~ 0
 VIA2_~CS
-Text Label 13250 5250 2    50   ~ 0
+Text Label 11750 6450 2    50   ~ 0
 VIA2_~IRQ
 $Comp
 L power:PWR_FLAG #FLG0103
@@ -3860,28 +3745,24 @@ Connection ~ 9150 8500
 Text Label 9650 7250 2    50   ~ 0
 EXT_0
 Text Label 9650 7350 2    50   ~ 0
-EXT_1
-Text Label 9650 7450 2    50   ~ 0
 EXT_2
-Text Label 9650 7550 2    50   ~ 0
+Text Label 10250 7350 0    50   ~ 0
 EXT_3
-Text Label 9650 7650 2    50   ~ 0
+Text Label 9650 7450 2    50   ~ 0
 EXT_4
-Text Label 9650 7750 2    50   ~ 0
-EXT_5
-Text Label 9650 7850 2    50   ~ 0
-EXT_6
-Text Label 9650 7950 2    50   ~ 0
-EXT_7
 Text Label 10250 7450 0    50   ~ 0
-EXT_10
+EXT_5
+Text Label 9650 7550 2    50   ~ 0
+EXT_6
 Text Label 10250 7550 0    50   ~ 0
-EXT_11
-Text Label 10250 7650 0    50   ~ 0
-EXT_12
+EXT_7
+Text Label 9650 7750 2    50   ~ 0
+EXT_10
 Text Label 10250 7750 0    50   ~ 0
-EXT_13
-Text Label 10250 7850 0    50   ~ 0
+EXT_11
+Text Label 9650 7850 2    50   ~ 0
+EXT_12
+Text Label 9650 7950 2    50   ~ 0
 EXT_14
 Text Label 10250 7950 0    50   ~ 0
 EXT_15
@@ -4200,7 +4081,7 @@ Wire Wire Line
 	6750 4650 6800 4650
 Wire Wire Line
 	6750 4750 6800 4750
-Text Label 13250 5550 2    50   ~ 0
+Text Label 14750 5850 2    50   ~ 0
 SID_~CS
 $Comp
 L Connector_Generic:Conn_02x08_Odd_Even J8
@@ -4213,15 +4094,13 @@ F 3 "~" H 9900 7550 50  0001 C CNN
 	1    9900 7550
 	1    0    0    -1  
 $EndComp
-Text Label 10250 7250 0    50   ~ 0
-EXT_8
-Text Label 10250 7350 0    50   ~ 0
+Text Label 10250 7650 0    50   ~ 0
 EXT_9
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0121
 U 1 1 6AC709BE
 P 9200 5700
-F 0 "#PWR?" H 9200 5550 50  0001 C CNN
+F 0 "#PWR0121" H 9200 5550 50  0001 C CNN
 F 1 "+5V" H 9215 5873 50  0000 C CNN
 F 2 "" H 9200 5700 50  0001 C CNN
 F 3 "" H 9200 5700 50  0001 C CNN
@@ -4233,10 +4112,10 @@ Wire Wire Line
 Wire Wire Line
 	9100 5700 9200 5700
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0122
 U 1 1 6AD630D8
 P 8550 5550
-F 0 "#PWR?" H 8550 5300 50  0001 C CNN
+F 0 "#PWR0122" H 8550 5300 50  0001 C CNN
 F 1 "GND" H 8555 5377 50  0000 C CNN
 F 2 "" H 8550 5550 50  0001 C CNN
 F 3 "" H 8550 5550 50  0001 C CNN
@@ -4272,6 +4151,133 @@ Wire Wire Line
 	8400 5800 9450 5800
 Wire Wire Line
 	9450 5800 9450 5450
+Wire Wire Line
+	10050 5750 10250 5750
+Wire Wire Line
+	10050 5650 10250 5650
+Wire Wire Line
+	10050 5550 10250 5550
+Wire Wire Line
+	10050 5450 10250 5450
+Wire Wire Line
+	10050 5350 10250 5350
+Wire Wire Line
+	10050 5250 10250 5250
+Wire Wire Line
+	10050 5150 10250 5150
+Wire Wire Line
+	10050 5050 10250 5050
+Wire Wire Line
+	10050 4950 10250 4950
+Wire Wire Line
+	10050 4850 10250 4850
+Wire Wire Line
+	10050 4750 10250 4750
+Wire Wire Line
+	10050 4650 10250 4650
+Wire Wire Line
+	10050 4550 10250 4550
+Wire Wire Line
+	10050 4450 10250 4450
+Wire Wire Line
+	10050 4350 10250 4350
+Wire Wire Line
+	10050 4250 10250 4250
+Wire Wire Line
+	10050 4150 10250 4150
+Wire Wire Line
+	10050 4050 10250 4050
+Wire Wire Line
+	10050 3950 10250 3950
+Wire Wire Line
+	9950 5850 10250 5850
+Wire Wire Line
+	9950 5950 10250 5950
+Wire Wire Line
+	9950 6050 10250 6050
+Wire Wire Line
+	9950 6150 10250 6150
+Wire Wire Line
+	9950 6250 10250 6250
+Wire Wire Line
+	9950 6350 10250 6350
+Wire Wire Line
+	9950 6450 10250 6450
+Wire Wire Line
+	9950 6550 10250 6550
+Text Label 11750 3950 2    50   ~ 0
+SPI_MISO
+Text Label 11750 4050 2    50   ~ 0
+SPI_MOSI
+Text Label 11750 4150 2    50   ~ 0
+SPI_CLOCK
+Text Label 11750 4250 2    50   ~ 0
+SPI_CS0
+Text Label 11750 4350 2    50   ~ 0
+SPI_CS1
+Text Label 11750 4450 2    50   ~ 0
+SPI_CS2
+Text Label 11750 4550 2    50   ~ 0
+SPI_CS3
+Text Label 11750 4650 2    50   ~ 0
+SPI_CS4
+Text Label 11750 4750 2    50   ~ 0
+SPI_CS5
+Text Label 11750 4850 2    50   ~ 0
+SPI_CS6
+Text Label 11750 4950 2    50   ~ 0
+SPI_CS7
+Text Label 11750 5050 2    50   ~ 0
+SPI_EXP0
+Text Label 11750 5150 2    50   ~ 0
+SPI_EXP1
+Text Label 13250 4050 2    50   ~ 0
+EXT_0
+Text Label 13250 4150 2    50   ~ 0
+EXT_1
+Text Label 13250 4250 2    50   ~ 0
+EXT_2
+Text Label 13250 4350 2    50   ~ 0
+EXT_3
+Text Label 13250 4450 2    50   ~ 0
+EXT_4
+Text Label 13250 4550 2    50   ~ 0
+EXT_5
+Text Label 13250 4650 2    50   ~ 0
+EXT_6
+Text Label 13250 4750 2    50   ~ 0
+EXT_7
+Text Label 13250 4850 2    50   ~ 0
+EXT_8
+Text Label 13250 4950 2    50   ~ 0
+EXT_9
+Text Label 13250 5050 2    50   ~ 0
+EXT_10
+Text Label 13250 5150 2    50   ~ 0
+EXT_11
+Text Label 13250 5250 2    50   ~ 0
+EXT_12
+Text Label 13250 5350 2    50   ~ 0
+EXT_13
+Text Label 13250 5450 2    50   ~ 0
+EXT_14
+Text Label 13250 5550 2    50   ~ 0
+EXT_15
+Text Label 10250 7250 0    50   ~ 0
+EXT_1
+Text Label 9650 7650 2    50   ~ 0
+EXT_8
+Text Label 10250 7850 0    50   ~ 0
+EXT_13
+NoConn ~ 11750 5250
+NoConn ~ 11750 6250
+NoConn ~ 11750 6350
+NoConn ~ 13250 3950
+NoConn ~ 14750 4850
+NoConn ~ 14750 5050
+NoConn ~ 14750 5150
+NoConn ~ 14750 5250
+NoConn ~ 14750 5550
 Wire Bus Line
 	6500 5450 6500 5900
 Wire Bus Line
@@ -4289,7 +4295,7 @@ Wire Bus Line
 Wire Bus Line
 	9250 10150 9250 10950
 Wire Bus Line
-	13000 3800 13000 4550
+	9850 5700 9850 6450
 Wire Bus Line
 	1650 6200 1650 6950
 Wire Bus Line
@@ -4303,5 +4309,5 @@ Wire Bus Line
 Wire Bus Line
 	3600 1200 3600 3100
 Wire Bus Line
-	11450 3750 11450 5650
+	9950 3750 9950 5650
 $EndSCHEMATC
