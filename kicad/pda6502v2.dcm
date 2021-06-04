@@ -1,5 +1,11 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP ARMSID
+D ARMSID 6581/8580 Sound Interface Device (SID), 3-Voice Sound Synthesizer, DIP-28
+K 6502 6581 8580 SID Sound
+F https://www.nobomi.cz/8bit/armsid/index_en.php
+$ENDCMP
+#
 $CMP AS6C4008-55PCN
 D 512Kx8 bit Low Power CMOS Static RAM, 55ns, DIP-32
 K RAM SRAM CMOS MEMORY
