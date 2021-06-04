@@ -23,9 +23,9 @@ Comparison table
 | Address decode logic  | 7400-series chips   | FPGA                           |
 | Schematic/layout tool | EAGLE               | KiCad                          |
 | Boot                  | EEPROM              | FPGA loads boostrap from flash |
-| Clock                 | 1 MHz               | 10 MHz                         |
+| Clock                 | 1 MHz               | 8 MHz                          |
 | I/O                   | GPIO                | GPIO, UART, SPI                |
-| RAM                   | 32 KiB              | 1024 KiB                       |
+| RAM                   | 32 KiB              | 512 KiB                        |
 
 
 FPGA system controller: BIFRÖST
@@ -89,11 +89,10 @@ BIFRÖST needs the following signals:
 | RESET        |   1  |
 | RESET (inv)  |   1  |
 | RW           |   1  |
-| SPI IRQ      |   4  |
-| SPI MISO     |   4  |
+| SPI MISO     |   1  |
 | SPI MOSI     |   1  |
 | SPI SCLK     |   1  |
-| SPI SEL      |   4  |
+| SPI SS       |   8  |
 | SRAM CS      |   2  |
 | UART CS      |   1  |
 | UART IM      |   1  |
@@ -104,10 +103,12 @@ BIFRÖST needs the following signals:
 | UART TXAIRQ  |   1  |
 | UART TXBIRQ  |   1  |
 | UART WRN     |   1  |
-| VIA CS       |   1  |
-| VIA IRQ      |   1  |
+| VIA1 CS      |   1  |
+| VIA1 IRQ     |   1  |
+| VIA2 CS      |   1  |
+| VIA2 IRQ     |   1  |
 
-This brings the total I/O pin requirement to at least 67.
+This brings the total I/O pin requirement to at least 64.
 
 The ICE40HX1K-VQ100 FPGA lacks PLL which might be useful?
 The TQ144 package includes PLL and has the same 0.5 mm pitch, so shouldn't be
@@ -116,23 +117,25 @@ materially harder to hand-solder.
 RAM
 ---
 
-A pair of Alliance Memory AS6C4008-55PCN 512K x 8 SRAM with 55ns access time at
-2.7~5.5V in a PDIP-32 package provide 1 MiB total RAM.
+Alliance Memory AS6C4008-55PCN 512K x 8 SRAM with 55ns access time at 2.7~5.5V
+in a PDIP-32 package provides 512 KiB RAM.
 
-This is 16 times larger than the 6502's 16-bit address space; access to RAM
+This is 8 times larger than the 6502's 16-bit address space; access to RAM
 beyond the first 64 KiB is managed by BIFRÖST.
 
 (Earlier during system design, a pair of AS6C62256 32K x 8 PDIP-28 was chosen
-to provide a less overkill and more era-appropriate 64 KiB of RAM, but the lure
-of 1 MiB RAM won in the end.)
+to provide a less overkill and more era-appropriate 64 KiB of RAM, then lure of
+1 MiB RAM made that 2 x 512 KiB, then the second 512 KiB was removed to make
+PCB space for SID.
 
 
 I/O
 ---
 
-- SPI: 4 devices
-- GPIO: 2 x 8-bit ports
-- UART
+- SPI: 8 devices
+- GPIO: 2 x 6522 VIA providing total of 4 x 8-bit ports
+- Dual UART
+- SID (ARMSID) sound
 
 ### SPI
 
@@ -144,7 +147,7 @@ bit-banging, making SPI display output more viable.
 
 ### GPIO
 
-WDC W65C22S (6522) VIA provides two 8-bit GPIO ports, as well as timers etc.
+A pair of WDC W65C22S (6522) VIA provide two 8-bit GPIO ports each, as well as timers etc.
 
 ### UART
 
@@ -152,14 +155,26 @@ NXP SC28L92 3.3V dual UART (SC28L92A1A: PLC44-44 package)
 
 Useful information on [UARTs: REPLACING THE 65C51 on 6502.org forums](http://forum.6502.org/viewtopic.php?f=4&t=4587).
 
+### SID Sound
+
+[ARMSID](https://www.nobomi.cz/8bit/armsid/index_en.php) emulates MOS6581 or MOS8580 SID.
+
+I believe this will only function correctly when running at ~1 MHz.
+
+An email reply from the creator re. voltage and clock:
+
+> The ARMSID has its own LDO regulator, so it needs at least 3.45 V (max. 5.5 V) on pin 24 for proper operation.
+> The value of the output signals is logic 3.3 V, the inputs are tolerant to 5 V. Therefore, it is not a problem to connect it to a 3.3 V system.
+> The clock signal is designed for use in the C64, so it is guaranteed in the range of 0.985 to 1.023 MHz and directly controls the emulation rate (just like the original SID).
+> Lower frequencies are not a problem, higher frequencies can disable emulation. All write and read operations should take at least 350ns for proper operation.
+
+
 
 Power supply & reset
 --------------------
 
-LM1117-3.3 LDO linear regulator brings 4.75V–15V down to the main 3.3V / 800mA
+TLV1117-33 LDO linear regulator brings 4.75V–15V down to the main 3.3V / 800mA
 supply, used for all internal/external I/O.
-
-Note: replace with TLV1117; newer/cheaper drop-in replacement?
 
 LT3030 dual LDO linear regulator brings the 3.3V supply down to 2.5V / 750mA
 and 1.2V / 250mA for the additional FPGA voltage requirements.
