@@ -1880,11 +1880,11 @@ F 3 "" H 13400 9500 50  0001 C CNN
 $EndComp
 Text Label 11750 5550 2    50   ~ 0
 UART_TXB~IRQ
-Text Label 11750 6050 2    50   ~ 0
+Text Label 11750 5950 2    50   ~ 0
 UART_TXA~IRQ
 Text Label 11750 5650 2    50   ~ 0
 UART_RXB~IRQ
-Text Label 11750 6150 2    50   ~ 0
+Text Label 11750 6050 2    50   ~ 0
 UART_RXA~IRQ
 Text Label 11750 5750 2    50   ~ 0
 UART_~RDN
@@ -2143,7 +2143,7 @@ F 3 "" H 12250 3250 50  0001 C CNN
 $EndComp
 Text Label 14750 4950 2    50   ~ 0
 RAM_~CS
-Text Label 11750 5950 2    50   ~ 0
+Text Label 11750 6150 2    50   ~ 0
 UART_~CS
 Text Label 11750 6750 2    50   ~ 0
 VIA1_~CS
