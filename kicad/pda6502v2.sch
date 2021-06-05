@@ -4205,11 +4205,11 @@ Wire Wire Line
 	9950 6450 10250 6450
 Wire Wire Line
 	9950 6550 10250 6550
-Text Label 11750 3950 2    50   ~ 0
-SPI_MISO
 Text Label 11750 4050 2    50   ~ 0
-SPI_MOSI
+SPI_MISO
 Text Label 11750 4150 2    50   ~ 0
+SPI_MOSI
+Text Label 11750 3950 2    50   ~ 0
 SPI_CLOCK
 Text Label 11750 4250 2    50   ~ 0
 SPI_CS0
