@@ -2786,13 +2786,13 @@ Wire Wire Line
 $Comp
 L Connector:Screw_Terminal_01x02 J4
 U 1 1 628F567C
-P 9700 1100
-F 0 "J4" H 9618 1317 50  0000 C CNN
-F 1 "Screw_Terminal_01x02" H 9618 1226 50  0000 C CNN
-F 2 "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal" H 9700 1100 50  0001 C CNN
-F 3 "~" H 9700 1100 50  0001 C CNN
-	1    9700 1100
-	-1   0    0    -1  
+P 9700 1200
+F 0 "J4" H 9618 1417 50  0000 C CNN
+F 1 "Screw_Terminal_01x02" H 9618 1326 50  0000 C CNN
+F 2 "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal" H 9700 1200 50  0001 C CNN
+F 3 "~" H 9700 1200 50  0001 C CNN
+	1    9700 1200
+	-1   0    0    1   
 $EndComp
 Connection ~ 10400 1750
 Wire Wire Line
