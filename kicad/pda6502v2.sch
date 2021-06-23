@@ -2608,7 +2608,7 @@ NoConn ~ 13250 5650
 NoConn ~ 13250 5750
 Text Label 14750 5450 2    50   ~ 0
 CLOCKSRC
-Text Label 14750 5050 2    50   ~ 0
+Text Label 11750 6250 2    50   ~ 0
 RESET
 Text Label 14750 5150 2    50   ~ 0
 ~RESET
@@ -4234,7 +4234,6 @@ EXT_8
 Text Label 10250 7850 0    50   ~ 0
 EXT_13
 NoConn ~ 11750 5250
-NoConn ~ 11750 6250
 NoConn ~ 11750 6350
 NoConn ~ 13250 3950
 NoConn ~ 14750 5650
