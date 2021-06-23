@@ -305,15 +305,15 @@ Wire Wire Line
 Wire Wire Line
 	4900 1100 5050 1100
 Text Label 4950 1800 0    50   ~ 0
-D7
+D3
 Text Label 4950 1700 0    50   ~ 0
-D6
+D4
 Text Label 4950 1600 0    50   ~ 0
 D5
 Text Label 4950 1500 0    50   ~ 0
-D4
+D6
 Text Label 4950 1400 0    50   ~ 0
-D3
+D7
 Text Label 4950 1300 0    50   ~ 0
 D2
 Text Label 4950 1200 0    50   ~ 0
@@ -332,21 +332,21 @@ F 3 "https://www.alliancememory.com/wp-content/uploads/pdf/AS6C4008.pdf" H 4400 
 	1    0    0    -1  
 $EndComp
 Text Label 3700 1100 0    50   ~ 0
-A0
-Text Label 3700 1200 0    50   ~ 0
-A1
-Text Label 3700 1300 0    50   ~ 0
-A2
-Text Label 3700 1400 0    50   ~ 0
-A3
-Text Label 3700 1500 0    50   ~ 0
-A4
-Text Label 3700 1600 0    50   ~ 0
-A5
-Text Label 3700 1700 0    50   ~ 0
-A6
-Text Label 3700 1800 0    50   ~ 0
 A7
+Text Label 3700 1200 0    50   ~ 0
+A6
+Text Label 3700 1300 0    50   ~ 0
+A5
+Text Label 3700 1400 0    50   ~ 0
+A4
+Text Label 3700 1500 0    50   ~ 0
+A3
+Text Label 3700 1600 0    50   ~ 0
+A2
+Text Label 3700 1700 0    50   ~ 0
+A1
+Text Label 3700 1800 0    50   ~ 0
+A0
 Text Label 3700 1900 0    50   ~ 0
 A8
 Text Label 3700 2000 0    50   ~ 0
@@ -2608,9 +2608,9 @@ NoConn ~ 13250 5650
 NoConn ~ 13250 5750
 Text Label 14750 5450 2    50   ~ 0
 CLOCKSRC
-Text Label 14750 5650 2    50   ~ 0
+Text Label 14750 5050 2    50   ~ 0
 RESET
-Text Label 14750 5750 2    50   ~ 0
+Text Label 14750 5150 2    50   ~ 0
 ~RESET
 Text Label 14750 4150 2    50   ~ 0
 ~SETOV
@@ -2951,17 +2951,6 @@ Wire Wire Line
 	4500 9150 4550 9150
 Wire Wire Line
 	4550 9150 4550 9250
-$Comp
-L pda6502v2:W65C22SxP U2
-U 1 1 6244272B
-P 1900 9250
-F 0 "U2" H 1900 10881 50  0000 C CNN
-F 1 "W65C22SxP" H 1900 10790 50  0000 C CIB
-F 2 "Package_DIP:DIP-40_W15.24mm" H 1900 9400 50  0001 C CNN
-F 3 "http://www.westerndesigncenter.com/wdc/documentation/w65c22.pdf" H 1900 9400 50  0001 C CNN
-	1    1900 9250
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	2500 8950 2900 8950
 Wire Wire Line
@@ -3313,10 +3302,10 @@ Wire Wire Line
 Wire Wire Line
 	8550 9150 8550 9250
 $Comp
-L pda6502v2:W65C22SxP U3
+L pda6502v2:W65C22SxP U2
 U 1 1 62BC495B
 P 5900 9250
-F 0 "U3" H 5900 10881 50  0000 C CNN
+F 0 "U2" H 5900 10881 50  0000 C CNN
 F 1 "W65C22SxP" H 5900 10790 50  0000 C CIB
 F 2 "Package_DIP:DIP-40_W15.24mm" H 5900 9400 50  0001 C CNN
 F 3 "http://www.westerndesigncenter.com/wdc/documentation/w65c22.pdf" H 5900 9400 50  0001 C CNN
@@ -4013,49 +4002,49 @@ F 3 "" H 8050 6650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	9100 5250 9100 5050
+	9100 5550 9100 5350
 Wire Wire Line
-	9100 5050 9200 5050
+	9100 5350 9200 5350
 $Comp
 L Connector_Generic:Conn_02x04_Odd_Even J9
 U 1 1 67B17C61
-P 8800 5350
-F 0 "J9" H 8850 5667 50  0000 C CNN
-F 1 "SID" H 8850 5576 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 8800 5350 50  0001 C CNN
-F 3 "~" H 8800 5350 50  0001 C CNN
-	1    8800 5350
-	1    0    0    -1  
+P 8900 5750
+F 0 "J9" H 8950 6067 50  0000 C CNN
+F 1 "SID" H 8950 5976 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 8900 5750 50  0001 C CNN
+F 3 "~" H 8900 5750 50  0001 C CNN
+	1    8900 5750
+	-1   0    0    1   
 $EndComp
 $Comp
 L power:+5V #PWR0119
 U 1 1 678A04B9
-P 8550 5200
-F 0 "#PWR0119" H 8550 5050 50  0001 C CNN
-F 1 "+5V" H 8565 5373 50  0000 C CNN
-F 2 "" H 8550 5200 50  0001 C CNN
-F 3 "" H 8550 5200 50  0001 C CNN
-	1    8550 5200
+P 8550 5500
+F 0 "#PWR0119" H 8550 5350 50  0001 C CNN
+F 1 "+5V" H 8565 5673 50  0000 C CNN
+F 2 "" H 8550 5500 50  0001 C CNN
+F 3 "" H 8550 5500 50  0001 C CNN
+	1    8550 5500
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR0120
 U 1 1 688A6E95
-P 9200 5050
-F 0 "#PWR0120" H 9200 4800 50  0001 C CNN
-F 1 "GND" H 9205 4877 50  0000 C CNN
-F 2 "" H 9200 5050 50  0001 C CNN
-F 3 "" H 9200 5050 50  0001 C CNN
-	1    9200 5050
+P 9200 5350
+F 0 "#PWR0120" H 9200 5100 50  0001 C CNN
+F 1 "GND" H 9205 5177 50  0000 C CNN
+F 2 "" H 9200 5350 50  0001 C CNN
+F 3 "" H 9200 5350 50  0001 C CNN
+	1    9200 5350
 	1    0    0    -1  
 $EndComp
-Text Label 9100 5350 0    50   ~ 0
+Text Label 9100 5650 0    50   ~ 0
 SID_OUT
-Text Label 8600 5450 2    50   ~ 0
+Text Label 8600 5650 2    50   ~ 0
 SID_IN
-Text Label 8600 5350 2    50   ~ 0
+Text Label 8600 5750 2    50   ~ 0
 SID_X
-Text Label 9100 5450 0    50   ~ 0
+Text Label 9100 5750 0    50   ~ 0
 SID_Y
 Wire Wire Line
 	8000 5450 8050 5450
@@ -4063,12 +4052,12 @@ Wire Wire Line
 	8000 5950 8050 5950
 Connection ~ 8050 5950
 Wire Wire Line
-	8050 5950 8300 5950
+	8050 5950 8250 5950
 Wire Wire Line
 	6750 4650 6800 4650
 Wire Wire Line
 	6750 4750 6800 4750
-Text Label 14750 5850 2    50   ~ 0
+Text Label 14750 4850 2    50   ~ 0
 SID_~CS
 $Comp
 L Connector_Generic:Conn_02x08_Odd_Even J8
@@ -4086,58 +4075,46 @@ EXT_9
 $Comp
 L power:+5V #PWR0121
 U 1 1 6AC709BE
-P 9200 5700
-F 0 "#PWR0121" H 9200 5550 50  0001 C CNN
-F 1 "+5V" H 9215 5873 50  0000 C CNN
-F 2 "" H 9200 5700 50  0001 C CNN
-F 3 "" H 9200 5700 50  0001 C CNN
-	1    9200 5700
+P 9200 6000
+F 0 "#PWR0121" H 9200 5850 50  0001 C CNN
+F 1 "+5V" H 9215 6173 50  0000 C CNN
+F 2 "" H 9200 6000 50  0001 C CNN
+F 3 "" H 9200 6000 50  0001 C CNN
+	1    9200 6000
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	9100 5550 9100 5700
+	9100 5850 9100 6000
 Wire Wire Line
-	9100 5700 9200 5700
+	9100 6000 9200 6000
 $Comp
 L power:GND #PWR0122
 U 1 1 6AD630D8
-P 8550 5550
-F 0 "#PWR0122" H 8550 5300 50  0001 C CNN
-F 1 "GND" H 8555 5377 50  0000 C CNN
-F 2 "" H 8550 5550 50  0001 C CNN
-F 3 "" H 8550 5550 50  0001 C CNN
-	1    8550 5550
+P 8550 5850
+F 0 "#PWR0122" H 8550 5600 50  0001 C CNN
+F 1 "GND" H 8555 5677 50  0000 C CNN
+F 2 "" H 8550 5850 50  0001 C CNN
+F 3 "" H 8550 5850 50  0001 C CNN
+	1    8550 5850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8600 5550 8550 5550
+	8600 5850 8550 5850
 Wire Wire Line
-	9450 4950 9450 5350
+	9450 4950 9450 5650
 Wire Wire Line
-	9450 5350 9100 5350
+	9450 5650 9100 5650
 Wire Wire Line
 	8250 4950 9450 4950
 Wire Wire Line
-	8250 5450 8600 5450
+	8600 5550 8550 5550
 Wire Wire Line
-	8300 5350 8600 5350
+	8550 5550 8550 5500
 Wire Wire Line
-	8300 5350 8300 5950
-Wire Wire Line
-	8600 5250 8550 5250
-Wire Wire Line
-	8550 5250 8550 5200
-Wire Wire Line
-	8050 6450 8400 6450
-Wire Wire Line
-	8400 6450 8400 5800
+	8050 6450 9450 6450
 Connection ~ 8050 6450
 Wire Wire Line
-	9100 5450 9450 5450
-Wire Wire Line
-	8400 5800 9450 5800
-Wire Wire Line
-	9450 5800 9450 5450
+	9100 5750 9450 5750
 Wire Wire Line
 	10050 5750 10250 5750
 Wire Wire Line
@@ -4260,9 +4237,8 @@ NoConn ~ 11750 5250
 NoConn ~ 11750 6250
 NoConn ~ 11750 6350
 NoConn ~ 13250 3950
-NoConn ~ 14750 4850
-NoConn ~ 14750 5050
-NoConn ~ 14750 5150
+NoConn ~ 14750 5650
+NoConn ~ 14750 5750
 NoConn ~ 14750 5250
 NoConn ~ 14750 5550
 $Comp
@@ -4346,14 +4322,42 @@ Wire Wire Line
 	8000 1300 8100 1300
 Wire Wire Line
 	8000 1300 8000 1750
-Wire Bus Line
-	6600 6250 6600 7000
+Text Label 12950 7850 2    50   ~ 0
+VCC_FLASH
+$Comp
+L pda6502v2:W65C22SxP U3
+U 1 1 6244272B
+P 1900 9250
+F 0 "U3" H 1900 10881 50  0000 C CNN
+F 1 "W65C22SxP" H 1900 10790 50  0000 C CIB
+F 2 "Package_DIP:DIP-40_W15.24mm" H 1900 9400 50  0001 C CNN
+F 3 "http://www.westerndesigncenter.com/wdc/documentation/w65c22.pdf" H 1900 9400 50  0001 C CNN
+	1    1900 9250
+	1    0    0    -1  
+$EndComp
+NoConn ~ 14750 5850
+Wire Wire Line
+	9450 5750 9450 6450
+Wire Wire Line
+	8250 5450 8250 5650
+Wire Wire Line
+	8250 5650 8600 5650
+Wire Wire Line
+	8250 5950 8250 5750
+Wire Wire Line
+	8250 5750 8600 5750
 Wire Bus Line
 	6500 5450 6500 5900
 Wire Bus Line
-	5100 9750 5100 10500
-Wire Bus Line
 	4900 9050 4900 9400
+Wire Bus Line
+	1650 4700 1650 5050
+Wire Bus Line
+	900  9050 900  9400
+Wire Bus Line
+	6600 6250 6600 7000
+Wire Bus Line
+	5100 9750 5100 10500
 Wire Bus Line
 	14250 6050 14250 6850
 Wire Bus Line
@@ -4361,23 +4365,17 @@ Wire Bus Line
 Wire Bus Line
 	9850 5700 9850 6450
 Wire Bus Line
-	9950 3750 9950 5650
-Wire Bus Line
 	1650 6200 1650 6950
-Wire Bus Line
-	1650 4700 1650 5050
-Wire Bus Line
-	2750 1000 2750 2550
-Wire Bus Line
-	3600 1200 3600 3100
 Wire Bus Line
 	5150 950  5150 1700
 Wire Bus Line
 	1100 9750 1100 10500
 Wire Bus Line
-	900  9050 900  9400
-Wire Bus Line
 	2750 2950 2750 3700
-Text Label 12950 7850 2    50   ~ 0
-VCC_FLASH
+Wire Bus Line
+	2750 1000 2750 2550
+Wire Bus Line
+	3600 1200 3600 3100
+Wire Bus Line
+	9950 3750 9950 5650
 $EndSCHEMATC
