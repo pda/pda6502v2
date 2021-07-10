@@ -351,9 +351,9 @@ Text Label 3700 1900 0    50   ~ 0
 A8
 Text Label 3700 2000 0    50   ~ 0
 A9
-Text Label 3700 2100 0    50   ~ 0
-A10
 Text Label 3700 2200 0    50   ~ 0
+A10
+Text Label 3700 2100 0    50   ~ 0
 A11
 Text Label 3700 2300 0    50   ~ 0
 A12
