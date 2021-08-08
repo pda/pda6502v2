@@ -1,4 +1,4 @@
-update=Friday, 18 June 2021 at 12:03:22 am
+update=Wednesday, 04 August 2021 at 10:18:10 pm
 last_client=kicad
 [general]
 version=1
@@ -37,8 +37,8 @@ dPairWidth1=0.2
 dPairGap1=0.25
 dPairViaGap1=0.25
 SilkLineWidth=0.12
-SilkTextSizeV=1
-SilkTextSizeH=1
+SilkTextSizeV=0.7999999999999999
+SilkTextSizeH=0.7999999999999999
 SilkTextSizeThickness=0.15
 SilkTextItalic=0
 SilkTextUpright=1
