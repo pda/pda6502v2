@@ -1,0 +1,17 @@
+# Icarus Verilog output/executable
+a.out
+
+# Icarus Verilog test bench executables
+*_tb
+
+# Value Change Dump file for viewing waveform (e.g. GTKWave)
+*.vcd
+
+# yosys synthesis output
+*.json
+
+# nextpnr place-and-route output (ASCII bitstream)
+*.asc
+
+# icepack binary bitstream
+*.bin
