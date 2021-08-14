@@ -10,16 +10,13 @@ module blinken_tb;
     .clock(clock)
   );
 
+  // just run the clock for 1 second, monitoring changes.
   initial begin
-    $dumpfile("blinken_tb.vcd");
-    $dumpvars(0, blinken_tb);
-    $monitor("[%10t] splashing:%b leds:%b", $time, dut.splashing, dut.leds);
-  end
-
-  initial begin
+    //$dumpfile("blinken_tb.vcd");
+    //$dumpvars(0, blinken_tb);
+    $monitor("[%10t] animating:%b leds:%b", $time, dut.animating, dut.leds);
     repeat(2_000_000) begin // 2M half-cycles -> 1 sec @ 1MHz
-      #5 // 500ns high, 500ns low -> 1 MHz
-      clock = ~clock;
+      clock = #5 ~clock; // 500ns high, 500ns low -> 1 MHz
     end
 
     $finish;

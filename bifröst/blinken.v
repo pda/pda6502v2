@@ -6,17 +6,17 @@ module blinken(
 );
 
 // on start-up, animate the LEDs in
-reg splashing = 1;
+reg animating = 1;
 reg [16:0] counter = 0; // 17-bit counter to reach 100,000
 always @(posedge clock) begin
-  if (splashing == 1) begin
+  if (animating == 1) begin
     counter = counter + 1;
     if (counter == 100_000) begin
       counter <= 0;
       leds <= (leds << 1) | 1;
       if (leds == 8'hFF) begin
         // after all LEDs have been on for 100ms, clear them and halt
-        splashing = 0;
+        animating = 0;
         leds <= 0;
       end
     end
