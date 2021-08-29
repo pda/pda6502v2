@@ -1,0 +1,46 @@
+    Id   Designator                            Package                                                  Quantity  Designation
+[M] 4    C30,C29                               CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder           2         10uF
+[M] 5    U7                                    SOIC-8_3.9x4.9mm_P1.27mm                                 1         CAT25M01
+[M] 6    C31,C28                               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder              2         1800pF
+[M] 7    C21,C20                               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder              2         10uF
+[M] 8    C19,C18                               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder              2         10nF
+[M] 9    C14,C32,C9,C27,C26,C25,C7,C6,C24,...  C_0805_2012Metric_Pad1.18x1.45mm_HandSolder              22        0.1μF
+[M] 10   J4                                    TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Ho...  1         Screw_Terminal_01x02
+[M] 11   D1                                    D_DO-41_SOD81_P10.16mm_Horizontal                        1         1N5819
+[M] 12   U9                                    SOT-223                                                  1         TLV1117-33
+[M] 13   C13                                   CP_Radial_D5.0mm_P2.00mm                                 1         10uF
+[M] 14   C12                                   CP_Radial_D5.0mm_P2.00mm                                 1         100uF
+[M] 15   D2                                    LED_D3.0mm                                               1         LED
+[M] 16   U10                                   HTSSOP-20-1EP_4.4x6.5mm_P0.65mm_EP2.85x4mm               1         LT3030
+[M] 17   U4                                    SOT-23_Handsoldering                                     1         DS1818
+[M] 18   SW2                                   PinHeader_1x02_P2.54mm_Vertical                          1         SW_Push
+[M] 19A  R24                                   R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              1         255k 1%
+[M] 19B  R25                                   R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              1         243k 1%
+[M] 19C  R26                                   R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              1         0 (jumper)
+[-] 19D  R27                                   R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              1         (open)
+[M] 20   R3,R22,R21,R4,R23,R2,R1               R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              7         10K
+[M] 21   R28                                   R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              1         1K
+[M] 21A  R36,R35,R34,R33,R32,R31,R30,R29       R_0805_2012Metric_Pad1.20x1.40mm_HandSolder              8         330 ohm
+[M] 22   SW1                                   SW_PUSH_6mm_H5mm                                         1         SW_Push
+[M] 23   U8                                    TQFP-144_20x20mm_P0.5mm                                  1         ICE40HX4K-TQ144
+[M] 24   U11                                   PQFP-44_10x10mm_P0.8mm                                   1         SC28L92A1B
+[M] 25   U5                                    DIP-32_W15.24mm                                          1         AS6C4008-55PCN
+[M] 26   X1                                    Oscillator_SMD_5.0x3.2mm_HandSolder                      1         8 MHz
+[M] 27   X2                                    Oscillator_SMD_5.0x3.2mm_HandSolder                      1         3.6864 MHz
+[M] 28   U3,U2                                 DIP-40_W15.24mm                                          2         W65C22SxP
+[M] 29   U1                                    DIP-40_W15.24mm                                          1         W65C02SxP
+[M] 30   J1                                    PinHeader_2x12_P2.54mm_Vertical                          1         GPIO1
+[M] 31   J2                                    PinHeader_2x12_P2.54mm_Vertical                          1         GPIO2
+[M] 32   J3                                    PinHeader_2x06_P2.54mm_Vertical                          1         UART
+[M] 33   J7                                    PinHeader_2x10_P2.54mm_Vertical                          1         SPI
+[M] 34   J8                                    PinHeader_2x08_P2.54mm_Vertical                          1         FPGA_EXT
+[M] 35   J9                                    PinHeader_2x04_P2.54mm_Vertical                          1         SID
+[M] 36   D3,D10,D9,D8,D7,D6,D5,D4              LED_0805_2012Metric_Pad1.15x1.40mm_HandSolder            8         LED
+[M] 37   D11                                   D_SOD-123                                                1         1N4148W
+[M] 38   J6                                    PinHeader_2x03_P2.54mm_Vertical                          1         ICSP
+[M] 39   J5                                    PinHeader_2x04_P2.54mm_Vertical                          1         Conn_02x04_Odd_Even
+[R] 40   U6                                    DIP-28_W15.24mm_Socket                                   1         ARMSID
+
+
+M: Mouser
+R: Retrocomp
