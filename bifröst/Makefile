@@ -1,6 +1,7 @@
 .PHONY: test
-test: blinken_tb
+test: blinken_tb boot_tb
 	./blinken_tb
+	./boot_tb
 
 %_tb: %_tb.v
 	iverilog -Wall -o "$@" "$^"
