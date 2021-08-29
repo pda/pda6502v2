@@ -3,10 +3,11 @@ pda6502v2
 
 Version two (complete redesign) of https://github.com/pda/pda6502
 
-A single board computer with 6502 CPU, 1 MiB RAM, GPIO+UART+SPI I/O,
-FPGA system controller / address decoder, serial EEPROM boot loader.
+A single board computer with 6502 CPU, 512 KiB RAM, 32 GPIO pins, dual UART,
+high speed SPI, SID sound, FPGA system controller, ICSP-programmable EEPROM
+boot loader.
 
-Version two aims to address the main pain points of version one:
+The main v1 pain points being addressed by v2:
 
 * tedious software/bootloader development cycle, removing and reprogramming EEPROM.
 * limited/slow serial communications (bit-banged via 6522 GPIO).
@@ -23,9 +24,10 @@ Comparison table
 | Address decode logic  | 7400-series chips   | FPGA                           |
 | Schematic/layout tool | EAGLE               | KiCad                          |
 | Boot                  | EEPROM              | FPGA loads boostrap from flash |
-| Clock                 | 1 MHz               | 8 MHz                          |
+| Clock                 | 1 MHz               | variable, target 8 MHz         |
 | I/O                   | GPIO                | GPIO, UART, SPI                |
 | RAM                   | 32 KiB              | 512 KiB                        |
+| Sound                 | (none)              | ARMSID (SID emulator)          |
 
 
 FPGA system controller: BIFRÖST
@@ -38,6 +40,8 @@ with three primary functions;
 
 Startup code is stored in an on-board SPI serial EEPROM (Microchip AT25M01)
 which can be written from an external computer via SPI ICSP header.
+
+(Microchip AT25M01 replaced by ON Semiconductor CAT25M01 due to availability).
 
 BIFRÖST bootstraps the system by copying a fixed size/location bootloader from
 serial EEPROM into main RAM before starting CPU.  The bootloader may load
