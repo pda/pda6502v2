@@ -2,14 +2,14 @@
 test: blinken_tb
 	./blinken_tb
 
-blinken_tb: blinken_tb.v
-	iverilog -Wall -o $@ blinken_tb.v
+%_tb: %_tb.v
+	iverilog -Wall -o "$@" "$^"
 
-blinken.json: blinken.v
-	yosys -p "synth_ice40 -top blinken -json blinken.json" blinken.v
+%.json: %.v
+	yosys -p "synth_ice40 -top $* -json $@" "$^"
 
-blinken.asc: blinken.json bifröst.pcf
-	nextpnr-ice40 --hx4k --package tq144 --json blinken.json --pcf bifröst.pcf --asc blinken.asc
+%.asc: %.json bifröst.pcf
+	nextpnr-ice40 --hx4k --package tq144 --json "$<" --pcf bifröst.pcf --asc "$@"
 
 .PHONY: synth
 synth: blinken.json
@@ -19,7 +19,7 @@ pnr: blinken.asc
 
 .PHONY: clean
 clean:
-	rm -f -- blinken_tb blinken.json blinken.asc
+	rm -f -- *_tb *.json *.asc
 
 .PHONY: wave
 wave:
