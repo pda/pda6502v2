@@ -194,3 +194,11 @@ Block diagram
 -------------
 
 ![](docs/block.png)
+
+
+Errata
+------
+
+R26 (0 ohm) and R27 (open) labels are swapped.
+The one closer to LT3030 vreg is R26 and should be 0 ohm (jumper/shorted).
+The one further from the LT3030 vreg is R27 and should be open (not connected).
