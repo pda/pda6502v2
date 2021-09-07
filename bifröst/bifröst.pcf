@@ -1,9 +1,9 @@
-set_io clock 20
-set_io leds[0] 25
-set_io leds[1] 26
-set_io leds[2] 28
-set_io leds[3] 29
-set_io leds[4] 31
+set_io clock 21
+set_io leds[0] 99
+set_io leds[1] 98
+set_io leds[2] 97
+set_io leds[3] 96
+set_io leds[4] 95
 set_io leds[5] 32
 set_io leds[6] 33
 set_io leds[7] 34

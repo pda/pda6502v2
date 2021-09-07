@@ -10,7 +10,7 @@ test: blinken_tb boot_tb
 	yosys -p "synth_ice40 -top $* -json $@" "$^"
 
 %.asc: %.json bifröst.pcf
-	nextpnr-ice40 --hx4k --package tq144 --json "$<" --pcf bifröst.pcf --asc "$@"
+	nextpnr-ice40 --hx1k --package tq144 --json "$<" --pcf bifröst.pcf --asc "$@"
 
 %.bin: %.asc
 	icepack -v $< $@
