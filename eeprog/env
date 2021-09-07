@@ -1,0 +1,7 @@
+# homebrew's libftdi package doesn't install to a standard location.
+# maybe that's normal, but here's a hack to help clang _and_ vim linters etc find it.
+LIBFTDI_BASE="$(brew --cellar)/libftdi/$(brew info --json=v2 libftdi | jq -r '.formulae[0].linked_keg')"
+export C_INCLUDE_PATH="$LIBFTDI_BASE/include/libftdi1"
+export LD_LIBRARY_PATH="$LIBFTDI_BASE/lib"
+echo C_INCLUDE_PATH=$C_INCLUDE_PATH
+echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
