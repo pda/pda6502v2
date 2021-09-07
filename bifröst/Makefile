@@ -12,6 +12,13 @@ test: blinken_tb boot_tb
 %.asc: %.json bifröst.pcf
 	nextpnr-ice40 --hx4k --package tq144 --json "$<" --pcf bifröst.pcf --asc "$@"
 
+%.bin: %.asc
+	icepack -v $< $@
+
+.PHONY: prog
+prog: blinken.bin
+	iceprog $<
+
 .PHONY: synth
 synth: blinken.json
 
@@ -20,7 +27,7 @@ pnr: blinken.asc
 
 .PHONY: clean
 clean:
-	rm -f -- *_tb *.json *.asc
+	rm -f -- *_tb *.json *.asc *.bin
 
 .PHONY: wave
 wave:
