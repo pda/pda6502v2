@@ -1,10 +1,10 @@
 CC=clang
-CFLAGS=-Wall
+CFLAGS=-Wall -g
 LDFLAGS=-lftdi1
 
 all: eeprog
 
-eeprog: eeprog.o hexdump.o
+eeprog: eeprog.o spi.o hexdump.o
 
 clean:
 	rm -f -- eeprog *.o
