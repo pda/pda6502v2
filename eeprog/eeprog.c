@@ -3,6 +3,8 @@
 
 #include <ftdi.h>
 
+#include "hexdump.h"
+
 #define FTDI_VENDOR_ID  0x0403 // FTDI
 #define FTDI_PRODUCT_ID 0x6015 // http://jim.sh/ftx/
 
@@ -147,25 +149,12 @@ int test_things(struct spi_context *spi) {
   CHECK(spi_transfer(spi, addr>>16&0xFF)); // ADDR[23:16]
   CHECK(spi_transfer(spi, addr>>8&0xFF)); // ADDR[15:8]
   CHECK(spi_transfer(spi, addr&0xFF)); // ADDR[7:0]
-  // sneaky 2am hexdump
-  char asciibuf[16];
+  struct hexdump_context hd = {.output = stderr, .addr = addr};
   for (int i = 0; i < 256; i++) {
     CHECK(spi_transfer(spi, 0));
-    asciibuf[i%16] = (spi->data >= 32 && spi->data <= 126) ? spi->data : '.';
-    if (i % 16 == 0) printf("%08x  ", addr+i);
-    printf("%02x", spi->data);
-    if (i % 16 == 7) printf(" ");
-    if (i % 16 == 15) {
-      printf("  |");
-      for (int j = 0; j < sizeof(asciibuf); j++) {
-        putc(asciibuf[j], stdout);
-      }
-      printf("|\n");
-    } else {
-      printf(" ");
-    }
+    hexdump_byte(&hd, spi->data);
   }
-  printf("\n");
+  hexdump_finish(&hd);
   CHECK(spi_deselect(spi));
 
   return 0;

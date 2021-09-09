@@ -4,7 +4,7 @@ LDFLAGS=-lftdi1
 
 all: eeprog
 
-eeprog: eeprog.o
+eeprog: eeprog.o hexdump.o
 
 clean:
 	rm -f -- eeprog *.o
