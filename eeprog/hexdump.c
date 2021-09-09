@@ -4,34 +4,37 @@
 #include "hexdump.h"
 
 void hexdump_byte(struct hexdump_context *ctx, uint8_t byte) {
+  FILE * out = ctx->output;
   ctx->asciibuf[ctx->i%16] = (byte >= 32 && byte <= 126) ? byte : '.';
-  if (ctx->i % 16 == 0) fprintf(ctx->output, "%08x  ", ctx->addr+ctx->i);
-  fprintf(ctx->output, "%02x", byte);
-  if (ctx->i % 16 == 7) fprintf(ctx->output, " ");
+  if (ctx->i % 16 == 0) fprintf(out, "%08x  ", ctx->addr+ctx->i);
+  fprintf(out, "%02x", byte);
+  if (ctx->i % 16 == 7) fprintf(out, " ");
   if (ctx->i % 16 == 15) {
-    fprintf(ctx->output, "  |");
+    fprintf(out, "  |");
     for (int j = 0; j < sizeof(ctx->asciibuf); j++) {
-      fputc(ctx->asciibuf[j], ctx->output);
+      fputc(ctx->asciibuf[j], out);
     }
-    fprintf(ctx->output, "|\n");
+    fprintf(out, "|\n");
   } else {
-    fprintf(ctx->output, " ");
+    fprintf(out, " ");
   }
   ctx->i++;
 }
 
 void hexdump_finish(struct hexdump_context *ctx) {
+  FILE * out = ctx->output;
   int left = ctx->i % 16;
   int right = 16 - left;
   if (left > 0) {
     for (int i = 0; i < right; i++) {
-      fprintf(ctx->output, "   ");
+      fprintf(out, "   ");
     }
-    fprintf(ctx->output, " |");
+    if (left < 8) fputc(' ', out);
+    fprintf(out, " |");
     for (int j = 0; j < left; j++) {
-      fputc(ctx->asciibuf[j], ctx->output);
+      fputc(ctx->asciibuf[j], out);
     }
-    fprintf(ctx->output, "|\n");
+    fprintf(out, "|\n");
   }
   bzero((void *)ctx, sizeof(ctx));
 }
