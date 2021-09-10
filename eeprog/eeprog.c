@@ -18,7 +18,6 @@ int main(int argc, char *argv[]) {
   if (spi_init(&spi) != 0) return EXIT_FAILURE;
 
   if (argc == 3 && strcmp(argv[1], "write") == 0) {
-    printf("write\n");
     if (write(&spi, argv[2]) != 0) {
       fprintf(stderr, "test_things failed, hopefully it produced some stderr\n");
       spi_deinit(&spi);
@@ -60,16 +59,13 @@ int write(struct spi_context *spi, char *srcfile) {
     fclose(f);
     return -1;
   }
-  printf("file size: %ld\n", size);
 
-  printf("-- enable writes\n");
   CHECK(spi_select(spi));
   CHECK(spi_transfer(spi, EEPROM_WREN));
   CHECK(spi_deselect(spi));
 
   uint32_t addr;
   addr = 0x000000;
-  printf("-- write data\n");
   CHECK(spi_select(spi));
   CHECK(spi_transfer(spi, EEPROM_WRITE));
   CHECK(spi_transfer(spi, addr>>16&0xFF)); // ADDR[23:16]
@@ -80,23 +76,17 @@ int write(struct spi_context *spi, char *srcfile) {
   for (int i = 0; i < size; i++) {
     // TODO: fread() per byte is probably shit, but probably not the bottleneck.
     if (fread(&data, 1, 1, f) < 1) {
-      fprintf(stderr, "problem reading file\n");
+      fprintf(stderr, "fread failed\n");
     };
     CHECK(spi_transfer(spi, data));
+    hexdump_byte(&hd, data);
     if (i % 256 == 255) {
+      fprintf(stderr, "\n"); // page boundary
       addr += 256;
       CHECK(spi_deselect(spi));
 
-      printf("-- enable writes\n");
       CHECK(spi_select(spi));
       CHECK(spi_transfer(spi, EEPROM_WREN));
-      CHECK(spi_deselect(spi));
-
-      printf("-- read status register\n");
-      CHECK(spi_select(spi));
-      CHECK(spi_transfer(spi, EEPROM_RDSR));
-      CHECK(spi_transfer(spi, 0));
-      print_status(spi->data);
       CHECK(spi_deselect(spi));
 
       CHECK(spi_select(spi));
@@ -105,14 +95,14 @@ int write(struct spi_context *spi, char *srcfile) {
       CHECK(spi_transfer(spi, addr>>8&0xFF)); // ADDR[15:8]
       CHECK(spi_transfer(spi, addr&0xFF)); // ADDR[7:0]
     }
-    hexdump_byte(&hd, data);
   }
   hexdump_finish(&hd);
   CHECK(spi_deselect(spi));
 
-  for (int i = 0; i < size; i++) {
+  if (fclose(f) != 0) {
+    perror("fclose");
+    return -1;
   }
-  fclose(f);
   return 0;
 }
 
