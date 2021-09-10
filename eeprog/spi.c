@@ -22,7 +22,7 @@ int spi_init(struct spi_context *spi) {
     return -1;
   }
 
-  fprintf(stderr, "Connected to FTDI device: ");
+  printf("Connected to FTDI device: ");
   switch (spi->ftdi->type) {
     case TYPE_2232C: printf("2232C\n"); break;
     case TYPE_2232H: printf("2232H\n"); break;
@@ -34,7 +34,6 @@ int spi_init(struct spi_context *spi) {
     case TYPE_R:     printf("R\n");     break;
     default: printf("(unknown)\n");     break;
   }
-  fflush(stderr);
 
   uint8_t outputPins = 1<<BIT_CS | 1<<BIT_SCK | 1<<BIT_MO | 0<<BIT_MI;
   if (ftdi_set_bitmode(spi->ftdi, outputPins, BITMODE_BITBANG) < 0) {

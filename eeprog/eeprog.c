@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 }
 
 int write(struct spi_context *spi, char *srcfile) {
-  fprintf(stderr, "opening %s\n", srcfile);
+  printf("opening %s\n", srcfile);
   FILE * f;
   if ((f = fopen(srcfile, "r")) == NULL) {
     perror("fopen");
@@ -71,7 +71,7 @@ int write(struct spi_context *spi, char *srcfile) {
   CHECK(spi_transfer(spi, addr>>16&0xFF)); // ADDR[23:16]
   CHECK(spi_transfer(spi, addr>>8&0xFF)); // ADDR[15:8]
   CHECK(spi_transfer(spi, addr&0xFF)); // ADDR[7:0]
-  struct hexdump_context hd = {.output = stderr, .addr = addr};
+  struct hexdump_context hd = {.output = stdout, .addr = addr};
   uint8_t data;
   for (int i = 0; i < size; i++) {
     // TODO: fread() per byte is probably shit, but probably not the bottleneck.
@@ -81,7 +81,7 @@ int write(struct spi_context *spi, char *srcfile) {
     CHECK(spi_transfer(spi, data));
     hexdump_byte(&hd, data);
     if (i % 256 == 255) {
-      fprintf(stderr, "\n"); // page boundary
+      fprintf(hd.output, "\n"); // page boundary
       addr += 256;
       CHECK(spi_deselect(spi));
 
