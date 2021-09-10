@@ -22,19 +22,6 @@ int spi_init(struct spi_context *spi) {
     return -1;
   }
 
-  printf("Connected to FTDI device: ");
-  switch (spi->ftdi->type) {
-    case TYPE_2232C: printf("2232C\n"); break;
-    case TYPE_2232H: printf("2232H\n"); break;
-    case TYPE_230X:  printf("230X\n");  break;
-    case TYPE_232H:  printf("232H\n");  break;
-    case TYPE_4232H: printf("4232H\n"); break;
-    case TYPE_AM:    printf("AM\n");    break;
-    case TYPE_BM:    printf("BM\n");    break;
-    case TYPE_R:     printf("R\n");     break;
-    default: printf("(unknown)\n");     break;
-  }
-
   uint8_t outputPins = 1<<BIT_CS | 1<<BIT_SCK | 1<<BIT_MO | 0<<BIT_MI;
   if (ftdi_set_bitmode(spi->ftdi, outputPins, BITMODE_BITBANG) < 0) {
     fprintf(stderr, "ftdi_set_bitmode to BITMODE_BITBANG failed: %d (%s)\n",

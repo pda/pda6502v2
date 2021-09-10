@@ -11,10 +11,10 @@
 #define BIT_CTS 3
 
 // SPI EEPROM ICSP connections
-#define BIT_MO BIT_RX
-#define BIT_MI BIT_CTS
-#define BIT_CS BIT_TX
+#define BIT_MO  BIT_TX
+#define BIT_MI  BIT_RX
 #define BIT_SCK BIT_RTS
+#define BIT_CS  BIT_CTS
 
 // CAT25M01 instruction set
 #define EEPROM_WRSR  0x01 // Write Status Register
