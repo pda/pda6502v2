@@ -202,3 +202,14 @@ Errata
 R26 (0 ohm) and R27 (open) labels are swapped.
 The one closer to LT3030 vreg is R26 and should be 0 ohm (jumper/shorted).
 The one further from the LT3030 vreg is R27 and should be open (not connected).
+
+EEPROM triple drama:
+- 128 KiB isn't nearly enough; iCEstick has 4 MiB.
+- missing pull-up on SPI CS to put FPGA into SPI master mode.
+- MISO/MOSI lines from FPGA to EEPROM are swapped :(
+The best solution to this mess is to leave the EEPROM footprint unpopulated,
+and attach a small board to ICSP header with:
+- a larger EEPROM,
+- a 10K pull-up resistor on CS,
+- a MISO/MOSI-correct ICSP header.
+A prototype of this works using a Winbond W25Q80BVAIG 8Mbit SPI EEPROM.
