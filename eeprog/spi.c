@@ -103,6 +103,36 @@ int spi_transfer(struct spi_context *spi, uint8_t data) {
   return 0;
 }
 
+// spi_write is like spi_transfer, but skips reading MISO into spi->data.
+int spi_write(struct spi_context *spi, uint8_t data) {
+  if (spi->debug) {
+    printf("MOSI → 0x%02X ", data);
+    print_binary(data);
+    printf("\n");
+  }
+  for (int i = 0; i <= 7; i++) {
+    // ensure clock is low
+    if ((spi->pins & 1<<BIT_SCK) != 0) {
+      fprintf(stderr, "spi_transfer expects low clock\n");
+      return -1;
+    }
+
+    // set MSB from data buffer into MOSI bit of pins buffer
+    spi->pins = (spi->pins & ~(1<<BIT_MO)) | ((data>>7) << BIT_MO);
+
+    // shift written MOSI bit off the right, without setting new MISO bit into the left.
+    data <<= 1;
+
+    // write MOSI bit before rising clock
+    // set SPI clock high; input data is latched on the rising edge
+    CHECK(spi_write_pins(spi, spi->pins | 1<<BIT_SCK));
+
+    // set SPI clock low; data shifted out on falling edge will be read on next iteration
+    CHECK(spi_write_pins(spi, spi->pins & ~(1<<BIT_SCK)));
+  }
+  return 0;
+}
+
 int spi_read_pins(struct spi_context *spi) {
   int ret;
   if ((ret = ftdi_read_pins(spi->ftdi, &spi->pins)) < 0) {

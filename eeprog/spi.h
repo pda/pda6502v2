@@ -48,6 +48,8 @@ int spi_deselect(struct spi_context *);
 
 int spi_transfer(struct spi_context *, uint8_t mosi);
 
+int spi_write(struct spi_context *, uint8_t mosi);
+
 int spi_read_pins(struct spi_context *);
 
 int spi_write_pins(struct spi_context *, uint8_t pins);
