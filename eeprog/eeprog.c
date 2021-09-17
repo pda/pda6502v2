@@ -69,9 +69,9 @@ void usage(char *argv[]) {
   printf("  %s status              -- print EEPROM status register\n", argv[0]);
   printf("\n");
   printf("Wiring:\n\n");
-  printf("  RX  → MOSI\n");
-  printf("  TX  → CS\n");
-  printf("  CTS → MISO\n");
+  printf("  RX  → MISO\n");
+  printf("  TX  → MOSI\n");
+  printf("  CTS → CS\n");
   printf("  RTS → SCK\n");
 }
 
