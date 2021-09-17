@@ -122,6 +122,23 @@ int spi_write_pins(struct spi_context *spi, uint8_t pins) {
   return 0;
 }
 
+int wait_for_ready(struct spi_context *spi) {
+  int ttl = 10000;
+  while (1) {
+    CHECK(spi_select(spi));
+    CHECK(spi_transfer(spi, EEPROM_RDSR));
+    CHECK(spi_transfer(spi, 0));
+    CHECK(spi_deselect(spi));
+    if ((spi->data&1) == 0) {
+      return 0;
+    }
+    if (--ttl == 0) {
+      fprintf(stderr, "wait_for_ready timed out\n");
+      return -1;
+    }
+  }
+}
+
 void print_binary(uint8_t x) {
   char bits[9];
   bits[8] = 0;

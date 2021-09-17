@@ -23,6 +23,8 @@
 #define EEPROM_WRDI  0x04 // Disable Write Operations
 #define EEPROM_RDSR  0x05 // Read Status Register
 #define EEPROM_WREN  0x06 // Enable Write Operations
+// Winbond W25Q80 instructions
+#define EEPROM_CHIP_ERASE  0xC7 // Chip Erase sets all bits to 1
 
 #define SPI_SELECT 0
 #define SPI_DESELECT 1
@@ -49,6 +51,8 @@ int spi_transfer(struct spi_context *, uint8_t mosi);
 int spi_read_pins(struct spi_context *);
 
 int spi_write_pins(struct spi_context *, uint8_t pins);
+
+int wait_for_ready(struct spi_context *spi);
 
 void print_binary(uint8_t x);
 

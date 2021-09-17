@@ -5,6 +5,7 @@
 #include "spi.h"
 #include "hexdump.h"
 
+int cmd_erase(struct spi_context *);
 int cmd_status(struct spi_context *);
 int cmd_upload(struct spi_context *, char *srcfile);
 int cmd_download(struct spi_context *, char *dstfile);
@@ -19,7 +20,14 @@ void usage(char *argv[]);
 int main(int argc, char *argv[]) {
   struct spi_context spi;
 
-  if (argc == 3 && strcmp(argv[1], "upload") == 0) {
+  if (argc == 2 && strcmp(argv[1], "erase") == 0) {
+    if (spi_init(&spi) != 0) return EXIT_FAILURE;
+    if (cmd_erase(&spi) != 0) {
+      fprintf(stderr, "cmd_erase failed\n");
+      spi_deinit(&spi);
+      return EXIT_FAILURE;
+    }
+  } else if (argc == 3 && strcmp(argv[1], "upload") == 0) {
     if (spi_init(&spi) != 0) return EXIT_FAILURE;
     if (cmd_upload(&spi, argv[2]) != 0) {
       fprintf(stderr, "cmd_upload failed\n");
@@ -63,6 +71,7 @@ int main(int argc, char *argv[]) {
 void usage(char *argv[]) {
   printf("\nRead & write SPI EEPROM (AT25M01 or similar) via FTDI (FT230X or similar)\n\n");
   printf("Usage:\n\n");
+  printf("  %s erase               -- erase entire EEPROM\n", argv[0]);
   printf("  %s upload   <filename> -- write file to EEPROM\n", argv[0]);
   printf("  %s download <filename> -- dump EEPROM contents to file\n", argv[0]);
   printf("  %s verify   <filename> -- verify EEPROM contents matches file\n", argv[0]);
@@ -73,6 +82,18 @@ void usage(char *argv[]) {
   printf("  TX  → MOSI\n");
   printf("  CTS → CS\n");
   printf("  RTS → SCK\n");
+}
+
+int cmd_erase(struct spi_context *spi) {
+  printf("Erasing EEPROM...\n");
+  CHECK(spi_select(spi));
+  CHECK(spi_transfer(spi, EEPROM_WREN));
+  CHECK(spi_deselect(spi));
+  CHECK(spi_select(spi));
+  CHECK(spi_transfer(spi, EEPROM_CHIP_ERASE));
+  CHECK(spi_deselect(spi));
+  CHECK(wait_for_ready(spi));
+  return 0;
 }
 
 int cmd_upload(struct spi_context *spi, char *srcfile) {
