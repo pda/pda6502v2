@@ -131,6 +131,7 @@ int cmd_upload(struct spi_context *spi, char *srcfile) {
   CHECK(spi_write(spi, addr>>8&0xFF)); // ADDR[15:8]
   CHECK(spi_write(spi, addr&0xFF)); // ADDR[7:0]
   struct hexdump_context hd = {.output = stdout, .addr = addr};
+  hexdump_reset(&hd);
   uint8_t data;
   for (int i = 0; i < size; i++) {
     // TODO: fread() per byte is probably shit, but probably not the bottleneck.
@@ -181,6 +182,7 @@ int cmd_download(struct spi_context *spi, char *dstfile) {
   CHECK(spi_transfer(spi, addr>>8&0xFF)); // ADDR[15:8]
   CHECK(spi_transfer(spi, addr&0xFF)); // ADDR[7:0]
   struct hexdump_context hd = {.output = stdout, .addr = addr};
+  hexdump_reset(&hd);
   for (int i = 0; i < 1024; i++) {
     CHECK(spi_transfer(spi, 0x00));
     // TODO: fwrite() per byte is probably shit, but probably not the bottleneck.
