@@ -58,7 +58,7 @@ void hexdump_finish(struct hexdump_context *ctx) {
     if (i == 7) fprintf(out, " ");
   }
   fprintf(out, " |");
-  for (int i = 0; i <= ctx->i; i++) {
+  for (int i = 0; i < ctx->i; i++) {
     char byte = ctx->curr[i];
     fputc((byte >= 32 && byte <= 126) ? byte : '.', out); // ASCII
   }
