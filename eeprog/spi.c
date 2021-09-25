@@ -41,6 +41,7 @@ int spi_init(struct spi_context *spi) {
 }
 
 int spi_deinit(struct spi_context *spi) {
+  CHECK(ftdi_set_bitmode(spi->ftdi, 0x00, BITMODE_RESET));
   int ret;
   if ((ret = ftdi_usb_close(spi->ftdi)) < 0) {
     fprintf(stderr, "unable to close ftdi device: %d (%s)\n",
