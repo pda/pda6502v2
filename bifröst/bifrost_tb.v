@@ -22,9 +22,9 @@ module bifrost_tb;
   initial begin
     $dumpfile("bifrost_tb.vcd");
     $dumpvars(0, bifrost_tb);
-    //$monitor("[%10t] animating:%b leds:%b", $time, dut.animating, dut.leds);
     repeat(2_000_000) begin // 2M half-cycles -> 1 sec @ 1MHz
       clock = #5 ~clock; // 500ns high, 500ns low -> 1 MHz
+      addr++;
     end
 
     $finish;
