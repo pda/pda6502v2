@@ -196,6 +196,19 @@ Block diagram
 ![](docs/block.png)
 
 
+Memory map
+----------
+
+Memory mapping is controlled by BIFRÖST, so it may be reconfigured.
+Currently, everything is RAM except 0xD000–DFFF.
+
+- `0xD400` SID (nobomi ARMSID)
+- `0xDC00` VIA1 (WDC 65C22)
+- `0xDC10` VIA2 (WDC 65C22)
+- `0xDC20` UART (NXP SC28L92)
+
+This roughly matches Commodore 64's I/O space.
+
 Errata
 ------
 

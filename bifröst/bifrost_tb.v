@@ -6,10 +6,16 @@ module bifrost_tb;
 
   reg clock = 0;
   reg flash_miso = 1'bZ;
+  reg [18:0] addr = 16'h0000;
+  reg [7:0] data = 8'h00;
+  reg rw = 1;
 
   bifrost dut(
     .clock(clock),
-    .flash_miso(flash_miso)
+    .flash_miso(flash_miso),
+    .addr(addr),
+    .data(data),
+    .rw(rw)
   );
 
   // just run the clock for 1 second, monitoring changes.
