@@ -8,8 +8,6 @@ module boot(
   output flash_si = 0,
   output flash_sck = 0,
   output flash_cs_n = 1,
-  output flash_wp_n = 1,
-  output flash_hold_n = 1,
 
   output reg [18:0] address,
   output reg [7:0] data,
@@ -25,7 +23,7 @@ parameter EEPROM_ADDRESS_BITS = 24;
 
 reg [7:0] phase = 0;
 reg [7:0] step = 0;
-reg [10:0] offset = 0;
+reg [15:0] offset = 0;
 
 reg [31:0] spi_buffer;
 reg [7:0] spi_bits = 0;
@@ -142,19 +140,30 @@ always @(posedge clock) begin
           step <= step+1;
         end
         3: begin
+          rw <= 0;
           step <= 0;
-          if (offset == 2048) begin
+          if (offset < 16'h1FFF) begin
+            offset <= offset+1;
+          end
+          else begin
             phase <= phase+1;
           end
-          offset <= offset+1;
         end
       endcase
     end
     5: begin // read finish
+      // TODO: put EEPROM back into power-down state?
+      flash_cs_n <= 1'bZ;
+      flash_sck <= 1'bZ;
+      flash_si <= 1'bZ;
+      rw <= 1'bZ;
+      address <= 19'bZZZZZZZZZZZZZZZZZZ;
+      data <= 8'bZZZZZZZZ;
       phase <= phase+1;
     end
-    6: begin // enable bus
+    6: begin // enable bus and start clock
       busen <= 1;
+      clock_stop <= 1;
       phase <= phase+1;
     end
     7: begin // start 6502
