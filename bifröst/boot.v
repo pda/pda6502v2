@@ -5,16 +5,16 @@ module boot(
   input clock,
   input flash_so,
 
-  output flash_si = 0,
-  output flash_sck = 0,
-  output flash_cs_n = 1,
+  output reg flash_si = 0,
+  output reg flash_sck = 0,
+  output reg flash_cs_n = 1,
 
   output reg [18:0] address,
   output reg [7:0] data,
   output reg rw,
-  output busen = 1,  // HIGH = 6502 bus output disabled
+  output reg busen = 1,  // HIGH = 6502 bus output disabled
 
-  output clock_stop = 0 // LOW = stop
+  output reg clock_stop = 0 // LOW = stop
 );
 
 // The 25AA512 model used in the testbench has 16-bit addressing,
