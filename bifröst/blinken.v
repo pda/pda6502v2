@@ -2,7 +2,7 @@
 
 module blinken(
   input wire clock,
-  output reg [7:0] leds = 0
+  output reg [7:0] leds = 8'b0
 );
 
 // on start-up, animate the LEDs in

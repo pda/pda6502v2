@@ -48,7 +48,7 @@ initial begin
   flash.DeepPowerDown = 1;
 
   // 8 MHz @ timescale:1ns/1ns (62+63=125 ns period)
-  repeat(150000) begin
+  repeat(150_000) begin
     #62 clock = ~clock;
     #63 clock = ~clock;
   end

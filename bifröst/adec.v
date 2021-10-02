@@ -5,12 +5,12 @@ module adec(
   input [18:0] addr,
   input rw,
 
-  output ram_cs,
-  output bifrost_cs,
-  output via1_cs,
-  output via2_cs,
-  output uart_cs,
-  output sid_cs
+  output wire ram_cs,
+  output wire bifrost_cs,
+  output wire via1_cs,
+  output wire via2_cs,
+  output wire uart_cs,
+  output wire sid_cs
 );
 
   assign ram_cs     = ~(~clock && (addr <  16'hD000 || addr >  16'hDFFF));

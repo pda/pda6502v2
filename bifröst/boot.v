@@ -5,16 +5,16 @@ module boot(
   input clock,
   input flash_so,
 
-  output reg flash_si,
-  output reg flash_sck = 0,
-  output reg flash_cs_n = 1,
+  output reg flash_si = 1'b0,
+  output reg flash_sck = 1'b0,
+  output reg flash_cs_n = 1'b1,
 
-  output reg [18:0] address,
-  output reg [7:0] data,
-  output reg rw = 0,
-  output reg busen = 1,  // HIGH = 6502 bus output disabled
+  output reg [18:0] address = 19'b0,
+  output reg [7:0] data = 8'b0,
+  output reg rw = 1'b1,
+  output reg busen = 1'b1,  // HIGH = 6502 bus output disabled
 
-  output reg clock_stop = 0 // LOW = stop
+  output reg booting = 1'b1
 );
 
 // The 25AA512 model used in the testbench has 16-bit addressing,
@@ -38,9 +38,6 @@ localparam s_ram_write_finish  = 7; //              finish write to RAM, loop to
 localparam s_cleanup           = 8; // Set everything back to a safe state.
 localparam s_done              = 9; // Terminal no-op.
 
-//always @(negedge flash_sck) begin
-//end
-
 always @(posedge clock) begin
   if (spi_bits > 0) begin
     flash_sck <= ~flash_sck;
@@ -53,7 +50,6 @@ always @(posedge clock) begin
     case(state)
       s_cpu_disable: begin // initial state: disable CPU
         busen <= 0;
-        clock_stop <= 0;
         state <= s_eeprom_power;
       end
       s_eeprom_power: begin
@@ -103,12 +99,12 @@ always @(posedge clock) begin
         if (spi_bits == 0) begin
           address <= 16'hE000 + offset;
           data <= spi_buffer;
-          rw <= 1;
+          rw <= 1'b0;
           state <= s_ram_write_finish;
         end
       end
       s_ram_write_finish: begin
-        rw <= 0;
+        rw <= 1'b1;
         if (offset < 16'h1FFF) begin
           spi_bits <= 8; // start reading next byte
           state <= s_ram_write;
@@ -117,16 +113,15 @@ always @(posedge clock) begin
         else state <= s_cleanup;
       end
       s_cleanup: begin // read finish
-        flash_cs_n <= 1'b1;
-        rw <= 1'b1;
-        busen <= 1;
-        clock_stop <= 1;
-        state <= s_done;
         // TODO: put EEPROM back into power-down state?
-        //flash_sck <= 1'bZ;
-        //flash_si <= 1'bZ;
-        //address <= 19'bZZZZZZZZZZZZZZZZZZ;
-        //data <= 8'bZZZZZZZZ;
+        booting <= 0;
+        flash_sck <= 1'bZ;
+        flash_cs_n <= 1'bZ;
+        address <= 19'bZZZZZZZZZZZZZZZZZZ;
+        data <= 8'bZZZZZZZZ;
+        rw <= 1'bZ;
+        busen <= 1;
+        state <= s_done;
       end
       s_done: begin
         // nothing
@@ -136,10 +131,13 @@ always @(posedge clock) begin
 end
 
 always @(negedge clock) begin
-  if (spi_bits > 0) begin
+  if (booting && spi_bits > 0) begin
     if (flash_sck == 0) begin // prep for MOSI on rising clock
       flash_si <= (spi_buffer[spi_bits-1]);
     end
+  end
+  else begin
+    flash_si <= 1'bZ;
   end
 end
 
