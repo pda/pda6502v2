@@ -75,11 +75,11 @@ boot boot(
 );
 
 // divide 8 MHz clock down to 1 MHz
-reg [3:0] clock_divide = 4'b1111;
+reg [7:0] clock_divide = 8'b11111111;
 always @(posedge clock) begin
   if (!booting) clock_divide++;
 end
-assign clockout = clock_divide[3];
+assign clockout = clock_divide[7]; // 7: 31,250 Hz (31 kHz)
 
 //assign reset_inv = !reset;
 
