@@ -131,14 +131,12 @@ always @(posedge clock) begin
 end
 
 always @(negedge clock) begin
-  if (booting && spi_bits > 0) begin
-    if (flash_sck == 0) begin // prep for MOSI on rising clock
-      flash_si <= (spi_buffer[spi_bits-1]);
+  if (booting) begin
+    if (spi_bits > 0 && flash_sck == 0) begin
+      flash_si <= (spi_buffer[spi_bits-1]); // prep for MOSI on rising clock
     end
   end
-  else begin
-    flash_si <= 1'bZ;
-  end
+  else flash_si <= 1'bZ;
 end
 
 endmodule
