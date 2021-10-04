@@ -220,6 +220,24 @@ void cmd_write(char *argstr) {
       SPI.endTransaction();
       wait_for_ready();
 
+      // verify page written
+      digitalWrite(pinCS, LOW);
+      SPI.transfer(EEPROM_READ);
+      SPI.transfer(write_addr>>16&0xFF); // ADDR[23:16]
+      SPI.transfer(write_addr>>8&0xFF); // ADDR[15:8]
+      SPI.transfer(write_addr&0xFF); // ADDR[7:0]
+      // for each byte `b` (in this page) touched by this write
+      for (uint32_t b = p + addr_in_page; b < p + PAGE_SIZE && b <= addr_end; b++) {
+        uint8_t buf = SPI.transfer(0x00);
+        if (buf != page_buffer[b % PAGE_SIZE]) {
+          printhex("[0x", &b, 32, " ");
+          printhex("want:", &page_buffer[b % PAGE_SIZE], 8, " ");
+          printhex("got:", &buf, 8, "]\n");
+        }
+      }
+      digitalWrite(pinCS, HIGH);
+      SPI.endTransaction();
+
       addr_in_page = 0; // only the first page written might start at non-zero.
     }
     Serial.println();
