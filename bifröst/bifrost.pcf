@@ -70,3 +70,20 @@ set_io data[4] 141
 set_io data[5] 142
 set_io data[6] 143
 set_io data[7] 144
+
+set_io ext[0]  38
+set_io ext[1]  39
+set_io ext[2]  41
+set_io ext[3]  42
+set_io ext[4]  43
+set_io ext[5]  44
+set_io ext[6]  45
+set_io ext[7]  47
+set_io ext[8]  48
+set_io ext[9]  49
+set_io ext[10] 52
+set_io ext[11] 55
+set_io ext[12] 56
+set_io ext[13] 60
+set_io ext[14] 61
+set_io ext[15] 62
