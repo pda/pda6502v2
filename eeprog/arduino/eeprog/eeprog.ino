@@ -193,7 +193,12 @@ void cmd_write(char *argstr) {
       while (bytes_read < bytes_in_page) {
         while (Serial.available() == 0);
         int r = Serial.read();
-        if (r >= 0) page_buffer[addr_in_page + bytes_read++] = (uint8_t)r;
+        if (r >= 0) {
+          page_buffer[addr_in_page + bytes_read] = (uint8_t)r;
+          bytes_read++;
+        } else {
+          Serial.write('?');
+        }
         if (bytes_read % 64 == 0) Serial.write('.'); // acknowledge each chunk
       }
 
