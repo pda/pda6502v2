@@ -352,6 +352,7 @@ void eeprom_write_enable() {
 }
 
 void eeprom_sector_erase(uint32_t addr) {
+  wait_for_ready();
   eeprom_write_enable();
 
   SPI.beginTransaction(spi_settings);

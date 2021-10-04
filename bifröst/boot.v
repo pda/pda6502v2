@@ -13,6 +13,7 @@ module boot(
   output reg [7:0] data = 8'b0,
   output reg rw = 1'b1,
   output reg busen = 1'b1,  // HIGH = 6502 bus output disabled
+  output reg reset = 1'b1,
 
   output reg booting = 1'b1
 );
@@ -27,16 +28,17 @@ reg [31:0] spi_buffer;
 reg [7:0] spi_bits = 0;
 
 // states
-localparam s_cpu_disable       = 0; // stop 6502 clock, tell it to release bus
-localparam s_eeprom_power      = 1; // EEPROM power-up: prepare command
-localparam s_eeprom_power_send = 2; //                  SPI send
-localparam s_eeprom_power_wait = 3; //                  wait specified time for power-up
-localparam s_eeprom_read       = 4; // EEPROM read: prepare cmd & addr
-localparam s_eeprom_read_send  = 5; //              wait for SPI send, then trigger first byte read
-localparam s_ram_write         = 6; //              read SPI data, write to RAM
-localparam s_ram_write_finish  = 7; //              finish write to RAM, loop to s_ram_write until all bytes done
-localparam s_cleanup           = 8; // Set everything back to a safe state.
-localparam s_done              = 9; // Terminal no-op.
+localparam s_cpu_disable       =  0; // stop 6502 clock, tell it to release bus
+localparam s_eeprom_power      =  1; // EEPROM power-up: prepare command
+localparam s_eeprom_power_send =  2; //                  SPI send
+localparam s_eeprom_power_wait =  3; //                  wait specified time for power-up
+localparam s_eeprom_read       =  4; // EEPROM read: prepare cmd & addr
+localparam s_eeprom_read_send  =  5; //              wait for SPI send, then trigger first byte read
+localparam s_ram_write         =  6; //              read SPI data, write to RAM
+localparam s_ram_write_finish  =  7; //              finish write to RAM, loop to s_ram_write until all bytes done
+localparam s_cleanup           =  8; // Set everything back to a safe state.
+localparam s_reset             =  9; // Reset the 6502 system
+localparam s_done              = 10; // Terminal no-op.
 
 always @(posedge clock) begin
   if (spi_bits > 0) begin
@@ -110,7 +112,10 @@ always @(posedge clock) begin
           state <= s_ram_write;
           offset <= offset+1;
         end
-        else state <= s_cleanup;
+        else begin
+          offset <= 0;
+          state <= s_cleanup;
+        end
       end
       s_cleanup: begin // read finish
         // TODO: put EEPROM back into power-down state?
@@ -121,7 +126,17 @@ always @(posedge clock) begin
         data <= 8'bZZZZZZZZ;
         rw <= 1'bZ;
         busen <= 1;
-        state <= s_done;
+        state <= s_reset;
+      end
+      s_reset: begin
+        // "The RESB signal must be held low for at least two clock cycles"
+        if (offset == 0) reset <= 0;
+        if (offset < 4) offset <= offset+1;
+        else begin
+          reset <= 1;
+          offset <= 0;
+          state <= s_done;
+        end
       end
       s_done: begin
         // nothing

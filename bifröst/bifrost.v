@@ -40,7 +40,9 @@ module bifrost(
   output wire via1_cs,
   output wire via2_cs,
   output wire uart_cs,
-  output wire sid_cs
+  output wire sid_cs,
+
+  output wire [15:0] ext
 );
 
 blinken blinken(
@@ -71,6 +73,7 @@ boot boot(
   .address(addr),
   .data(data),
   .rw(rw),
+  .reset(ext[0]),
   .booting(booting)
 );
 
@@ -92,5 +95,7 @@ assign nmirq = 1'b1;
 assign uart_rdn = 1'b1;
 assign uart_wrn = 1'b1;
 assign uart_im = 1'b1; // 80xxx/Intel mode
+
+assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
 endmodule
