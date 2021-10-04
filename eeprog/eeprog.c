@@ -14,7 +14,7 @@ void usage(char *argv[]) {
   printf("Usage:\n");
   //printf("  %s erase <port>\n", argv[0]);
   printf("  %s upload <filename> <port> <addr>\n", argv[0]);
-  //printf("  %s download <filename> <port> <addr> <size>\n", argv[0]);
+  printf("  %s download <filename> <port> <addr> <size>\n", argv[0]);
   printf("  %s verify <filename> <port> <addr>\n", argv[0]);
   //printf("  %s info <port>\n", argv[0]);
   printf("\n");
@@ -139,9 +139,64 @@ int cmd_upload(char *srcfile, char *port, char *addr_str) {
   return 0;
 }
 
-int cmd_download(char *dstfile) {
-  fprintf(stderr, "TODO\n");
-  return -1;
+int cmd_download(char *dstfile, char * port, char * addr_str, char * size_str) {
+  FILE *file = fopen(dstfile, "w");
+  if (file < 0) {
+    fprintf(stderr, "error opening file %s\n", dstfile);
+    return(-1);
+  }
+  int serial = open_serial(port);
+  if (serial < 0) {
+    fprintf(stderr, "error opening serial port %s\n", port);
+    return(-1);
+  }
+
+  uint32_t addr_from = strtol(addr_str, NULL, 0);
+  uint32_t size = strtol(size_str, NULL, 0);
+  uint32_t addr_to = addr_from + size;
+
+  printf("Download %s ← %s 0x%06X–0x%06X (%d bytes)\n", dstfile, port, addr_from, addr_to, size);
+
+  char *data = "\x03"; // End-of-text (etx); Ctrl-C
+  if (write(serial, data, 1) == -1) {
+    perror("writing ^C to serial");
+    return(-1);
+  }
+  tcdrain(serial);
+  expect(serial, "\r\nEEPROM> ");
+  char * reset_hold = "reset hold\n";
+  write(serial, reset_hold, strlen(reset_hold));
+  expect(serial, "RESET is held LOW");
+  expect(serial, "\r\nEEPROM> ");
+
+  char cmd[32];
+  snprintf(cmd, sizeof(cmd), "read 0x%06X %d\n", addr_from, size);
+  int cmdlen = strlen(cmd);
+  int bytes_written = write(serial, cmd, cmdlen);
+  if (bytes_written != cmdlen) {
+    fprintf(stderr, "short write %d != %d\n", bytes_written, cmdlen);
+  }
+  expect(serial, ":\r\n"); // "Reading X bytes from 0xXXXXXXXX:\r\n"
+
+  for (int i = 0; i < size; i++) {
+    uint8_t byte_from_serial;
+    // TODO: fread() per byte is probably shit, but probably not the bottleneck.
+    if (read(serial, &byte_from_serial, 1) != 1) {
+      fprintf(stderr, "read from serial failed\n");
+    }
+    fwrite(&byte_from_serial, 1, 1, file);
+  }
+  if (fclose(file) != 0) {
+    perror("fclose");
+    return -1;
+  }
+  expect(serial, "EEPROM> ");
+  char * reset_release = "reset release\n";
+  write(serial, reset_release, strlen(reset_release));
+  expect(serial, "RESET is released to Hi-Z");
+
+  printf("\n");
+  return 0;
 }
 
 int cmd_verify(char *srcfile, char *port, char *addr_str) {
@@ -240,8 +295,8 @@ int main(int argc, char *argv[]) {
     if (cmd_upload(argv[2], argv[3], argv[4]) != 0) {
       return EXIT_FAILURE;
     }
-  } else if (argc == 3 && strcmp(argv[1], "download") == 0) {
-    if (cmd_download(argv[2]) != 0) {
+  } else if (argc == 6 && strcmp(argv[1], "download") == 0) {
+    if (cmd_download(argv[2], argv[3], argv[4], argv[5]) != 0) {
       return EXIT_FAILURE;
     }
   } else if (argc == 5 && strcmp(argv[1], "verify") == 0) {
