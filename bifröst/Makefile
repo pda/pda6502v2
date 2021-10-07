@@ -9,8 +9,8 @@ test: blinken_tb boot_tb
 %.json: %.v
 	yosys -q -p "synth_ice40 -top $* -json $@" "$^"
 
-%.asc: %.json bifrost.pcf
-	nextpnr-ice40 -q --hx4k --package tq144 --json "$<" --pcf bifrost.pcf --asc "$@"
+%.asc: %.json %.pcf
+	nextpnr-ice40 -q --hx4k --package tq144 --json $(filter %.json, $^) --pcf $(filter %.pcf, $^) --asc "$@"
 
 %.bin: %.asc
 	icepack -v $< $@
