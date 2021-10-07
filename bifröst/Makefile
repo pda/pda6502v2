@@ -3,8 +3,8 @@ test: blinken_tb boot_tb
 	./blinken_tb
 	./boot_tb
 
-%_tb: %_tb.v
-	iverilog -Wall -o "$@" "$^"
+%_tb: %_tb.v %.v
+	iverilog -Wall -o "$@" "$<"
 
 %.json: %.v
 	yosys -q -p "synth_ice40 -top $* -json $@" "$^"
