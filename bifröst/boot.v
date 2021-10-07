@@ -12,7 +12,7 @@ module boot(
   output reg [18:0] address = 19'b0,
   output reg [7:0] data = 8'b0,
   output reg rw = 1'b1,
-  output reg busen = 1'b1,  // HIGH = 6502 bus output disabled
+  output reg busen = 1'b1,  // HIGH = 6502 bus output enabled
   output reg reset = 1'b1,
 
   output reg booting = 1'b1
