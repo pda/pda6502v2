@@ -1,0 +1,43 @@
+set_io rw       1
+set_io busen    2
+set_io setov    3
+set_io ready    7
+set_io irq      8
+set_io nmirq   10
+
+set_io clock    20
+set_io clockout 19
+
+set_io via1_cs 107
+set_io via2_cs 105
+set_io sid_cs   12
+set_io ram_cs   15
+set_io uart_cs  99
+
+set_io addr[0]  110
+set_io addr[1]  112
+set_io addr[2]  113
+set_io addr[3]  114
+set_io addr[4]  115
+set_io addr[5]  116
+set_io addr[6]  117
+set_io addr[7]  118
+set_io addr[8]  119
+set_io addr[9]  120
+set_io addr[10] 121
+set_io addr[11] 122
+set_io addr[12] 124
+set_io addr[13] 125
+set_io addr[14] 128
+set_io addr[15] 129
+
+set_io data[0] 136
+set_io data[1] 137
+set_io data[2] 138
+set_io data[3] 139
+set_io data[4] 141
+set_io data[5] 142
+set_io data[6] 143
+set_io data[7] 144
+
+set_io reset6502  38
