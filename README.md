@@ -226,3 +226,14 @@ and attach a small board to ICSP header with:
 - a 10K pull-up resistor on CS,
 - a MISO/MOSI-correct ICSP header.
 A prototype of this works using a Winbond W25Q80BVAIG 8Mbit SPI EEPROM.
+(Silver lining: attempts to program the EEPROM while it's connected to the FPGA
+have failed, despite efforts to make the FPGA tristate those SPI lines when not
+in use. Being able to disconnect the EEPROM from the FPGA is useful. However
+one of the pda6502v2 goals was uploading new 6502 code without touching the
+board. Hopefully this can be fixed in Verilog.
+
+RESET lines for BIFRÖST FPGA and the 6502 system are coupled.  This is a
+terrible idea; BIFRÖST needs to reset the CPU without resetting itself.
+Workaround: use a knife to physically cut the RESET trace coming from top-right
+pin of RESET switch, next to pin 1 of ARMSID, and then airwire from EXT[0] to
+6502 RESET.
