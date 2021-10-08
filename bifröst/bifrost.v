@@ -14,12 +14,11 @@ module bifrost(
   output wire busen,
   output setov,
   input vecpull,
-  inout ready,
+  output ready, // inout really
   output irq,
   input mlock,
   output nmirq,
   input sync,
-  input reset, // hrmm
 
   input uart_irq,
   output uart_im,
@@ -45,13 +44,16 @@ module bifrost(
   output wire [15:0] ext
 );
 
-blinken blinken(
-  .clock(clock),
-  .leds(leds)
-);
+//reg [7:0] leds_blinken;
+//wire animating;
+//blinken blinken(
+//  .clock(clock),
+//  .leds(leds_blinken),
+//  .animating(animating)
+//);
 
 adec adec(
-  .clock(clock),
+  .clock(clockout),
   .addr(addr),
   .rw(rw),
   .ram_cs(ram_cs),
@@ -63,39 +65,59 @@ adec adec(
 
 
 wire booting;
+wire [18:0] addr_boot;
+wire [7:0] data_boot;
+wire rw_boot;
+wire flash_mosi_boot;
+wire flash_sck_boot;
+wire flash_cs_boot;
 boot boot(
-  .clock(clock),
+  .clock(clockout),
   .flash_so(flash_miso),
-  .flash_si(flash_mosi),
-  .flash_sck(flash_sck),
-  .flash_cs_n(flash_cs),
+  .flash_si(flash_mosi_boot),
+  .flash_sck(flash_sck_boot),
+  .flash_cs_n(flash_cs_boot),
   .busen(busen),
-  .address(addr),
-  .data(data),
-  .rw(rw),
+  .address(addr_boot),
+  .data(data_boot),
+  .rw(rw_boot),
   .reset(ext[0]),
   .booting(booting)
 );
 
 // divide 8 MHz clock down to 1 MHz
-reg [7:0] clock_divide = 8'b11111111;
-always @(posedge clock) begin
-  if (!booting) clock_divide++;
-end
-assign clockout = clock_divide[7]; // 7: 31,250 Hz (31 kHz)
-
-//assign reset_inv = !reset;
-
+reg [8:0] clock_divide = 9'b000000000;
+always @(posedge clock) clock_divide++;
+// 0: 4,000,000 Hz
+// 1: 2,000,000 Hz
+// 2: 1,000,000 Hz
+// 3:   500,000 Hz
+// 4:   250,000 Hz
+// 5:   125,000 Hz
+// 6:    62,500 Hz
+// 7:    31,250 Hz
+// 8:    15,625 Hz
+assign clockout = clock_divide[8];
 
 assign setov = 1'b1;
 assign ready = 1'b1;
-assign reset_inv = !reset;
 assign irq = 1'b1;
 assign nmirq = 1'b1;
 assign uart_rdn = 1'b1;
 assign uart_wrn = 1'b1;
 assign uart_im = 1'b1; // 80xxx/Intel mode
+assign reset_inv = ~ext[0];
 
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
+
+assign addr = booting ? addr_boot : 19'bZZZZZZZZZZZZZZZZZZZ;
+assign data = booting ? data_boot : 8'bZZZZZZZZ;
+assign rw = booting ? rw_boot : 1'bZ;
+assign flash_mosi = booting ? flash_mosi_boot : 1'bZ;
+assign flash_sck = booting ? flash_sck_boot : 1'bZ;
+assign flash_cs = booting ? flash_cs_boot : 1'bZ;
+
+//assign leds = animating ? leds_blinken : addr[15:8];
+assign leds = addr[15:8];
 
 endmodule

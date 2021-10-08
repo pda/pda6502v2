@@ -2,11 +2,11 @@
 
 module blinken(
   input wire clock,
-  output reg [7:0] leds = 8'b0
+  output reg [7:0] leds = 8'b0,
+  output reg animating = 1
 );
 
 // on start-up, animate the LEDs in
-reg animating = 1;
 reg [18:0] counter = 0; // 19-bit counter to reach 500,000
 always @(posedge clock) begin
   if (animating == 1) begin
