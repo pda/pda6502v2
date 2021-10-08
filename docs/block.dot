@@ -2,11 +2,11 @@ graph block {
   node [shape = box, margin = 0.2]
   ranksep = 3.0
   nodesep = 1.0
-  splines = ortho
+  //splines = ortho
 
   6502 [label = "6502 CPU\nW65C02S"]
 
-  SYSCON [label = "BIFRÖST\nSystem Controller\nFPGA"]
+  BIFROST [label = "BIFRÖST\nSystem Controller\nFPGA"]
 
 
   // bus groups
@@ -14,19 +14,20 @@ graph block {
     style = invisible
     rank = same
     node [style = dashed, width=1.4, height=1.0]
-    BUS [label = "ADDR[0..15]\nDATA[0..7]\nRWB", color = "blue"]
+    BUS [label = "ADDR\nDATA\nRWB", color = "blue"]
     CLK [label = "CLK\n1/2/4/8 MHz", color = "green"]
     IRQ [label = "IRQ", color = "red"]
-    RESET [label = "RESET", color = "orange"]
     CS [label = "CS"]
   }
 
   // system bus devices
   {
     rank = same
-    SRAM [label = "SRAM\n64 KiB"]
-    VIA [label = "6522 VIA\nW65C22S"]
-    UART [label = "UART\nSC28L91"]
+    SRAM [label = "SRAM\n512 KiB"]
+    VIA1 [label = "6522 VIA\nW65C22S"]
+    VIA2 [label = "6522 VIA\nW65C22S"]
+    UART [label = "UART\nSC28L92"]
+    SID [label = "SID\n(ARMSID)"]
     FLASH [label = "Serial\nEEPROM"]
   }
 
@@ -34,65 +35,67 @@ graph block {
   {
     rank = same
     node [shape = hexagon, width=1.2, height=0.8, margin=0]
-    GPIO1 [label = "GPIO\n8-bit"]
-    GPIO2 [label = "GPIO\n8-bit"]
-    SPI_PORT [label = "SPI x 4"]
-    UART_PORT [label = "UART"]
-    PROG [label = "PROG"]
+    GPIO1 [label = "GPIO\n2 x 8-bit"]
+    GPIO2 [label = "GPIO\n2 x 8-bit"]
+    SPI_PORT [label = "SPI"]
+    UART_PORT1 [label = "UART"]
+    UART_PORT2 [label = "UART"]
+    ICSP [label = "ICSP"]
+    SOUND [label = "Sound\nin/out"]
+    JOYSTICK [label = "Joystick\nX/Y"]
   }
 
-  SYSCON -- FLASH
-  FLASH -- PROG [xlabel = "SPI"]
+  BIFROST -- FLASH
+  FLASH -- ICSP [xlabel = "SPI"]
 
-  6502 -- SYSCON [xlabel = BE]
-  6502 -- SYSCON [xlabel = RDY]
+  6502 -- BIFROST
 
   {
-    VIA -- GPIO1
-    VIA -- GPIO2
-    SYSCON -- SPI_PORT [xlabel = "MOSI\nMISO x 4\nSS x 4\nIRQ x 4"]
-    UART -- UART_PORT [xlabel = "TX/RX"]
+    VIA1 -- GPIO1
+    VIA2 -- GPIO2
+    BIFROST -- SPI_PORT [xlabel = "MOSI\nMISO\nCS x 8\nIRQ x 2"]
+    UART -- UART_PORT1 [xlabel = "TX/RX\nRTS/CTS"]
+    UART -- UART_PORT2 [xlabel = "TX/RX\nRTS/CTS"]
+    SID -- SOUND
+    SID -- JOYSTICK
   }
 
   {
     edge [color = blue]
-    6502 -- BUS
-    SYSCON -- BUS
-    BUS -- SYSCON
+    BIFROST -- BUS
+    BUS -- 6502
     BUS -- SRAM
-    BUS -- VIA
+    BUS -- VIA1
+    BUS -- VIA2
     BUS -- UART
+    BUS -- SID
   }
 
   {
     edge [color = green]
-    SYSCON -- CLK
+    BIFROST -- CLK
     CLK -- 6502
-    CLK -- VIA
+    CLK -- VIA1
+    CLK -- VIA2
     CLK -- UART
-  }
-
-  {
-    edge [color = orange]
-    RESET -- SYSCON
-    RESET -- 6502
-    RESET -- VIA
-    RESET -- UART
   }
 
   {
     edge [color = red]
     6502 -- IRQ
-    IRQ -- VIA
+    IRQ -- VIA1
+    IRQ -- VIA2
     IRQ -- UART
-    IRQ -- SYSCON
+    IRQ -- BIFROST
   }
 
   {
-    edge [color = purple]
-    SYSCON -- CS
+    edge [color = orange]
+    BIFROST -- CS
     CS -- SRAM
-    CS -- VIA
+    CS -- VIA1
+    CS -- VIA2
     CS -- UART
+    CS -- SID
   }
 }
