@@ -1,0 +1,4 @@
+map.out
+debug.out
+*.o
+os.rom
