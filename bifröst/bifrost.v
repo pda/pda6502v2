@@ -97,7 +97,7 @@ always @(posedge clock) clock_divide++;
 // 6:    62,500 Hz
 // 7:    31,250 Hz
 // 8:    15,625 Hz
-assign clockout = clock_divide[8];
+assign clockout = clock_divide[2];
 
 assign setov = 1'b1;
 assign ready = 1'b1;
