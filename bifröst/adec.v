@@ -31,7 +31,6 @@ module adec(
 
   // C64 0xDE00–DEFF: I/O Area #1 (external/optional)
   // C64 0xDF00–DFFF: I/O Area #2 (external/optional)
-  // assign bifrost_cs = ~clock && (addr >= 16'hDE00 && addr <= 16'hDFFF); // 8-bit; 255 registers
-  assign bifrost_cs = 1;
+  assign bifrost_cs = ~(addr >= 16'hDE00 && addr <= 16'hDFFF); // 8-bit; 255 registers
 
 endmodule

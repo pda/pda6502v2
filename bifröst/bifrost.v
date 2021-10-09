@@ -44,13 +44,15 @@ module bifrost(
   output wire [15:0] ext
 );
 
-//reg [7:0] leds_blinken;
-//wire animating;
-//blinken blinken(
-//  .clock(clock),
-//  .leds(leds_blinken),
-//  .animating(animating)
-//);
+wire bifrost_cs;
+
+reg [7:0] leds_blinken;
+wire animating;
+blinken blinken(
+  .clock(clockout),
+  .leds(leds_blinken),
+  .animating(animating)
+);
 
 adec adec(
   .clock(clockout),
@@ -60,7 +62,8 @@ adec adec(
   .via1_cs(via1_cs),
   .via2_cs(via2_cs),
   .uart_cs(uart_cs),
-  .sid_cs(sid_cs)
+  .sid_cs(sid_cs),
+  .bifrost_cs(bifrost_cs)
 );
 
 
@@ -72,7 +75,7 @@ wire flash_mosi_boot;
 wire flash_sck_boot;
 wire flash_cs_boot;
 boot boot(
-  .clock(clockout),
+  .clock(clock_divide[0]), // 4 MHz
   .flash_so(flash_miso),
   .flash_si(flash_mosi_boot),
   .flash_sck(flash_sck_boot),
@@ -117,7 +120,12 @@ assign flash_mosi = booting ? flash_mosi_boot : 1'bZ;
 assign flash_sck = booting ? flash_sck_boot : 1'bZ;
 assign flash_cs = booting ? flash_cs_boot : 1'bZ;
 
-//assign leds = animating ? leds_blinken : addr[15:8];
-assign leds = addr[15:8];
+reg [7:0] leds_reg = 8'b11000011;
+always @(posedge clock) begin
+  if (~bifrost_cs && ~rw && addr[7:0] == 8'h00) begin
+    leds_reg <= data;
+  end
+end
+assign leds = animating ? leds_blinken : leds_reg;
 
 endmodule
