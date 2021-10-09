@@ -75,7 +75,7 @@ wire flash_mosi_boot;
 wire flash_sck_boot;
 wire flash_cs_boot;
 boot boot(
-  .clock(clock_divide[0]), // 4 MHz
+  .clock(clockout),
   .flash_so(flash_miso),
   .flash_si(flash_mosi_boot),
   .flash_sck(flash_sck_boot),
