@@ -233,7 +233,7 @@ void cmd_write(char *argstr) {
         if (buf != page_buffer[b % PAGE_SIZE]) {
           printhex("[0x", &b, 32, " ");
           printhex("want:", &page_buffer[b % PAGE_SIZE], 8, " ");
-          printhex("got:", &buf, 8, "]\n");
+          printhex("got:", &buf, 8, "]\r\n");
         }
       }
       digitalWrite(pinCS, HIGH);
