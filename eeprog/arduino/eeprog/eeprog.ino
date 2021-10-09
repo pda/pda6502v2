@@ -359,6 +359,8 @@ void eeprom_write_enable() {
     digitalWrite(pinCS, LOW);
     SPI.transfer(EEPROM_WREN);
     digitalWrite(pinCS, HIGH);
+    SPI.endTransaction();
+    SPI.beginTransaction(spi_settings);
     digitalWrite(pinCS, LOW);
     SPI.transfer(EEPROM_RDSR);
     reg = SPI.transfer(0x00);
