@@ -221,6 +221,7 @@ void cmd_write(char *argstr) {
       wait_for_ready();
 
       // verify page written
+      SPI.beginTransaction(spi_settings);
       digitalWrite(pinCS, LOW);
       SPI.transfer(EEPROM_READ);
       SPI.transfer(write_addr>>16&0xFF); // ADDR[23:16]
