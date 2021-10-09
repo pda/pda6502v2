@@ -177,7 +177,6 @@ void cmd_write(char *argstr) {
     printhex("erasing sector 0x", &s, 32, "\r\n");
     eeprom_sector_erase(s);
   }
-  delay(100);
 
   Serial.println("ready for data"); // indicate ready for data
   Serial.setTimeout(1000); // milliseconds
@@ -493,7 +492,7 @@ void spi_begin() {
   // pulling SCK and MOSI low, and SS high.
   // (but there is no "native" SS on Arduino Zero)
   SPI.begin();
-  delay(10);
+  delay(1);
   power_up();
 }
 
