@@ -96,7 +96,7 @@ void cmd_exec() {
     Serial.println("  read <addr> <length>");
     Serial.println("  hexdump <addr> <length>");
     Serial.println("  write <addr> <length>");
-    Serial.println("  reset [hold|release]");
+    Serial.println("  reset [disable|hold|release]");
   } else if (strcmp("info", cmd0) == 0) {
     cmd_info();
   } else if (strcmp("read", cmd0) == 0) {
@@ -482,7 +482,7 @@ void printhex(const char *prefix, void *data, int bits, const char *suffix) {
 void spi_begin() {
   // Hold pda6502v2 in reset state during SPI, to keep FPGA off SPI bus.
   // Eventually this will be conditional based on a --reset CLI flag.
-  if (!reset_hold) {
+  if (!reset_hold && !reset_disable) {
     pinMode(pinReset, OUTPUT);
     digitalWrite(pinReset, LOW);
   }
