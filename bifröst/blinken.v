@@ -7,23 +7,15 @@ module blinken(
 );
 
 // on start-up, animate the LEDs in
-reg [18:0] counter = 0; // 19-bit counter to reach 500,000
+reg [18:0] counter = 0;
 always @(posedge clock) begin
   if (animating == 1) begin
-    counter = counter + 1;
-    if (counter == 500_000) begin
+    counter <= counter + 1;
+    if (counter[16] == 1'b1) begin
       counter <= 0;
-      if (leds[0] == 0) begin
-        leds <= (leds>>1) | (1<<7);
-      end
-      else begin
-        leds <= (leds>>1);
-      end
-      if (leds == 8'b00000001) begin
-        // after all LEDs have been on for 100ms, clear them and halt
-        animating = 0;
-        leds <= 0;
-      end
+      if (leds == 8'b00000000) leds <= 8'b10000000;
+      else leds <= leds>>1;
+      if (leds == 8'b00000001) animating <= 1'b0;
     end
   end
 end
