@@ -353,11 +353,18 @@ void power_down() {
 }
 
 void eeprom_write_enable() {
-  SPI.beginTransaction(spi_settings);
-  digitalWrite(pinCS, LOW);
-  SPI.transfer(EEPROM_WREN);
-  digitalWrite(pinCS, HIGH);
-  SPI.endTransaction();
+  uint8_t reg;
+  do {
+    SPI.beginTransaction(spi_settings);
+    digitalWrite(pinCS, LOW);
+    SPI.transfer(EEPROM_WREN);
+    digitalWrite(pinCS, HIGH);
+    digitalWrite(pinCS, LOW);
+    SPI.transfer(EEPROM_RDSR);
+    reg = SPI.transfer(0x00);
+    digitalWrite(pinCS, HIGH);
+    SPI.endTransaction();
+  } while ((reg&0b00000011) != 0b00000010);
 }
 
 void eeprom_sector_erase(uint32_t addr) {
