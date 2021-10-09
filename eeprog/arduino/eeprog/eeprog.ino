@@ -35,6 +35,7 @@ struct hexdump_context {
 char cmd[128];
 char *cmd_p = &cmd[0];
 bool reset_hold = false;
+bool reset_disable = false;
 
 void setup() {
   Serial.begin(115200);
@@ -307,18 +308,26 @@ void cmd_info() {
 
 void cmd_reset(char *argstr) {
   char *mode = strsep(&argstr, " ");
-  if (strcmp(mode, "hold") == 0) {
+  if (strcmp(mode, "disable") == 0) {
+    reset_disable = true;
+    reset_hold = false;
+    pinMode(pinReset, INPUT);
+    Serial.println("RESET is disabled; Hi-Z");
+  } else if (strcmp(mode, "hold") == 0) {
     reset_hold = true;
+    reset_disable = false;
     pinMode(pinReset, OUTPUT);
     digitalWrite(pinReset, LOW);
     Serial.println("RESET is held LOW");
   } else if (strcmp(mode, "release") == 0) {
     reset_hold = false;
+    reset_disable = false;
     digitalWrite(pinReset, HIGH);
     pinMode(pinReset, INPUT);
     Serial.println("RESET is released to Hi-Z");
   } else {
     reset_hold = false;
+    reset_disable = false;
     pinMode(pinReset, OUTPUT);
     digitalWrite(pinReset, LOW);
     delay(1);

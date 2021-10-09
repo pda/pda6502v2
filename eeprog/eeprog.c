@@ -97,9 +97,9 @@ int cmd_upload(char *srcfile, char *port, char *addr_str) {
   }
   tcdrain(serial);
   expect(serial, "\r\nEEPROM> ");
-  char * reset_hold = "reset hold\n";
-  write(serial, reset_hold, strlen(reset_hold));
-  expect(serial, "RESET is held LOW");
+  char * reset_disable = "reset disable\n";
+  write(serial, reset_disable, strlen(reset_disable));
+  expect(serial, "RESET is disabled; Hi-Z");
   expect(serial, "\r\nEEPROM> ");
 
   char cmd[32];
@@ -131,9 +131,9 @@ int cmd_upload(char *srcfile, char *port, char *addr_str) {
   }
   expect(serial, "bytes written!");
 
-  char * reset_release = "reset release\n";
-  write(serial, reset_release, strlen(reset_release));
-  expect(serial, "RESET is released to Hi-Z");
+  char * reset_now = "reset\n";
+  write(serial, reset_now, strlen(reset_now));
+  expect(serial, "\r\nEEPROM> ");
 
   printf("\n");
   return 0;
