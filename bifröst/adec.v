@@ -13,7 +13,7 @@ module adec(
   output wire sid_cs
 );
 
-  assign ram_cs     = ~(~clock && (addr <  16'hD000 || addr >  16'hDFFF));
+  assign ram_cs     = ~(clock && (addr <  16'hD000 || addr >  16'hDFFF));
 
   // C64 0xD000–D3FF: VIC-II
 
