@@ -103,7 +103,7 @@ always @(posedge clock) begin
     end
     s_ram_write: begin // read data
       if (spi_bits == 0) begin
-        address <= 19'h0E000 + offset;
+        address <= 19'h0F000 + offset;
         data <= spi_buffer;
         rw <= 1'b0;
         state <= s_ram_write_finish;
@@ -111,7 +111,7 @@ always @(posedge clock) begin
     end
     s_ram_write_finish: begin
       rw <= 1'b1;
-      if (offset < 16'h1FFF) begin
+      if (offset < 16'h0FFF) begin
         spi_bits <= 8; // start reading next byte
         state <= s_ram_write;
         offset <= offset+1;
