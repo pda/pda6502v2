@@ -164,10 +164,10 @@ int cmd_download(char *dstfile, char * port, char * addr_str, char * size_str) {
   }
   tcdrain(serial);
   expect(serial, "\r\nEEPROM> ");
-  char * reset_hold = "reset hold\n";
-  write(serial, reset_hold, strlen(reset_hold));
-  expect(serial, "RESET is held LOW");
-  expect(serial, "\r\nEEPROM> ");
+  //char * reset_hold = "reset hold\n";
+  //write(serial, reset_hold, strlen(reset_hold));
+  //expect(serial, "RESET is held LOW");
+  //expect(serial, "\r\nEEPROM> ");
 
   char cmd[32];
   snprintf(cmd, sizeof(cmd), "read 0x%06X %d\n", addr_from, size);
@@ -191,9 +191,9 @@ int cmd_download(char *dstfile, char * port, char * addr_str, char * size_str) {
     return -1;
   }
   expect(serial, "EEPROM> ");
-  char * reset_release = "reset release\n";
-  write(serial, reset_release, strlen(reset_release));
-  expect(serial, "RESET is released to Hi-Z");
+  //char * reset_release = "reset release\n";
+  //write(serial, reset_release, strlen(reset_release));
+  //expect(serial, "RESET is released to Hi-Z");
 
   printf("\n");
   return 0;

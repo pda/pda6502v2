@@ -155,6 +155,14 @@ void cmd_hexdump(char *argstr) {
   spi_end();
 }
 
+struct page_params {
+  uint32_t page_addr;  // address of the page being written
+  uint32_t last_page;  // address of the final page to be written
+  uint32_t addr_end;   // address of final byte to be written
+  uint32_t write_addr; // address to start writing from in this page
+  uint32_t write_size; // bytes to write in this page
+};
+
 void cmd_write(char *argstr) {
   spi_begin();
   long addr = strtol(strsep(&argstr, " "), NULL, 0);
@@ -167,16 +175,17 @@ void cmd_write(char *argstr) {
   uint32_t first_page = addr/PAGE_SIZE * PAGE_SIZE;
   uint32_t last_page = addr_end/PAGE_SIZE * PAGE_SIZE;
 
-  uint32_t bytes_written = 0;
   uint32_t addr_in_sector = first_page % SECTOR_SIZE;
-  uint32_t addr_in_page = addr % PAGE_SIZE;
-
-  uint8_t page_buffer[PAGE_SIZE];
+  uint32_t offset_in_page = addr % PAGE_SIZE;
 
   for (uint32_t s = first_sector; s <= last_sector; s += SECTOR_SIZE) {
     printhex("erasing sector 0x", &s, 32, "\r\n");
     eeprom_sector_erase(s);
   }
+
+  uint32_t bytes_written = 0;
+  uint32_t page_retries = 0;
+  uint8_t page_buffer[PAGE_SIZE];
 
   Serial.println("ready for data"); // indicate ready for data
   Serial.setTimeout(1000); // milliseconds
@@ -184,69 +193,98 @@ void cmd_write(char *argstr) {
   for (uint32_t s = first_sector; s <= last_sector; s += SECTOR_SIZE) {
     // for each page `p` (in this sector) touched by this write
     for (uint32_t p = s + addr_in_sector; p < s + SECTOR_SIZE && p <= last_page; p += PAGE_SIZE) {
+      uint32_t write_size = (p == last_page) ?
+          (addr_end % PAGE_SIZE + 1) - offset_in_page :
+          PAGE_SIZE - offset_in_page;
 
-      // read data for page from serial into buffer
-      int bytes_in_page = (p == last_page) ?
-        (addr_end % PAGE_SIZE + 1) - addr_in_page :
-        PAGE_SIZE - addr_in_page;
-      int bytes_read = 0;
-      while (bytes_read < bytes_in_page) {
-        while (Serial.available() == 0);
-        int r = Serial.read();
-        if (r >= 0) {
-          page_buffer[addr_in_page + bytes_read] = (uint8_t)r;
-          bytes_read++;
+      struct page_params pp = {
+        .page_addr = p,
+        .last_page = last_page,
+        .addr_end = addr_end,
+        .write_addr = p + offset_in_page,
+        .write_size = write_size,
+      };
+
+      read_from_serial(pp, page_buffer);
+      uint32_t bw;
+      for (int attempt = 1; attempt <= 10; attempt++) {
+        bw = write_page(pp, page_buffer);
+        if (verify_page(pp, page_buffer) > 0) {
+          page_retries++;
+          Serial.write(attempt < 10 ? 'r' : '!');
         } else {
-          Serial.write('?');
-        }
-        if (bytes_read % 64 == 0) Serial.write('.'); // acknowledge each chunk
-      }
-
-      // write data from buffer to EEPROM via SPI
-      uint32_t write_addr = p + addr_in_page;
-      eeprom_write_enable();
-      SPI.beginTransaction(spi_settings);
-      digitalWrite(pinCS, LOW);
-      SPI.transfer(EEPROM_WRITE);
-      SPI.transfer(write_addr>>16&0xFF); // ADDR[23:16]
-      SPI.transfer(write_addr>>8&0xFF); // ADDR[15:8]
-      SPI.transfer(write_addr&0xFF); // ADDR[7:0]
-      // for each byte `b` (in this page) touched by this write
-      for (uint32_t b = p + addr_in_page; b < p + PAGE_SIZE && b <= addr_end; b++) {
-        SPI.transfer(page_buffer[b % PAGE_SIZE]); // each byte in page
-        bytes_written++;
-      }
-      digitalWrite(pinCS, HIGH);
-      SPI.endTransaction();
-      wait_for_ready();
-
-      // verify page written
-      SPI.beginTransaction(spi_settings);
-      digitalWrite(pinCS, LOW);
-      SPI.transfer(EEPROM_READ);
-      SPI.transfer(write_addr>>16&0xFF); // ADDR[23:16]
-      SPI.transfer(write_addr>>8&0xFF); // ADDR[15:8]
-      SPI.transfer(write_addr&0xFF); // ADDR[7:0]
-      // for each byte `b` (in this page) touched by this write
-      for (uint32_t b = p + addr_in_page; b < p + PAGE_SIZE && b <= addr_end; b++) {
-        uint8_t buf = SPI.transfer(0x00);
-        if (buf != page_buffer[b % PAGE_SIZE]) {
-          printhex("[0x", &b, 32, " ");
-          printhex("want:", &page_buffer[b % PAGE_SIZE], 8, " ");
-          printhex("got:", &buf, 8, "]\r\n");
+          bytes_written += bw;
+          break;
         }
       }
-      digitalWrite(pinCS, HIGH);
-      SPI.endTransaction();
-
-      addr_in_page = 0; // only the first page written might start at non-zero.
+      offset_in_page = 0; // only the first page written might start at non-zero.
     }
     Serial.println();
     addr_in_sector = 0; // only the first sector written might start at non-zero.
   }
+  Serial.print(page_retries);
+  Serial.println(" page retries");
   Serial.print(bytes_written);
   Serial.println(" bytes written!");
   spi_end();
+}
+
+void read_from_serial(struct page_params pp, uint8_t buf[]) {
+  uint32_t bytes_read = 0;
+  while (bytes_read < pp.write_size) {
+    while (Serial.available() == 0);
+    int r = Serial.read();
+    if (r >= 0) {
+      buf[(pp.write_addr % PAGE_SIZE) + bytes_read] = (uint8_t)r;
+      bytes_read++;
+    } else {
+      Serial.write('?');
+    }
+    if (bytes_read % 64 == 0) Serial.write('.'); // acknowledge each chunk
+  }
+}
+
+uint32_t write_page(struct page_params pp, uint8_t buf[]) {
+  eeprom_write_enable();
+  SPI.beginTransaction(spi_settings);
+  digitalWrite(pinCS, LOW);
+  SPI.transfer(EEPROM_WRITE);
+  SPI.transfer(pp.write_addr>>16&0xFF); // ADDR[23:16]
+  SPI.transfer(pp.write_addr>>8&0xFF); // ADDR[15:8]
+  SPI.transfer(pp.write_addr&0xFF); // ADDR[7:0]
+  // for each byte `b` (in this page) touched by this write
+  uint32_t bytes_written = 0;
+  for (uint32_t b = pp.write_addr; b < pp.page_addr + PAGE_SIZE && b <= pp.addr_end; b++) {
+    SPI.transfer(buf[b % PAGE_SIZE]); // each byte in page
+    bytes_written++;
+  }
+  digitalWrite(pinCS, HIGH);
+  SPI.endTransaction();
+  wait_for_ready();
+  return bytes_written;
+}
+
+uint16_t verify_page(struct page_params pp, uint8_t buf[]) {
+  SPI.beginTransaction(spi_settings);
+  digitalWrite(pinCS, LOW);
+  SPI.transfer(EEPROM_READ);
+  SPI.transfer(pp.write_addr>>16&0xFF); // ADDR[23:16]
+  SPI.transfer(pp.write_addr>>8&0xFF); // ADDR[15:8]
+  SPI.transfer(pp.write_addr&0xFF); // ADDR[7:0]
+  // for each byte `b` (in this page) touched by this write
+  uint16_t errors = 0;
+  for (uint32_t b = pp.write_addr; b < pp.page_addr + PAGE_SIZE && b <= pp.addr_end; b++) {
+    uint8_t miso = SPI.transfer(0x00);
+    if (miso != buf[b % PAGE_SIZE]) {
+      errors++;
+      //printhex("\r\n[0x", &b, 32, " ");
+      //printhex("want:", &buf[b % PAGE_SIZE], 8, " ");
+      //printhex("got:", &buf, 8, "]");
+    }
+  }
+  digitalWrite(pinCS, HIGH);
+  SPI.endTransaction();
+  return errors;
 }
 
 void cmd_info() {
