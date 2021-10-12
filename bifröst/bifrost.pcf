@@ -27,7 +27,7 @@ set_io flash_miso 68
 set_io flash_sck  70
 set_io flash_cs   71
 
-set_io uart_irq     90
+set_io -pullup yes uart_irq     90
 set_io uart_im      91
 set_io uart_txbirq  93
 set_io uart_rxbirq  94
@@ -38,8 +38,12 @@ set_io uart_rxairq  98
 set_io uart_cs      99
 set_io reset_inv   101
 
-set_io via1_cs 107
-set_io via2_cs 105
+set_io via2_irq 104
+set_io via2_cs  105
+set_io via1_irq 106
+
+set_io via1_cs  107
+
 set_io sid_cs   12
 set_io ram_cs   15
 

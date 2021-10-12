@@ -20,6 +20,11 @@ module bifrost(
   output nmirq,
   input sync,
 
+  input via1_irq,
+  input via2_irq,
+  output wire via1_cs,
+  output wire via2_cs,
+
   input uart_irq,
   output uart_im,
   output uart_rdn,
@@ -36,8 +41,6 @@ module bifrost(
   output wire flash_cs,
   output wire [7:0] leds,
   output wire ram_cs,
-  output wire via1_cs,
-  output wire via2_cs,
   output wire uart_cs,
   output wire sid_cs,
 
@@ -104,12 +107,8 @@ assign clockout = clock_divide[2];
 
 assign setov = 1'b1;
 assign ready = 1'b1;
-assign irq = 1'b1;
+assign irq = (via1_irq && via2_irq && uart_irq) ? 1'b1 : 1'b0;
 assign nmirq = 1'b1;
-assign uart_rdn = 1'b1;
-assign uart_wrn = 1'b1;
-assign uart_im = 1'b1; // 80xxx/Intel mode
-assign reset_inv = ~ext[0];
 
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
@@ -127,5 +126,11 @@ always @(posedge clock) begin
   end
 end
 assign leds = animating ? leds_blinken : leds_reg;
+
+// UART
+assign uart_rdn = 1'b1;
+assign uart_wrn = 1'b1;
+assign uart_im = 1'b1; // 80xxx/Intel mode
+assign reset_inv = ~ext[0];
 
 endmodule
