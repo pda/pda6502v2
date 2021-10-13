@@ -9,6 +9,8 @@ reg flash_miso = 1'bZ;
 wire [18:0] addr = 19'hCAFE;
 wire [7:0] data = 8'h42;
 wire rw;
+reg via1_irq = 1'b1;
+reg via2_irq = 1'b1;
 
 bifrost dut(
   .clock(clock),
@@ -19,6 +21,8 @@ bifrost dut(
   .vecpull(1'b1),
   .mlock(1'b1),
   .sync(1'b1),
+  .via1_irq(via1_irq),
+  .via2_irq(via2_irq),
   .uart_irq(1'b1),
   .uart_txbirq(1'b1),
   .uart_rxbirq(1'b1),
@@ -35,6 +39,7 @@ initial begin
   repeat(1_500_000) begin
     #62 clock = ~clock;
     #63 clock = ~clock;
+    via1_irq = ~via1_irq;
   end
 
   $finish;
