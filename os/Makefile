@@ -2,7 +2,7 @@ SOURCES=$(wildcard *.s)
 OBJECTS=$(SOURCES:.s=.o)
 
 ASM      = ca65
-ASMFLAGS = --debug-info
+ASMFLAGS = --cpu 65C02 --debug-info
 LD      = ld65
 LDFLAGS = --mapfile map.out --config memory.conf --dbgfile debug.out
 
