@@ -15,7 +15,7 @@ module bifrost(
   output setov,
   input vecpull,
   output ready, // inout really
-  output irq,
+  output wire irq,
   input mlock,
   output nmirq,
   input sync,
@@ -49,7 +49,7 @@ module bifrost(
 
 wire bifrost_cs;
 
-reg [7:0] leds_blinken;
+wire [7:0] leds_blinken;
 wire animating;
 blinken blinken(
   .clock(clockout),
@@ -107,8 +107,13 @@ assign clockout = clock_divide[2];
 
 assign setov = 1'b1;
 assign ready = 1'b1;
-assign irq = (via1_irq && via2_irq && uart_irq) ? 1'b1 : 1'b0;
 assign nmirq = 1'b1;
+
+// multiplex IRQ signals into 6502 IRQB.
+// VIA1 IRQ currently flakey soldering at the FPGA, so exclude it for now.
+// VIA2 IRQ is working.
+// UART IRQ is not used yet (and pull-up in PCF file not tested yet).
+assign irq = via2_irq;
 
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
@@ -126,6 +131,13 @@ always @(posedge clock) begin
   end
 end
 assign leds = animating ? leds_blinken : leds_reg;
+
+// temporary configuration for testing IRQ
+//assign leds[0] = irq;
+//assign leds[1] = via1_irq;
+//assign leds[2] = via2_irq;
+//assign leds[3] = uart_irq;
+//assign leds[7:4] = 5'b00000;
 
 // UART
 assign uart_rdn = 1'b1;
