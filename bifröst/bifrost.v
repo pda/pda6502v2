@@ -111,9 +111,7 @@ assign nmirq = 1'b1;
 
 // multiplex IRQ signals into 6502 IRQB.
 // VIA1 IRQ currently flakey soldering at the FPGA, so exclude it for now.
-// VIA2 IRQ is working.
-// UART IRQ is not used yet (and pull-up in PCF file not tested yet).
-assign irq = via2_irq;
+assign irq = via2_irq & uart_irq;
 
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
@@ -140,8 +138,8 @@ assign leds = animating ? leds_blinken : leds_reg;
 //assign leds[7:4] = 5'b00000;
 
 // UART
-assign uart_rdn = 1'b1;
-assign uart_wrn = 1'b1;
+assign uart_rdn = ~(clockout & rw);
+assign uart_wrn = ~(clockout & ~rw);
 assign uart_im = 1'b1; // 80xxx/Intel mode
 assign reset_inv = ~ext[0];
 
