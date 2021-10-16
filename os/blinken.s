@@ -69,12 +69,10 @@ testr:    CMP #%00000001      ; BLINKEN reached far-right
 testdir:  BIT ZP_BLNKAUX      ; S[overflow] set to ZP_BLNKAUX[6]
           BVS right           ; branch if ZP_BLNKAUX[6] is 1 (dir=R)
 left:     TXA                 ; ZP_BLINKEN value A <- X
-          CLC
-          ROL A
+          ASL A               ; shift left
           JMP store
 right:    TXA                 ; ZP_BLINKEN value A <- X
-          CLC
-          ROR A
+          LSR A               ; shift right
 store:    STA ZP_BLINKEN
           STA BLINKEN
 
