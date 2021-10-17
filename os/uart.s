@@ -147,18 +147,3 @@ message: .BYTE $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
           RTS                 ; max: 2*255*255 + 3*255*255 + 2*255 + 2*255 + 3*255 + 2
                               ;      = 326,912 cycles (326 ms @ 1MHz)
 .ENDPROC
-
-; delay for approx 5*Y cycles
-.PROC delayY                 ; cycles:
-          DEY
-          BNE delayY
-          RTS
-.ENDPROC
-
-
-yesplz:   PHX
-          LDX $E012           ; weekend counter
-          INX                 ; moar weekend!
-          STX $E012
-          PLX
-          RTS
