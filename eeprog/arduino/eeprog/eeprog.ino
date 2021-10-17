@@ -179,8 +179,16 @@ void cmd_write(char *argstr) {
   uint32_t offset_in_page = addr % PAGE_SIZE;
 
   for (uint32_t s = first_sector; s <= last_sector; s += SECTOR_SIZE) {
-    printhex("erasing sector 0x", &s, 32, "\r\n");
-    eeprom_sector_erase(s);
+    printhex("erasing sector 0x", &s, 32, "");
+    for (int attempt = 1; attempt <= 10; attempt++) {
+      eeprom_sector_erase(s);
+      if (verify_sector_erase(s) > 0) {
+        Serial.write(attempt < 10 ? '.' : '!');
+      } else {
+        break; // verified; stop attempting
+      }
+    }
+    Serial.println();
   }
 
   uint32_t bytes_written = 0;
@@ -421,6 +429,22 @@ void eeprom_sector_erase(uint32_t addr) {
   SPI.endTransaction();
 
   wait_for_ready();
+}
+
+uint32_t verify_sector_erase(uint32_t sector) {
+  uint16_t errors = 0;
+  SPI.beginTransaction(spi_settings);
+  digitalWrite(pinCS, LOW);
+  SPI.transfer(EEPROM_READ);
+  SPI.transfer(sector>>16&0xFF); // ADDR[23:16]
+  SPI.transfer(sector>>8&0xFF); // ADDR[15:8]
+  SPI.transfer(sector&0xFF); // ADDR[7:0]
+  for (uint16_t i = 0; i < SECTOR_SIZE; i++) {
+    uint8_t miso = SPI.transfer(0xAA); // DC-balanced MOSI might help things?
+    if (miso != 0xFF) errors++;
+  }
+  SPI.endTransaction();
+  return errors;
 }
 
 void wait_for_ready() {
