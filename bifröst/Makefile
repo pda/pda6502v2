@@ -1,3 +1,6 @@
+.PHONY:all
+all: bifrost.bin
+
 .PHONY: test
 test: blinken_tb boot_tb
 	./blinken_tb
