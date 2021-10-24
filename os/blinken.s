@@ -8,8 +8,7 @@
 
 ; TODO: these need to go somewhere generally useful
 
-ZP_BLINKEN = $42              ; BIFRÖST BLINKEN value (TODO: make the register r/w)
-ZP_BLNKAUX = $43              ; BIFRÖST BLINKEN auxiliary data
+ZP_BLNKAUX = $42              ; BIFRÖST BLINKEN auxiliary data
 
 .segment "os"
 
@@ -22,7 +21,6 @@ ZP_BLNKAUX = $43              ; BIFRÖST BLINKEN auxiliary data
           LDA #%10000000      ; bit 7:enable, 6:dir(0:L,1:R)
           STA ZP_BLNKAUX
           LDA #1
-          STA ZP_BLINKEN
           STA BLINKEN
 
           ; enable T1 interrupt
@@ -58,8 +56,8 @@ enabled:
           LDA #%01000000      ; clear VIA2 T1 interrupt
           STA VIA2_IFR
 
-          LDA ZP_BLINKEN
-          TAX                 ; ZP_BLINKEN value A -> X
+          LDA BLINKEN
+          TAX                 ; BLINKEN value A -> X
 testl:    CMP #%10000000      ; BLINKEN reached far-left
           BNE testr
           LDA #%01000000
@@ -72,13 +70,12 @@ testr:    CMP #%00000001      ; BLINKEN reached far-right
           JMP left
 testdir:  BIT ZP_BLNKAUX      ; S[overflow] set to ZP_BLNKAUX[6]
           BVS right           ; branch if ZP_BLNKAUX[6] is 1 (dir=R)
-left:     TXA                 ; ZP_BLINKEN value A <- X
+left:     TXA                 ; BLINKEN value A <- X
           ASL A               ; shift left
           JMP store
-right:    TXA                 ; ZP_BLINKEN value A <- X
+right:    TXA                 ; BLINKEN value A <- X
           LSR A               ; shift right
-store:    STA ZP_BLINKEN
-          STA BLINKEN
+store:    STA BLINKEN
 
           PLX
           PLA

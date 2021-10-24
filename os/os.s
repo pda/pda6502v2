@@ -8,7 +8,7 @@
 .segment "os"
 
 .PROC Main
-          ;JSR BlinkenStart
+          JSR BlinkenStart
           JSR UartMain
 halt:     JMP halt
 .ENDPROC

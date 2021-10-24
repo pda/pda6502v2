@@ -116,7 +116,6 @@ assign irq = via2_irq & uart_irq;
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
 assign addr = booting ? addr_boot : 19'bZZZZZZZZZZZZZZZZZZZ;
-assign data = booting ? data_boot : 8'bZZZZZZZZ;
 assign rw = booting ? rw_boot : 1'bZ;
 assign flash_mosi = booting ? flash_mosi_boot : 1'bZ;
 assign flash_sck = booting ? flash_sck_boot : 1'bZ;
@@ -135,7 +134,8 @@ wire [7:0] blinken_irq = {
   uart_rxbirq,
   irq
 };
-always @(negedge clock) begin
+// write to BIFRÖST registers
+always @(negedge clockout) begin
   if (~bifrost_cs && ~rw) begin
     case(addr[7:0])
       8'h00: leds_reg <= data;
@@ -143,6 +143,14 @@ always @(negedge clock) begin
     endcase
   end
 end
+wire bifrost_reg_read = clockout && ~bifrost_cs && rw;
+assign data = (booting || bifrost_reg_read) ? (
+    booting ? data_boot :
+    addr[7:0] == 8'h00 ? leds_reg :
+    addr[7:0] == 8'h01 ? leds_src :
+    8'h00
+  ) : 8'bZZZZZZZZ;
+
 //assign leds = animating ? leds_blinken : leds_reg;
 assign leds =
   animating ? leds_blinken :
