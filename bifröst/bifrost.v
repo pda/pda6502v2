@@ -122,20 +122,36 @@ assign flash_mosi = booting ? flash_mosi_boot : 1'bZ;
 assign flash_sck = booting ? flash_sck_boot : 1'bZ;
 assign flash_cs = booting ? flash_cs_boot : 1'bZ;
 
+
 reg [7:0] leds_reg = 8'b11000011;
-always @(posedge clock) begin
-  if (~bifrost_cs && ~rw && addr[7:0] == 8'h00) begin
-    leds_reg <= data;
+reg [7:0] leds_src = 8'h00;
+wire [7:0] blinken_irq = {
+  via1_irq,
+  via2_irq,
+  uart_irq,
+  uart_txairq,
+  uart_rxairq,
+  uart_txbirq,
+  uart_rxbirq,
+  irq
+};
+always @(negedge clock) begin
+  if (~bifrost_cs && ~rw) begin
+    case(addr[7:0])
+      8'h00: leds_reg <= data;
+      8'h01: leds_src <= data;
+    endcase
   end
 end
-assign leds = animating ? leds_blinken : leds_reg;
-
-// temporary configuration for testing IRQ
-//assign leds[0] = irq;
-//assign leds[1] = via1_irq;
-//assign leds[2] = via2_irq;
-//assign leds[3] = uart_irq;
-//assign leds[7:4] = 5'b00000;
+//assign leds = animating ? leds_blinken : leds_reg;
+assign leds =
+  animating ? leds_blinken :
+  leds_src == 8'h00 ? leds_reg :
+  leds_src == 8'h01 ? data :
+  leds_src == 8'h02 ? addr[7:0] :
+  leds_src == 8'h03 ? addr[15:8] :
+  leds_src == 8'h04 ? blinken_irq :
+  8'h00;
 
 // UART
 assign uart_rdn = ~(clockout & rw);
