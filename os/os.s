@@ -3,6 +3,7 @@
 .import UartMain
 
 .import BLINKEN
+.import BLINKSRC
 
 .segment "os"
 
@@ -23,9 +24,6 @@ HandleReset:
 
 HandleInterrupt:
           JSR BlinkenTick
-          LDA #$AA
-          STA BLINKEN
-halt:     JMP halt
           RTI
 
 HandleNonMaskableInterrupt:

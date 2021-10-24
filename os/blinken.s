@@ -2,6 +2,7 @@
 .export BlinkenTick
 
 .export BLINKEN   = $DE00             ; BIFRÖST BLINKEN register
+.export BLINKSRC  = $DE01             ; BLINKEN source register
 
 .import VIA2_IFR, VIA2_T1CH, VIA2_T1CL, VIA2_ACR, VIA2_IER
 
@@ -14,6 +15,9 @@ ZP_BLNKAUX = $43              ; BIFRÖST BLINKEN auxiliary data
 
 .PROC BlinkenStart
           PHA
+
+          LDA #0              ; mode: register
+          STA BLINKSRC
 
           LDA #%10000000      ; bit 7:enable, 6:dir(0:L,1:R)
           STA ZP_BLNKAUX
