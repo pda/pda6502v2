@@ -4,10 +4,10 @@
 .export BLINKEN   = $DE00             ; BIFRÖST BLINKEN register
 .export BLINKSRC  = $DE01             ; BLINKEN source register
 
-.import VIA2_IFR, VIA2_T1CH, VIA2_T1CL, VIA2_ACR, VIA2_IER
+.import VIA1
+.importzp VIA_IFR, VIA_T1CH, VIA_T1CL, VIA_ACR, VIA_IER
 
 ; TODO: these need to go somewhere generally useful
-
 ZP_BLNKAUX = $42              ; BIFRÖST BLINKEN auxiliary data
 
 .segment "os"
@@ -25,18 +25,18 @@ ZP_BLNKAUX = $42              ; BIFRÖST BLINKEN auxiliary data
 
           ; enable T1 interrupt
           LDA #%11000000      ; “If bit 7 is a "1", then each Logic 1 in bits 0-6 enables the corresponding interrupt”
-          STA VIA2_IER
+          STA VIA1+VIA_IER
 
           ; set T1 to continuous interrupts ACR[7:6] = %01
-          LDA VIA2_ACR
+          LDA VIA1+VIA_ACR
           AND #%01111111      ; ACR[7] = 0
           ORA #%01000000      ; ACR[6] = 1
-          STA VIA2_ACR
+          STA VIA1+VIA_ACR
 
           ; trigger T1 counter from $FFFF
           LDA #$FF
-          STA VIA2_T1CL
-          STA VIA2_T1CH
+          STA VIA1+VIA_T1CL
+          STA VIA1+VIA_T1CH
 
           PLA
           RTS
@@ -53,8 +53,8 @@ enabled:
 
           ; “individual flag bits may be cleared by writing
           ; a Logic 1 into the appropriate bit of the IFR”
-          LDA #%01000000      ; clear VIA2 T1 interrupt
-          STA VIA2_IFR
+          LDA #%01000000      ; clear VIA1 T1 interrupt
+          STA VIA1+VIA_IFR
 
           LDA BLINKEN
           TAX                 ; BLINKEN value A -> X

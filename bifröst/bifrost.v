@@ -111,7 +111,7 @@ assign nmirq = 1'b1;
 
 // multiplex IRQ signals into 6502 IRQB.
 // VIA1 IRQ currently flakey soldering at the FPGA, so exclude it for now.
-assign irq = via2_irq & uart_irq;
+assign irq = via1_irq & via2_irq & uart_irq;
 
 assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
 
