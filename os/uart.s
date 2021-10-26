@@ -2,8 +2,6 @@
 
 .export UartMain
 
-.global BLINKEN
-
 UART_MRA      = $DC20 ; read + write
 UART_SRA      = $DC21 ; read
 UART_CSRA     = $DC21 ; write
@@ -34,8 +32,6 @@ UART_ROPR     = $DC2F ; write
           JSR UartConfigure
           JSR UartHello
 forever:  JSR UartEcho
-          LDA UART_SRA
-          STA BLINKEN
           JMP forever
 .ENDPROC
 
@@ -96,9 +92,6 @@ msgloop:  LDA UART_SRA
           LDA message,X
           BEQ msgdone
           STA UART_TXFIFOA
-
-          LDA UART_SRA
-          STA BLINKEN
 
           INX
           JMP msgloop

@@ -10,6 +10,8 @@
 .PROC Main
           JSR BlinkenStart
           JSR UartMain
+          ;LDA #$04           ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
+          ;STA BLINKSRC
 halt:     JMP halt
 .ENDPROC
 
