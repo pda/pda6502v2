@@ -33,7 +33,9 @@
 
 .proc UartMain
           JSR UartConfigure
+          JSR UartRxBufInit
           JSR UartHello
+          JSR UartEcho
           RTS
 .endproc
 
@@ -95,8 +97,59 @@
           RTS
 .endproc
 
+.proc UartRxBufInit
+          LDA rxbuf_r         ; doesn't matter where rxbuf_r points...
+          STA rxbuf_w         ; ... as long as rxbuf_w is the same.
+          RTS
+.endproc
+
+; input A: byte to write
+.proc UartRxBufWrite
+          LDX rxbuf_w
+          STA rxbuf,X
+          INC rxbuf_w
+          RTS
+.endproc
+
+; output A: byte read
+.proc UartRxBufRead
+          LDX rxbuf_r
+          LDA rxbuf,X
+          INC rxbuf_r
+          RTS
+.endproc
+
+; output A: length of data in buffer
+.proc UartRxBufLen
+          LDA rxbuf_w
+          SEC
+          SBC rxbuf_r
+          RTS
+.endproc
+
 .proc UartRxInterrupt
-          JSR UartEcho        ; tmp/demo: easy way to flush rx fifo?
+          PHA
+          PHX
+again:    LDA #1<<0           ; RxRDY: char is waiting in RX FIFO
+          BIT UART+UART_SRA
+          BEQ done
+          ;JSR UartRxBufLen    ; A <- len
+          ;CMP #128            ; half full
+          ;BCC done            ; full enough, don't buffer a byte
+          LDA UART+UART_RXFIFOA ; A <- FIFO
+          JSR UartRxBufWrite  ; buf <- A
+          JMP again
+done:     PLX
+          PLA
+          RTS
+.endproc
+
+; output A: byte from buffer
+.proc UartBlockingReadFromBuffer
+poll:     JSR UartRxBufLen
+          CMP #0
+          BEQ poll
+          JSR UartRxBufRead   ; A <- buf
           RTS
 .endproc
 
@@ -106,7 +159,7 @@ msgloop:  LDA UART+UART_SRA
           AND #1<<2           ; TxRDYA
           BEQ msgloop         ; keep waiting
 
-          LDA message,X
+          LDA welcome,X
           BEQ msgdone
           STA UART+UART_TXFIFOA
 
@@ -116,14 +169,9 @@ msgdone:  RTS
 .endproc
 
 .proc UartEcho
-          PHA
-          PHX
-again:
-          LDA #1<<0           ; RxRDY: char is waiting in RX FIFO
-          BIT UART+UART_SRA
-          BEQ empty
-          LDX UART+UART_RXFIFOA
-          JSR UartPutc        ; TX the RX char
+loop:     JSR UartBlockingReadFromBuffer          ; A <- byte
+          TAX                                     ; X <- A
+          JSR UartPutc                            ; UART TX <- X
           TXA
           CMP #$0D            ; if RX was CR
           BNE notcr
@@ -136,8 +184,17 @@ notcr:    TXA
           JSR UartPutc
           LDX #$08            ; backspace
           JSR UartPutc
-notbs:    JMP again        ; check for more
-empty:    PLX
+notbs:    JMP loop
+          RTS
+.endproc
+
+; output X: char received
+.proc UartGetcBlocking
+          PHA
+          LDA #1<<0           ; RxRDY: char is waiting in RX FIFO
+poll:     BIT UART+UART_SRA
+          BNE poll
+          LDX UART+UART_RXFIFOA
           PLA
           RTS
 .endproc
@@ -151,8 +208,6 @@ waitloop: BIT UART+UART_SRA
           RTS
 .endproc
 
-message: .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
-
 ; delay for approx 5*X*Y cycles (max 326ms @ 1MHz)
 .proc delayXY                 ; cycles:
           DEX                 ; 2*X*Y
@@ -162,3 +217,11 @@ message: .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
           RTS                 ; max: 2*255*255 + 3*255*255 + 2*255 + 2*255 + 3*255 + 2
                               ;      = 326,912 cycles (326 ms @ 1MHz)
 .endproc
+
+welcome:  .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
+
+.segment "bss"
+
+rxbuf:    .res 256            ; UART RX buffer (probably needs to be page-aligned?)
+rxbuf_r:  .res 1              ; read pointer (first addr not yet read)
+rxbuf_w:  .res 1              ; write pointer (next addr to be written)

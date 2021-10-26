@@ -33,11 +33,8 @@ halt:     JMP halt
           JSR BlinkenTick     ; VIA1 T1 animates BLINKEN
 after_via1_t1:
 after_via1:
-          BIT VIA2+VIA_IFR
-          BPL after_via2      ; not VIA2 interrupt
-after_via2:
           LDA #%00000010
-          AND UART+UART_ISR
+          BIT UART+UART_ISR
           BEQ after_uart      ; not UART RX interrupt
           JSR UartRxInterrupt
 after_uart:
