@@ -31,13 +31,13 @@
 .export UART_SOPR     = $E ; write
 .export UART_ROPR     = $F ; write
 
-.PROC UartMain
+.proc UartMain
           JSR UartConfigure
           JSR UartHello
           RTS
-.ENDPROC
+.endproc
 
-.PROC UartConfigure
+.proc UartConfigure
           ; Mode Select Registers
           LDA #%10110000      ; Select MR0A
           STA UART+UART_CRA
@@ -93,14 +93,14 @@
           ;          +---------->   2: enable TX
           STA UART+UART_CRA
           RTS
-.ENDPROC
+.endproc
 
-.PROC UartRxInterrupt
+.proc UartRxInterrupt
           JSR UartEcho        ; tmp/demo: easy way to flush rx fifo?
           RTS
-.ENDPROC
+.endproc
 
-.PROC UartHello
+.proc UartHello
           LDX #0
 msgloop:  LDA UART+UART_SRA
           AND #1<<2           ; TxRDYA
@@ -113,9 +113,9 @@ msgloop:  LDA UART+UART_SRA
           INX
           JMP msgloop
 msgdone:  RTS
-.ENDPROC
+.endproc
 
-.PROC UartEcho
+.proc UartEcho
           PHA
           PHX
 again:
@@ -140,25 +140,25 @@ notbs:    JMP again        ; check for more
 empty:    PLX
           PLA
           RTS
-.ENDPROC
+.endproc
 
 ; X: char to put on UART FIFO
-.PROC UartPutc
+.proc UartPutc
           LDA #1<<2           ; TxRDY: TX FIFO is not full
 waitloop: BIT UART+UART_SRA
           BEQ waitloop
           STX UART+UART_TXFIFOA
           RTS
-.ENDPROC
+.endproc
 
-message: .BYTE $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
+message: .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
 
 ; delay for approx 5*X*Y cycles (max 326ms @ 1MHz)
-.PROC delayXY                 ; cycles:
+.proc delayXY                 ; cycles:
           DEX                 ; 2*X*Y
           BNE delayXY         ; 3*X*Y + 2*Y
           DEY                 ; 2*Y
           BNE delayXY         ; 3*Y + 2
           RTS                 ; max: 2*255*255 + 3*255*255 + 2*255 + 2*255 + 3*255 + 2
                               ;      = 326,912 cycles (326 ms @ 1MHz)
-.ENDPROC
+.endproc

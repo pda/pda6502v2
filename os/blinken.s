@@ -12,7 +12,7 @@ ZP_BLNKAUX = $42              ; BIFRÖST BLINKEN auxiliary data
 
 .segment "os"
 
-.PROC BlinkenStart
+.proc BlinkenStart
           PHA
 
           LDA #0              ; mode: register
@@ -40,10 +40,10 @@ ZP_BLNKAUX = $42              ; BIFRÖST BLINKEN auxiliary data
 
           PLA
           RTS
-.ENDPROC
+.endproc
 
 ; Called by interrupt handler to update BLINKEN
-.PROC BlinkenTick
+.proc BlinkenTick
           BIT ZP_BLNKAUX
           BMI enabled
           RTS
@@ -80,4 +80,4 @@ store:    STA BLINKEN
           PLX
           PLA
           RTS
-.ENDPROC
+.endproc

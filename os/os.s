@@ -7,25 +7,25 @@
 
 .segment "os"
 
-.PROC Main
+.proc Main
           ;JSR BlinkenStart
           LDA #$04           ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
           STA BLINKSRC
           JSR UartMain
 halt:     JMP halt
-.ENDPROC
+.endproc
 
 
-.PROC HandleReset
+.proc HandleReset
           SEI                 ; mask interrupts during start-up
           LDX #$FF            ;
           TXS                 ; set stack pointer to $ff ($01FF)
           CLI                 ; resume interrupts
           CLD                 ; don't be in crazy decimal mode.
           JMP Main
-.ENDPROC
+.endproc
 
-.PROC HandleInterrupt
+.proc HandleInterrupt
           PHA
           BIT VIA1+VIA_IFR
           BPL after_via1      ; not VIA1 interrupt
@@ -43,11 +43,11 @@ after_via2:
 after_uart:
           PLA
           RTI
-.ENDPROC
+.endproc
 
-.PROC HandleNonMaskableInterrupt
+.proc HandleNonMaskableInterrupt
           RTI
-.ENDPROC
+.endproc
 
 .segment "vectors"
 
