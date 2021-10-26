@@ -2,8 +2,8 @@
 .import BlinkenTick
 .import UartMain
 
-.import BLINKEN
-.import BLINKSRC
+.import BLINKEN, BLINKSRC
+.import VIA1, VIA2, VIA_IFR : zp
 
 .segment "os"
 
@@ -25,7 +25,12 @@ HandleReset:
           JMP Main
 
 HandleInterrupt:
+          BIT VIA1+VIA_IFR
+          BPL after_via1      ; not VIA1 interrupt
+          BVC after_via1_t1   ; not VIA1 T1 interrupt
           JSR BlinkenTick
+after_via1_t1:
+after_via1:
           RTI
 
 HandleNonMaskableInterrupt:
