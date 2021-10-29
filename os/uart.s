@@ -133,9 +133,9 @@
 again:    LDA #1<<0           ; RxRDY: char is waiting in RX FIFO
           BIT UART+UART_SRA
           BEQ done
-          ;JSR UartRxBufLen    ; A <- len
-          ;CMP #128            ; half full
-          ;BCC done            ; full enough, don't buffer a byte
+          JSR UartRxBufLen    ; A <- len
+          CMP #250            ; quite full?
+          BCS done            ; then don't pull a byte off the UART FIFO
           LDA UART+UART_RXFIFOA ; A <- FIFO
           JSR UartRxBufWrite  ; buf <- A
           JMP again
@@ -179,12 +179,12 @@ loop:     JSR UartBlockingReadFromBuffer          ; A <- byte
           JSR UartPutc
 notcr:    TXA
           CMP #$08            ; if RX was backspace, also send:
-          BNE notbs
+          BNE notbksp
           LDX #$20            ; space
           JSR UartPutc
           LDX #$08            ; backspace
           JSR UartPutc
-notbs:    JMP loop
+notbksp:  JMP loop
           RTS
 .endproc
 
