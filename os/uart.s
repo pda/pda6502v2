@@ -208,16 +208,6 @@ waitloop: BIT UART+UART_SRA
           RTS
 .endproc
 
-; delay for approx 5*X*Y cycles (max 326ms @ 1MHz)
-.proc delayXY                 ; cycles:
-          DEX                 ; 2*X*Y
-          BNE delayXY         ; 3*X*Y + 2*Y
-          DEY                 ; 2*Y
-          BNE delayXY         ; 3*Y + 2
-          RTS                 ; max: 2*255*255 + 3*255*255 + 2*255 + 2*255 + 3*255 + 2
-                              ;      = 326,912 cycles (326 ms @ 1MHz)
-.endproc
-
 welcome:  .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
 
 .segment "bss"
