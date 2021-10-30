@@ -28,17 +28,15 @@ halt:           JMP halt
 .proc HandleInterrupt
                 PHA
                 BIT VIA1+VIA_IFR
-                BPL after_v1            ; not VIA1 interrupt
-                BVC after_v1t1          ; not VIA1 T1 interrupt
-                JSR BlinkenTick         ; VIA1 T1 animates BLINKEN
-after_v1t1:
-after_v1:
-                LDA #%00000010
-                BIT UART+UART_ISR
-                BEQ after_uart          ; not UART RX interrupt
-                JSR UartRxInterrupt
-after_uart:
-                PLA
+                BVS v1t1                ; VIA1 T1 if V=1 from BIT:6
+                LDA #1<<1               ; RxRDYA
+                BIT UART+UART_ISR       ; UART Interrupt Status Register
+                BNE uartrx
+v1t1:           JSR BlinkenTick
+                JMP done
+uartrx:         JSR UartRxInterrupt
+                JMP done
+done:           PLA
                 RTI
 .endproc
 
