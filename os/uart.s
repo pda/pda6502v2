@@ -122,9 +122,15 @@
                 RTS
 .endproc
 
-; UartRxBufRead pulls a byte from the in-memory RX buffer
+; UartRxBufRead pulls a byte from the in-memory RX buffer.
+; If carry bit is set, blocks polling for available data first.
+; If carry bit is clear, it is assumed the caller knows there is data available
+; in the buffer, in which case result will be invalid if the buffer is empty.
 .proc UartRxBufRead
-                LDX rxbuf_r             ; load read pointer (first unread byte)
+                BCC no_poll
+poll:           JSR UartRxBufLen
+                BEQ poll
+no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 LDA rxbuf,X             ; load RX byte from buffer into A
                 INC rxbuf_r             ; increment read pointer, with wrap-around
                 RTS                     ; return A: RX byte
@@ -136,7 +142,7 @@
                 LDA rxbuf_w             ; load write pointer
                 SEC                     ; prepare carry bit for subtraction
                 SBC rxbuf_r             ; subtract read pointer from write pointer
-                RTS                     ; resulting length returned in A register.
+                RTS                     ; return A: length (and associated status flags)
 .endproc
 
 ; UartRxInterrupt is triggered when UART RX FIFO has data (fill level reached,
@@ -163,16 +169,6 @@ done:           PLX
                 RTS
 .endproc
 
-; UartReadBuf is a blocking read from the in-memory buffer filled from UART
-; FIFO by UartRxInterrupt.
-.proc UartReadBuf
-poll:           JSR UartRxBufLen
-                CMP #0
-                BEQ poll
-                JSR UartRxBufRead       ; A <- buf
-                RTS                     ; return A: TX
-.endproc
-
 .proc UartHello
                 LDX #0
 msgloop:        LDA UART+UART_SRA
@@ -189,7 +185,8 @@ msgdone:        RTS
 .endproc
 
 .proc UartEcho
-loop:           JSR UartReadBuf         ; A <- byte
+loop:           SEC                     ; UartRxBufRead blocking mode
+                JSR UartRxBufRead       ; A <- byte
                 TAX                     ; X <- A
                 JSR UartPutc            ; UART TX <- X
                 TXA
