@@ -105,45 +105,56 @@
                 RTS
 .endproc
 
+; UartRxBufInit initializes the in-memory buffer for UART receive data.  This
+; is filled from the UART RX FIFO by an interrupt.
 .proc UartRxBufInit
                 LDA rxbuf_r             ; doesn't matter where rxbuf_r points...
                 STA rxbuf_w             ; ... as long as rxbuf_w is the same.
                 RTS
 .endproc
 
-; input A: byte to write
+; UartRxBufWrite queues the byte in A register that was previoulsy received by
+; UART RX.
 .proc UartRxBufWrite
-                LDX rxbuf_w
-                STA rxbuf,X
-                INC rxbuf_w
+                LDX rxbuf_w             ; load write pointer (next addr to write)
+                STA rxbuf,X             ; store the RX byte in A into the buffer
+                INC rxbuf_w             ; increment write pointer, with wrap-around
                 RTS
 .endproc
 
-; output A: byte read
+; UartRxBufRead pulls a byte from the in-memory RX buffer
 .proc UartRxBufRead
-                LDX rxbuf_r
-                LDA rxbuf,X
-                INC rxbuf_r
-                RTS
+                LDX rxbuf_r             ; load read pointer (first unread byte)
+                LDA rxbuf,X             ; load RX byte from buffer into A
+                INC rxbuf_r             ; increment read pointer, with wrap-around
+                RTS                     ; return A: RX byte
 .endproc
 
-; output A: length of data in buffer
+; UartRxBufLen calculates the length of data that has been pulled from UART RX
+; FIFO to in-memory RX buffer but not yet read.
 .proc UartRxBufLen
-                LDA rxbuf_w
-                SEC
-                SBC rxbuf_r
-                RTS
+                LDA rxbuf_w             ; load write pointer
+                SEC                     ; prepare carry bit for subtraction
+                SBC rxbuf_r             ; subtract read pointer from write pointer
+                RTS                     ; resulting length returned in A register.
 .endproc
 
+; UartRxInterrupt is triggered when UART RX FIFO has data (fill level reached,
+; or watchdog timer elapsed).  All data in UART RX FIFO is pulled into the
+; larger in-memory buffer, ready for UartRxBufRead. This keeps the UART FIFO
+; more empty more often, increasing throughput.
 .proc UartRxInterrupt
                 PHA
                 PHX
-again:          LDA #1<<0               ; RxRDY: char is waiting in RX FIFO
+again:          LDA #1<<0               ; RxRDY: char is waiting in UART RX FIFO
                 BIT UART+UART_SRA
-                BEQ done
-                JSR UartRxBufLen        ; A <- len
-                CMP #250                ; quite full?
-                BCS done                ; then don't pull a byte off the UART FIFO
+                BEQ done                ; if RxRDY is 0, UART RX FIFO is empty
+                JSR UartRxBufLen        ; A <- length of data in buffer
+                CMP #220                ; in-memory buffer nearly full?
+                BCS done                ; ... then don't pull a byte off the UART FIFO.
+                ; TODO: ideally, de-assert RTS to tell the sender to stop
+                ; transmitting, continue to pull UART FIFO into buffer, then
+                ; re-assert RTS after the in-memory buffer is empty enough.
                 LDA UART+UART_RXFIFOA   ; A <- FIFO
                 JSR UartRxBufWrite      ; buf <- A
                 JMP again
@@ -152,15 +163,14 @@ done:           PLX
                 RTS
 .endproc
 
-; UartReadBuf is a blocking read from the in-memory buffer
-; filled from UART FIFO by UartRxInterrupt.
-; output A: byte from buffer
+; UartReadBuf is a blocking read from the in-memory buffer filled from UART
+; FIFO by UartRxInterrupt.
 .proc UartReadBuf
 poll:           JSR UartRxBufLen
                 CMP #0
                 BEQ poll
                 JSR UartRxBufRead       ; A <- buf
-                RTS
+                RTS                     ; return A: TX
 .endproc
 
 .proc UartHello
@@ -222,6 +232,6 @@ welcome:        .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
 
 .segment "bss"
 
-rxbuf:          .res 256                ; UART RX buffer (probably needs to be page-aligned?)
+rxbuf:          .res 256                ; UART receive buffer; filled from UART RX FIFO by ISR
 rxbuf_r:        .res 1                  ; read pointer (first addr not yet read)
 rxbuf_w:        .res 1                  ; write pointer (next addr to be written)
