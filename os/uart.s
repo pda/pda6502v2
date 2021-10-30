@@ -205,21 +205,10 @@ notbksp:        JMP loop
                 RTS
 .endproc
 
-; output X: char received
-.proc UartGetcBlocking
-                PHA
-                LDA #1<<0               ; RxRDY: char is waiting in RX FIFO
-poll:           BIT UART+UART_SRA
-                BNE poll
-                LDX UART+UART_RXFIFOA
-                PLA
-                RTS
-.endproc
-
 ; X: char to put on UART FIFO
 .proc UartPutc
                 LDA #1<<2               ; TxRDY: TX FIFO is not full
-waitloop: BIT UART+UART_SRA
+waitloop:       BIT UART+UART_SRA
                 BEQ waitloop
                 STX UART+UART_TXFIFOA
                 RTS
