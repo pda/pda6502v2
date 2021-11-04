@@ -2,6 +2,7 @@
 
 .export UartMain
 .export UartRxInterrupt
+.export UartTxInterrupt
 
 .export UART := $DC20
 
@@ -35,6 +36,7 @@
 
 .proc UartMain
                 JSR UartRxBufInit
+                JSR UartTxBufInit
                 JSR UartConfigure
                 JSR UartHello
                 JSR UartEcho
@@ -97,8 +99,8 @@
                     ; ||+--------------->   5: RxRDYB
                     ; |+---------------->   6: channel B change in break
                     ; +----------------->   7: IP0[3:0] change (subject to ACR[3:0])
-                STA UART+UART_IMR
                 STA UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
+                STA UART+UART_IMR
 
                 LDA #%00000101          ; Command Register A (CRA)
                     ;      | +---------->   0: enable RX
@@ -162,9 +164,10 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 LDX txbuf_w             ; load write pointer (next addr to write)
                 STA txbuf,X             ; store the TX byte in A into the buffer
                 INC txbuf_w             ; increment write pointer, with wrap-around
-                LDA #1<<0               ; UART_IMR TxRDYA bit
-                TSB UART+UART_IMR       ; Interrupt when UART TX FIFO is below fill level
-                TSB UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
+                LDA UART+UART_MISC      ; readable copy of IMR
+                ORA #1<<0               ; UART_IMR TxRDYA bit
+                STA UART+UART_MISC      ; maintain readable copy of IMR
+                STA UART+UART_IMR       ; Interrupt when UART TX FIFO is below fill level
                 RTS
 .endproc
 
@@ -208,17 +211,34 @@ done:           PLX
                 RTS
 .endproc
 
+.proc UartTxInterrupt
+                PHA
+                PHX
+again:          JSR UartTxBufLen        ; A <- txbuf length
+                BNE has_txbuf
+                LDA UART+UART_MISC      ; readable copy of Interrupt Mask Register
+                AND #<~1<<0             ; clear UART_IMR TxRDYA bit
+                STA UART+UART_IMR       ; disable source of this interrupt, no data to TX
+                STA UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
+                JMP done
+has_txbuf:      JSR UartTxBufRead       ; A <- txbuf
+                STA UART+UART_TXFIFOA   ; UART FIFO <- A (assume TxRDY, because this interrupt fired)
+                LDA UART+UART_SRA       ; Flush another byte? Load UART status register...
+                AND #1<<2               ; SRA TxRDY: check TX FIFO is not full
+                BNE again               ; check for another txbuf as long as TxRDY
+done:           PLX
+                PLA
+                RTS
+.endproc
+
+; UartHello writes the welcome message to UART via UartRxBufWrite.
 .proc UartHello
-                LDX #0
-msgloop:        LDA UART+UART_SRA
-                AND #1<<2               ; TxRDYA
-                BEQ msgloop             ; keep waiting
-
-                LDA welcome,X
+                ; TODO: wait for space on txbuf space
+                LDY #0
+msgloop:        LDA welcome,Y
                 BEQ msgdone
-                STA UART+UART_TXFIFOA
-
-                INX
+                JSR UartTxBufWrite
+                INY
                 JMP msgloop
 msgdone:        RTS
 .endproc
