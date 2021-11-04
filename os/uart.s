@@ -31,9 +31,11 @@
 .export UART_SOPR     = $E ; write
 .export UART_ROPR     = $F ; write
 
+.import BLINKSRC, BLINKEN
+
 .proc UartMain
-                JSR UartConfigure
                 JSR UartRxBufInit
+                JSR UartConfigure
                 JSR UartHello
                 JSR UartEcho
                 RTS
@@ -96,6 +98,7 @@
                     ; |+---------------->   6: channel B change in break
                     ; +----------------->   7: IP0[3:0] change (subject to ACR[3:0])
                 STA UART+UART_IMR
+                STA UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
 
                 LDA #%00000101          ; Command Register A (CRA)
                     ;      | +---------->   0: enable RX
@@ -145,6 +148,42 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 RTS                     ; return A: length (and associated status flags)
 .endproc
 
+; UartTxBufInit initialised the in-memory buffer for UART transmit data.  This
+; is flushed to the UART TX FIFO by an interrupt.
+.proc UartTxBufInit
+                LDA txbuf_r             ; doesn't matter where txbuf_r points...
+                STA txbuf_w             ; ... as long as txbuf_w is the same.
+                RTS
+.endproc
+
+; UartTxBufWrite queues the byte in A register to be written to UART TX FIFO.
+; UART interrupts for TxRDY are enabled.
+.proc UartTxBufWrite
+                LDX txbuf_w             ; load write pointer (next addr to write)
+                STA txbuf,X             ; store the TX byte in A into the buffer
+                INC txbuf_w             ; increment write pointer, with wrap-around
+                LDA #1<<0               ; UART_IMR TxRDYA bit
+                TSB UART+UART_IMR       ; Interrupt when UART TX FIFO is below fill level
+                TSB UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
+                RTS
+.endproc
+
+.proc UartTxBufRead
+                LDX txbuf_r             ; load read pointer (first unread byte)
+                LDA txbuf,X             ; load TX byte from buffer into A
+                INC txbuf_r             ; increment read pointer, with wrap-around
+                RTS                     ; return A: TX byte
+.endproc
+
+; UartRxBufLen calculates the length of data that has been buffered to the
+; in-memory TX buffer but not yet flushed to UART TX FIFO.
+.proc UartTxBufLen
+                LDA txbuf_w             ; load write pointer
+                SEC                     ; prepare carry bit for subtraction
+                SBC txbuf_r             ; subtract read pointer from write pointer
+                RTS                     ; resulting length returned in A register.
+.endproc
+
 ; UartRxInterrupt is triggered when UART RX FIFO has data (fill level reached,
 ; or watchdog timer elapsed).  All data in UART RX FIFO is pulled into the
 ; larger in-memory buffer, ready for UartRxBufRead. This keeps the UART FIFO
@@ -162,7 +201,7 @@ again:          LDA #1<<0               ; RxRDY: char is waiting in UART RX FIFO
                 ; transmitting, continue to pull UART FIFO into buffer, then
                 ; re-assert RTS after the in-memory buffer is empty enough.
                 LDA UART+UART_RXFIFOA   ; A <- FIFO
-                JSR UartRxBufWrite      ; buf <- A
+                JSR UartRxBufWrite      ; rxbuf <- A
                 JMP again
 done:           PLX
                 PLA
@@ -221,3 +260,7 @@ welcome:        .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
 rxbuf:          .res 256                ; UART receive buffer; filled from UART RX FIFO by ISR
 rxbuf_r:        .res 1                  ; read pointer (first addr not yet read)
 rxbuf_w:        .res 1                  ; write pointer (next addr to be written)
+
+txbuf:          .res 256                ; UART transmit buffer; drained to UART TX FIFO by ISR
+txbuf_r:        .res 1                  ; read pointer (first addr not yet sent to TX FIFO)
+txbuf_w:        .res 1                  ; write pointer (next addr to be filled from TX FIFO)
