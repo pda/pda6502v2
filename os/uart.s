@@ -237,13 +237,15 @@ done:           PLX
 ; UartHello writes the welcome message to UART via UartRxBufWrite.
 .proc UartHello
                 ; TODO: wait for space on txbuf space
+                SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
                 LDY #0
 msgloop:        LDA welcome,Y
-                BEQ msgdone
+                BEQ msgdone             ; end on null byte
                 JSR UartTxBufWrite
                 INY
                 JMP msgloop
-msgdone:        RTS
+msgdone:        CLI                     ; unmask interrupts, triggering UartTxInterrupt
+                RTS
 .endproc
 
 ; UartEcho loops forever echo UART RX bytes back to UART TX.
