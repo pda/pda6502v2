@@ -160,6 +160,7 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
 
 ; UartTxBufWrite queues the byte in A register to be written to UART TX FIFO.
 ; UART interrupts for TxRDY are enabled.
+; A and X registers are not preserved.
 .proc UartTxBufWrite
                 LDX txbuf_w             ; load write pointer (next addr to write)
                 STA txbuf,X             ; store the TX byte in A into the buffer
@@ -171,6 +172,8 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 RTS
 .endproc
 
+; UartTxBufRead pulls a byte from txbuf into A.
+; X register is not preserved.
 .proc UartTxBufRead
                 LDX txbuf_r             ; load read pointer (first unread byte)
                 LDA txbuf,X             ; load TX byte from buffer into A
@@ -243,33 +246,26 @@ msgloop:        LDA welcome,Y
 msgdone:        RTS
 .endproc
 
+; UartEcho loops forever echo UART RX bytes back to UART TX.
+; Some extra character handling is done for newline, backspace etc.
 .proc UartEcho
 loop:           SEC                     ; UartRxBufRead blocking mode
-                JSR UartRxBufRead       ; A <- byte
-                TAX                     ; X <- A
-                JSR UartPutc            ; UART TX <- X
-                TXA
+                JSR UartRxBufRead       ; A <- rxbuf
+                TAY                     ; Y <- A (spare copy because A is destroyed by UartTxBufWrite)
+                JSR UartTxBufWrite      ; txbuf <- A
+                TYA
                 CMP #$0D                ; if RX was CR
                 BNE notcr
-                LDX #$0A                ; then also send LF
-                JSR UartPutc
-notcr:          TXA
+                LDA #$0A                ; then also send LF
+                JSR UartTxBufWrite
+notcr:          TYA
                 CMP #$08                ; if RX was backspace, also send:
                 BNE notbksp
-                LDX #$20                ; space
-                JSR UartPutc
-                LDX #$08                ; backspace
-                JSR UartPutc
+                LDA #$20                ; space
+                JSR UartTxBufWrite
+                LDA #$08                ; backspace
+                JSR UartTxBufWrite
 notbksp:        JMP loop
-                RTS
-.endproc
-
-; X: char to put on UART FIFO
-.proc UartPutc
-                LDA #1<<2               ; TxRDY: TX FIFO is not full
-waitloop:       BIT UART+UART_SRA
-                BEQ waitloop
-                STX UART+UART_TXFIFOA
                 RTS
 .endproc
 
