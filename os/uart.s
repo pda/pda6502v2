@@ -1,6 +1,9 @@
 .segment "os"
 
-.export UartMain
+.export UartInit
+.export UartRxBufRead
+.export UartTxBufWrite
+.export UartTxStr
 .export UartRxInterrupt
 .export UartTxInterrupt
 
@@ -32,14 +35,10 @@
 .export UART_SOPR     = $E ; write
 .export UART_ROPR     = $F ; write
 
-.import BLINKSRC, BLINKEN
-
-.proc UartMain
+.proc UartInit
                 JSR UartRxBufInit
                 JSR UartTxBufInit
                 JSR UartConfigure
-                JSR UartHello
-                JSR UartEcho
                 RTS
 .endproc
 
@@ -190,6 +189,32 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 RTS                     ; resulting length returned in A register.
 .endproc
 
+; UartTxStr copies null-terminated string to txbuf.
+; X,Y: string pointer
+; Registers are not preserved.
+.proc UartTxStr
+                LDA $00                 ; preserve $00 zero-page word...
+                PHA                     ; (this is probably a terrible calling convention,
+                LDA $01                 ; and I should just reserve a ZP word for this)
+                PHA
+                STX $00                 ; X: *string low byte
+                STY $01                 ; Y: *string high byte
+                ; TODO: wait for space on txbuf space
+                SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
+                LDY #0
+msgloop:        LDA ($00),Y             ; string[Y]
+                BEQ msgdone             ; terminate on null byte
+                JSR UartTxBufWrite
+                INY
+                JMP msgloop
+msgdone:        CLI                     ; unmask interrupts
+                PLA                     ; restore $00 zero-page word...
+                STA $01
+                PLA
+                STA $00
+                RTS
+.endproc
+
 ; UartRxInterrupt is triggered when UART RX FIFO has data (fill level reached,
 ; or watchdog timer elapsed).  All data in UART RX FIFO is pulled into the
 ; larger in-memory buffer, ready for UartRxBufRead. This keeps the UART FIFO
@@ -234,20 +259,6 @@ done:           PLX
                 RTS
 .endproc
 
-; UartHello writes the welcome message to UART via UartRxBufWrite.
-.proc UartHello
-                ; TODO: wait for space on txbuf space
-                SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
-                LDY #0
-msgloop:        LDA welcome,Y
-                BEQ msgdone             ; end on null byte
-                JSR UartTxBufWrite
-                INY
-                JMP msgloop
-msgdone:        CLI                     ; unmask interrupts, triggering UartTxInterrupt
-                RTS
-.endproc
-
 ; UartEcho loops forever echo UART RX bytes back to UART TX.
 ; Some extra character handling is done for newline, backspace etc.
 .proc UartEcho
@@ -270,8 +281,6 @@ notcr:          TYA
 notbksp:        JMP loop
                 RTS
 .endproc
-
-welcome:        .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, "> ", $00
 
 .segment "bss"
 

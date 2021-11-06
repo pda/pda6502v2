@@ -1,5 +1,6 @@
 .import BlinkenStart, BlinkenTick
-.import UartMain, UartRxInterrupt, UartTxInterrupt
+.import UartRxInterrupt, UartTxInterrupt
+.import ShellMain
 
 .import BLINKEN, BLINKSRC
 .import VIA1, VIA2, VIA_IFR : zp
@@ -8,10 +9,9 @@
 .segment "os"
 
 .proc Main
-                ;JSR BlinkenStart
                 LDA #$04                ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
                 STA BLINKSRC
-                JSR UartMain
+                JSR ShellMain
 halt:           JMP halt
 .endproc
 
