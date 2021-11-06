@@ -47,6 +47,11 @@ module bifrost(
   output wire [15:0] ext
 );
 
+// ext[15] is hijacked as 6502 reset line on the first
+// revision of this board.
+wire reset_fixup;
+assign ext[15] = reset_fixup;
+
 wire bifrost_cs;
 
 wire [7:0] leds_blinken;
@@ -87,7 +92,7 @@ boot boot(
   .address(addr_boot),
   .data(data_boot),
   .rw(rw_boot),
-  .reset(ext[0]),
+  .reset(reset_fixup),
   .booting(booting)
 );
 
@@ -113,7 +118,7 @@ assign nmirq = 1'b1;
 // VIA1 IRQ currently flakey soldering at the FPGA, so exclude it for now.
 assign irq = via1_irq & via2_irq & uart_irq;
 
-assign ext[15:1] = 15'bZZZZZZZZZZZZZZZ; // ext[0] is 6502 RESET hack
+assign ext[14:0] = 15'bZZZZZZZZZZZZZZZ; // ext[15] is 6502 reset_fixup
 
 assign addr = booting ? addr_boot : 19'bZZZZZZZZZZZZZZZZZZZ;
 assign rw = booting ? rw_boot : 1'bZ;
@@ -165,6 +170,6 @@ assign leds =
 assign uart_rdn = ~(clockout & rw);
 assign uart_wrn = ~(clockout & ~rw);
 assign uart_im = 1'b1; // 80xxx/Intel mode
-assign reset_inv = ~ext[0];
+assign reset_inv = ~reset_fixup;
 
 endmodule
