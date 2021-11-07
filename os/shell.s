@@ -31,13 +31,10 @@ halt:           JMP halt
 .proc ShellPrompt
                 LDA #0
                 STA cmdbuf_pos          ; init cmdbuf position
-
-                LDX #<prompt
+showprompt:     LDX #<prompt
                 LDY #>prompt
                 JSR UartTxStr
-
-eachchar:
-                SEC                     ; UartRxBufRead blocking mode
+eachchar:       SEC                     ; UartRxBufRead blocking mode
                 JSR UartRxBufRead       ; A <- rxbuf after waiting
                 TAY                     ; Y <- A (spare copy)
                 CMP #$08                ; ASCII backspace
@@ -64,11 +61,10 @@ newline:        LDA #$0D                ; CR
                 JSR UartTxBufWrite
                 LDA #$0A                ; LF
                 JSR UartTxBufWrite
-                JSR ShellCmd            ; evaluate command
-                LDX #<prompt
-                LDY #>prompt            ; watch out; spare copy of UartRxBufRead is gone
-                JSR UartTxStr           ; print a fresh prompt
-                JMP chardone
+                LDX cmdbuf_pos          ; check if cmdbuf is empty..
+                BEQ showprompt          ;   then jump back to show a fresh prompt.
+                JSR ShellCmd            ;   else evaluate command
+                JMP showprompt          ;     and then jump back to show a fresh prompt.
 chardone:       JMP eachchar            ; again, forever
 return:         RTS                     ; this never happens
 .endproc
