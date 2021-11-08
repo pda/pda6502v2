@@ -9,9 +9,10 @@ cmdbuf_pos:     .res 1
 
 .segment "os"
 
-welcome:        .byte $0D, $0A, "Welcome to pda6502v2", $0D, $0A, $00
+welcome:        .byte "Welcome to pda6502v2", $0D, $0A, $00
 prompt:         .byte "> ", $00
-cmdplaceholder: .byte "command not found", $0D, $0A, $00
+e_notfound:     .byte "command not found", $0D, $0A, $00
+cmdhello:       .byte "hello", $00
 
 .proc ShellMain
                 JSR UartInit
@@ -22,9 +23,18 @@ halt:           JMP halt
 .endproc
 
 .proc ShellHello
+                JSR ShellNewline
                 LDX #<welcome
                 LDY #>welcome
                 JSR UartTxStr
+                RTS
+.endproc
+
+.proc ShellNewline
+                LDA #$0D
+                JSR UartTxBufWrite
+                LDA #$0A
+                JSR UartTxBufWrite
                 RTS
 .endproc
 
@@ -63,17 +73,53 @@ newline:        LDA #$0D                ; CR
                 JSR UartTxBufWrite
                 LDX cmdbuf_pos          ; check if cmdbuf is empty..
                 BEQ showprompt          ;   then jump back to show a fresh prompt.
-                JSR ShellCmd            ;   else evaluate command
+                LDA #0                  ;   else null-terminate cmdbuf..
+                LDX cmdbuf_pos
+                STA cmdbuf,X
+                JSR ShellCmd            ; .. and evaluate command
+                LDX #0                  ;
+                STX cmdbuf_pos          ; reset position in cmdbuf to empty
                 JMP showprompt          ;     and then jump back to show a fresh prompt.
 chardone:       JMP eachchar            ; again, forever
 return:         RTS                     ; this never happens
 .endproc
 
 .proc ShellCmd
-                LDX #<cmdplaceholder
-                LDY #>cmdplaceholder    ; watch out; spare copy of UartRxBufRead is gone
-                JSR UartTxStr           ; print a fresh prompt
-                LDX #0
-                STX cmdbuf_pos          ; reset position in cmdbuf to empty
-                RTS
+                LDX #<cmdbuf            ; $00 pointer to cmdbuf...
+                STX $00
+                LDX #>cmdbuf
+                STX $01
+                LDX #<cmdhello          ; $02 pointer to cmdhello...
+                STX $02
+                LDX #>cmdhello
+                STX $03
+                JSR StrEq               ; compare strings
+                BEQ hello
+                JMP default
+hello:          LDX #<welcome
+                LDY #>welcome
+                JSR UartTxStr
+                JMP return
+default:        LDX #<e_notfound
+                LDY #>e_notfound
+                JSR UartTxStr
+return:         RTS
+.endproc
+
+; StrEq compares two null-terminated strings.
+; The results is returned by the Z bit of the status register.
+; Args are ZP pointers $00 and $02
+; Maximum string length is 255 plus null-terminator.
+.proc StrEq
+                LDY #0
+loop:           LDA ($00),Y             ; load byte from string A
+                CMP ($02),Y             ; load byte from string B
+                BNE return              ; if this byte differs, strings aren't equal (Z=1 ready for return)
+                CMP #0                  ; the bytes are equal; was it null?
+                BEQ return              ; in which case the strings match (Z=0 ready for return)
+                INY                     ; increment Y index to the next byte
+                BEQ err                 ; if it's zero, it's overflowed, return with Z=1
+                JMP loop
+err:            LDA #1
+return:         RTS
 .endproc
