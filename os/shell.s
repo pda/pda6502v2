@@ -1,6 +1,7 @@
 .export ShellMain
 
-.import UartInit, UartRxBufRead, UartTxBufWrite, UartTxStr
+.import UartInit, UartRxBufRead, UartTxBufWrite, UartNewline, UartTxStr
+.import LifeMain
 
 .segment "bss"
 
@@ -13,28 +14,21 @@ welcome:        .byte "Welcome to pda6502v2", $0D, $0A, $00
 prompt:         .byte "> ", $00
 e_notfound:     .byte "command not found", $0D, $0A, $00
 cmdhello:       .byte "hello", $00
+cmdlife:        .byte "life", $00
 
 .proc ShellMain
                 JSR UartInit
                 JSR ShellHello
+                JSR LifeMain
                 JSR ShellPrompt
-halt:           JMP halt
                 RTS
 .endproc
 
 .proc ShellHello
-                JSR ShellNewline
+                JSR UartNewline
                 LDX #<welcome
                 LDY #>welcome
                 JSR UartTxStr
-                RTS
-.endproc
-
-.proc ShellNewline
-                LDA #$0D
-                JSR UartTxBufWrite
-                LDA #$0A
-                JSR UartTxBufWrite
                 RTS
 .endproc
 
@@ -93,12 +87,20 @@ return:         RTS                     ; this never happens
                 STX $02
                 LDX #>cmdhello
                 STX $03
-                JSR StrEq               ; compare strings
+                JSR StrEq               ; compare ($00) and ($02)
                 BEQ hello
-                JMP default
+                LDX #<cmdlife           ; $02 pointer to cmdlife...
+                STX $02
+                LDX #>cmdlife
+                STX $03
+                JSR StrEq               ; compare ($00) and ($02)
+                BEQ life
+                JMP default             ; cmdbuf didn't match any commands
 hello:          LDX #<welcome
                 LDY #>welcome
                 JSR UartTxStr
+                JMP return
+life:           JSR LifeMain
                 JMP return
 default:        LDX #<e_notfound
                 LDY #>e_notfound

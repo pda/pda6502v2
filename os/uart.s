@@ -3,6 +3,8 @@
 .export UartInit
 .export UartRxBufRead
 .export UartTxBufWrite
+.export UartTxBufWriteBlocking
+.export UartNewline
 .export UartTxStr
 .export UartRxInterrupt
 .export UartTxInterrupt
@@ -159,8 +161,12 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
 
 ; UartTxBufWrite queues the byte in A register to be written to UART TX FIFO.
 ; UART interrupts for TxRDY are enabled.
-; A and X registers are not preserved.
+; If carry bit is set, blocks polling for space on txbuf first.
+; If carry bit is clear, it is assumed the caller knows there is space available
+; in the buffer, in which case the buffer may be corrupted.
 .proc UartTxBufWrite
+                PHA
+                PHX
                 LDX txbuf_w             ; load write pointer (next addr to write)
                 STA txbuf,X             ; store the TX byte in A into the buffer
                 INC txbuf_w             ; increment write pointer, with wrap-around
@@ -168,10 +174,24 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 ORA #1<<0               ; UART_IMR TxRDYA bit
                 STA UART+UART_MISC      ; maintain readable copy of IMR
                 STA UART+UART_IMR       ; Interrupt when UART TX FIFO is below fill level
+                PLX
+                PLA
                 RTS
 .endproc
 
+; UartTxBufWriteBlocking blocks until there is space on txbuf,
+; and then calls UartTxBufWrite
+.proc UartTxBufWriteBlocking
+                PHA
+waittxbuf:      JSR UartTxBufLen
+                CMP #$FF
+                BEQ waittxbuf
+                PLA
+                JMP UartTxBufWrite
+.endproc
+
 ; UartTxBufRead pulls a byte from txbuf into A.
+; Generally called by UartTxInterrupt during TxRDY interrupt.
 ; X register is not preserved.
 .proc UartTxBufRead
                 LDX txbuf_r             ; load read pointer (first unread byte)
@@ -189,17 +209,35 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
                 RTS                     ; resulting length returned in A register.
 .endproc
 
+; UartNewline sends CR/LF after waiting for space on txbuf.
+.proc UartNewline
+                PHA
+waittxbuf:      JSR UartTxBufLen        ; A <- len
+                SEC
+                SBC #2                  ; at least 2 chars free
+                BCS waittxbuf
+                LDA #$0D
+                JSR UartTxBufWrite
+                LDA #$0A
+                JSR UartTxBufWrite
+                PLA
+                RTS
+.endproc
+
 ; UartTxStr copies null-terminated string to txbuf.
 ; X,Y: string pointer
-; Registers are not preserved.
 .proc UartTxStr
+                PHA
+                PHX
+                PHY
                 LDA $00                 ; preserve $00 zero-page word...
                 PHA                     ; (this is probably a terrible calling convention,
                 LDA $01                 ; and I should just reserve a ZP word for this)
                 PHA
                 STX $00                 ; X: *string low byte
                 STY $01                 ; Y: *string high byte
-                ; TODO: wait for space on txbuf space
+waittxbuf:      JSR UartTxBufLen        ; Wait for space on txbuf
+                BNE waittxbuf
                 SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
                 LDY #0
 msgloop:        LDA ($00),Y             ; string[Y]
@@ -212,6 +250,9 @@ msgdone:        CLI                     ; unmask interrupts
                 STA $01
                 PLA
                 STA $00
+                PLY
+                PLX
+                PLA
                 RTS
 .endproc
 
@@ -243,17 +284,20 @@ done:           PLX
                 PHA
                 PHX
 again:          JSR UartTxBufLen        ; A <- txbuf length
-                BNE has_txbuf
-                LDA UART+UART_MISC      ; readable copy of Interrupt Mask Register
-                AND #<~1<<0             ; clear UART_IMR TxRDYA bit
-                STA UART+UART_IMR       ; disable source of this interrupt, no data to TX
-                STA UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
-                JMP done
-has_txbuf:      JSR UartTxBufRead       ; A <- txbuf
-                STA UART+UART_TXFIFOA   ; UART FIFO <- A (assume TxRDY, because this interrupt fired)
+                BEQ empty
+waittxready:    LDA UART+UART_SRA       ; Is UART ready? Load UART status register...
+                AND #1<<2               ; SRA TxRDY: check TX FIFO is not full
+                BEQ waittxready         ; zero means it's not ready (full), wait.
+                JSR UartTxBufRead       ; A <- txbuf (kills X)
+                STA UART+UART_TXFIFOA   ; UART FIFO <- A
                 LDA UART+UART_SRA       ; Flush another byte? Load UART status register...
                 AND #1<<2               ; SRA TxRDY: check TX FIFO is not full
-                BNE again               ; check for another txbuf as long as TxRDY
+                BNE again               ; If TxRDY, check for another byte to flush to FIFO
+                JMP done                ; else stop here, but leave the TxRDY interrupt enabled.
+empty:          LDA UART+UART_MISC      ; readable copy of Interrupt Mask Register
+                AND #<~1<<0             ; clear UART_IMR TxRDYA bit
+                STA UART+UART_MISC      ; Maintain readable copy of IMR in MISC register
+                STA UART+UART_IMR       ; disable source of this interrupt, no data to TX
 done:           PLX
                 PLA
                 RTS
