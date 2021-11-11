@@ -20,7 +20,6 @@ cmdlife:        .byte "life", $00
 .proc ShellMain
                 JSR UartInit
                 JSR ShellHello
-                JSR LifeMain
                 JSR ShellPrompt
                 RTS
 .endproc
