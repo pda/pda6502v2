@@ -2,6 +2,7 @@
 
 .import UartInit, UartRxBufRead, UartTxBufWrite, UartNewline, UartTxStr
 .import LifeMain
+.import BLINKEN, BLINKSRC
 
 .segment "bss"
 
@@ -34,11 +35,15 @@ cmdlife:        .byte "life", $00
 
 .proc ShellPrompt
                 LDA #0
+                STA BLINKSRC
+                LDA #0
                 STA cmdbuf_pos          ; init cmdbuf position
 showprompt:     LDX #<prompt
                 LDY #>prompt
                 JSR UartTxStr
-eachchar:       SEC                     ; UartRxBufRead blocking mode
+eachchar:       LDA cmdbuf_pos
+                STA BLINKEN
+                SEC                     ; UartRxBufRead blocking mode
                 JSR UartRxBufRead       ; A <- rxbuf after waiting
                 TAY                     ; Y <- A (spare copy)
                 CMP #$08                ; ASCII backspace
