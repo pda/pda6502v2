@@ -48,7 +48,7 @@
                 LDA #%10110000          ; Select MR0A
                 STA UART+UART_CRA
 
-                LDA #%10001000          ; Mode Register 0 channel A (MR0A)
+                LDA #%10001100          ; Mode Register 0 channel A (MR0A)
                     ; |||||||+---------->   0: baud rate extended I
                     ; ||||||+----------->   1: TEST2
                     ; |||||+------------>   2: baud rate extended II
@@ -76,8 +76,8 @@
                     ; ++----------------> 6:7 Channel mode (normal, echo, lloop, rloop)
                 STA UART+UART_MRA            ; Mode Register 2 channel A (MR2A)
 
-                LDA #%10111011          ; Clock Select Register
-                    ; ||||++++----------> 3:0: TX baud (1011 w/ MR0[0]=0: 9,600)
+                LDA #%01100110          ; Clock Select Register
+                    ; ||||++++----------> 3:0: TX baud (0110 w/ MR0[2]=1: 115,200)
                     ; ++++--------------> 7:4: RX baud
                 STA UART+UART_CSRA
 
