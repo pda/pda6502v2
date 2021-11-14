@@ -1,6 +1,7 @@
 .export ShellMain
 
-.import UartInit, UartRxBufRead, UartTxBufWrite, UartNewline, UartTxStr
+.import UartInit, UartRxBufRead, UartTxBufWrite, UartTxStr
+.import TermNewline
 .import LifeMain
 .import BLINKEN, BLINKSRC
 
@@ -25,7 +26,7 @@ cmdlife:        .byte "life", $00
 .endproc
 
 .proc ShellHello
-                JSR UartNewline
+                JSR TermNewline
                 LDX #<welcome
                 LDY #>welcome
                 JSR UartTxStr

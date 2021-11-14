@@ -1,6 +1,7 @@
 .export LifeMain
 
-.import UartNewline, UartTxStr, UartTxBufWriteBlocking
+.import UartTxStr, UartTxBufWriteBlocking
+.import TermNewline, TermCursorUp16
 .import VIA1, VIA_IRA : zp, VIA_T1CL : zp
 
 .segment "bss"
@@ -22,7 +23,7 @@ message:        .byte "A STRANGE GAME.", $0D, $0A
                 JSR LifeInit
 forever:        JSR LifeRender
                 JSR LifeTick
-                JSR LifeCursorUp
+                JSR TermCursorUp16
                 LDX #0
                 LDY #0
 delay:          INX
@@ -77,9 +78,9 @@ modulus:        SBC #16                ; number of columns
                 BEQ newline            ; end of column
                 BCS modulus
                 JMP donecell
-newline:        JSR UartNewline
+newline:        JSR TermNewline
 donecell:       JMP eachcell
-donegrid:       JSR UartNewline
+donegrid:       JSR TermNewline
 return:         RTS
 .endproc
 
@@ -171,15 +172,4 @@ copyeachcell:   LDA GRIDADDRB,X         ; All cells evaluated; copy each cell fr
                 INX
                 BNE copyeachcell        ; Until we wrap around to zero.
                 RTS
-.endproc
-
-.proc LifeCursorUp
-                LDX #0
-eachchar:       LDA vt100up16,X
-                BEQ return
-                JSR UartTxBufWriteBlocking
-                INX
-                JMP eachchar
-return:         RTS
-vt100up16:      .byte $1B, "[16A", $00
 .endproc

@@ -4,7 +4,6 @@
 .export UartRxBufRead
 .export UartTxBufWrite
 .export UartTxBufWriteBlocking
-.export UartNewline
 .export UartTxStr
 .export UartRxInterrupt
 .export UartTxInterrupt
@@ -207,21 +206,6 @@ waittxbuf:      JSR UartTxBufLen
                 SEC                     ; prepare carry bit for subtraction
                 SBC txbuf_r             ; subtract read pointer from write pointer
                 RTS                     ; resulting length returned in A register.
-.endproc
-
-; UartNewline sends CR/LF after waiting for space on txbuf.
-.proc UartNewline
-                PHA
-waittxbuf:      JSR UartTxBufLen        ; A <- len
-                SEC
-                SBC #2                  ; at least 2 chars free
-                BCS waittxbuf
-                LDA #$0D
-                JSR UartTxBufWrite
-                LDA #$0A
-                JSR UartTxBufWrite
-                PLA
-                RTS
 .endproc
 
 ; UartTxStr copies null-terminated string to txbuf.
