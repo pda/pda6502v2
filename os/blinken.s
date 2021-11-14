@@ -6,9 +6,7 @@
 
 .import VIA1
 .importzp VIA_IFR, VIA_T1CH, VIA_T1CL, VIA_ACR, VIA_IER
-
-; TODO: these need to go somewhere generally useful
-ZP_BLNKAUX = $42                        ; BIFRÖST BLINKEN auxiliary data
+.importzp ZP_BLNKAUX
 
 .segment "os"
 
