@@ -36,6 +36,7 @@
 .export UART_SOPR     = $E ; write
 .export UART_ROPR     = $F ; write
 
+.importzp R0, R1
 .importzp ZP_INTERRUPT
 
 .proc UartInit
@@ -216,26 +217,26 @@ waittxbuf:      JSR UartTxBufLen
                 PHA
                 PHX
                 PHY
-                LDA $00                 ; preserve $00 zero-page word...
-                PHA                     ; (this is probably a terrible calling convention,
-                LDA $01                 ; and I should just reserve a ZP word for this)
+                LDA R0                  ; preserve R0,R1
                 PHA
-                STX $00                 ; X: *string low byte
-                STY $01                 ; Y: *string high byte
+                LDA R1
+                PHA
+                STX R0                  ; X: *string low byte
+                STY R1                  ; Y: *string high byte
 waittxbuf:      JSR UartTxBufLen        ; Wait for space on txbuf
                 BNE waittxbuf
                 SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
                 LDY #0
-msgloop:        LDA ($00),Y             ; string[Y]
+msgloop:        LDA (R0),Y              ; string[Y]
                 BEQ msgdone             ; terminate on null byte
                 JSR UartTxBufWrite
                 INY
                 JMP msgloop
 msgdone:        CLI                     ; unmask interrupts
-                PLA                     ; restore $00 zero-page word...
-                STA $01
+                PLA                     ; restore R0,R1
+                STA R1
                 PLA
-                STA $00
+                STA R0
                 PLY
                 PLX
                 PLA

@@ -1,5 +1,6 @@
 .export ShellMain
 
+.importzp R0, R1, R2, R3
 .import UartInit, UartRxBufRead, UartTxBufWrite, UartTxStr
 .import TermNewline
 .import LifeMain
@@ -84,21 +85,21 @@ return:         RTS                     ; this never happens
 .endproc
 
 .proc ShellCmd
-                LDX #<cmdbuf            ; $00 pointer to cmdbuf...
-                STX $00
+                LDX #<cmdbuf            ; R0,R1 pointer to cmdbuf...
+                STX R0
                 LDX #>cmdbuf
-                STX $01
-                LDX #<cmdhello          ; $02 pointer to cmdhello...
-                STX $02
+                STX R1
+                LDX #<cmdhello          ; R2,R3 pointer to cmdhello...
+                STX R2
                 LDX #>cmdhello
-                STX $03
-                JSR StrEq               ; compare ($00) and ($02)
+                STX R3
+                JSR StrEq               ; compare (R0) and (R2)
                 BEQ hello
-                LDX #<cmdlife           ; $02 pointer to cmdlife...
-                STX $02
+                LDX #<cmdlife           ; R2,R3 pointer to cmdlife...
+                STX R2
                 LDX #>cmdlife
-                STX $03
-                JSR StrEq               ; compare ($00) and ($02)
+                STX R3
+                JSR StrEq               ; compare (R0) and (R2)
                 BEQ life
                 JMP default             ; cmdbuf didn't match any commands
 hello:          LDX #<welcome
