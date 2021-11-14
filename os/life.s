@@ -1,8 +1,10 @@
 .export LifeMain
 
 .import UartTxStr, UartTxBufWriteBlocking
-.import TermNewline, TermCursorUp16, TermCursorHide
-.import VIA1, VIA_IRA : zp, VIA_T1CL : zp
+.import TermNewline, TermCursorUp16, TermCursorHide, TermCursorShow
+.import VIA1
+.importzp VIA_IRA, VIA_T1CL
+.importzp ZP_INTERRUPT
 
 .segment "bss"
 
@@ -31,7 +33,13 @@ delay:          INX
                 BNE delay
                 INY
                 BNE delay
+                BIT ZP_INTERRUPT
+                BMI interrupted
                 JMP forever
+interrupted:    LDA #1<<7
+                TRB ZP_INTERRUPT
+                JSR TermCursorShow
+                JSR TermNewline
                 RTS
 .endproc
 

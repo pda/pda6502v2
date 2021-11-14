@@ -36,6 +36,8 @@
 .export UART_SOPR     = $E ; write
 .export UART_ROPR     = $F ; write
 
+.importzp ZP_INTERRUPT
+
 .proc UartInit
                 JSR UartRxBufInit
                 JSR UartTxBufInit
@@ -257,7 +259,12 @@ again:          LDA #1<<0               ; RxRDY: char is waiting in UART RX FIFO
                 ; transmitting, continue to pull UART FIFO into buffer, then
                 ; re-assert RTS after the in-memory buffer is empty enough.
                 LDA UART+UART_RXFIFOA   ; A <- FIFO
-                JSR UartRxBufWrite      ; rxbuf <- A
+                CMP #$03                ; Handle ctrl-c (TODO: ZP_UARTMODE to skip this in raw mode)
+                BNE writerxbuf
+                LDA #1<<7
+                TSB ZP_INTERRUPT
+                JMP again               ; don't place the ctrl-c on rxbuf
+writerxbuf:     JSR UartRxBufWrite      ; rxbuf <- A
                 JMP again
 done:           PLX
                 PLA

@@ -30,7 +30,7 @@
                                         ; $1D
                                         ; $1E
                                         ; $1F
-                                        ; $20
+.export ZP_INTERRUPT = $20              ; $20: Interrupt flag; ctrl-c sets bit 7 high
                                         ; $21
                                         ; $22
                                         ; $23
@@ -62,7 +62,7 @@
                                         ; $3D
                                         ; $3E
                                         ; $3F
-                                        ; $40
+.export ZP_UARTMODE = $40               ; $40
                                         ; $41
 .export ZP_BLNKAUX = $42                ; $42: BIFRÖST BLINKEN auxiliary data
                                         ; $43

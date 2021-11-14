@@ -4,13 +4,16 @@
 
 .import BLINKEN, BLINKSRC
 .import VIA1, VIA2, VIA_IFR : zp
-.import UART, UART_ISR : zp, UART_MISC : zp;
+.import UART, UART_ISR : zp, UART_MISC : zp
+.importzp ZP_INTERRUPT
 
 .segment "os"
 
 .proc Main
-                LDA #$04                ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
-                STA BLINKSRC
+                LDA #$00
+                STA ZP_INTERRUPT        ; Clear the user-mode interrupt flag(s)
+                LDA #$04
+                STA BLINKSRC            ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
                 JSR ShellMain
 halt:           JMP halt
 .endproc
