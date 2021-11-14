@@ -1,7 +1,7 @@
 .export LifeMain
 
 .import UartTxStr, UartTxBufWriteBlocking
-.import TermNewline, TermCursorUp16
+.import TermNewline, TermCursorUp16, TermCursorHide
 .import VIA1, VIA_IRA : zp, VIA_T1CL : zp
 
 .segment "bss"
@@ -21,7 +21,8 @@ message:        .byte "A STRANGE GAME.", $0D, $0A
                 LDY #>message
                 JSR UartTxStr
                 JSR LifeInit
-forever:        JSR LifeRender
+forever:        JSR TermCursorHide
+                JSR LifeRender
                 JSR LifeTick
                 JSR TermCursorUp16
                 LDX #0
