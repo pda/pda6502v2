@@ -1,5 +1,6 @@
 .export LifeMain
 
+.importzp R1
 .import UartTxStr, UartTxBufWriteBlocking
 .import TermNewline, TermCursorUp16, TermCursorHide, TermCursorShow
 .import VIA1
@@ -107,59 +108,59 @@ return:         RTS
 ;   else X dies
 ;
 ; X register is cell index
-; Y for alive-neighbor count
 ; A is used for rando stuff
 ; bit 7 of each byte indicates liveness
 .proc LifeTick
                 LDX #0                  ; cell index
-eachcell:       LDY #0                  ; neighbor count
+eachcell:       LDA #0
+                STA R1                  ; neighbor count
                 TXA                     ; transfer cell index to A for subtraction
                 SEC                     ; prepare carry bit for subtraction
                 SBC #17                 ; jump back a full row (16) plus one cell (origin->NW neighbor)
                 TAX                     ; transfer result back into X for indexed addressing
                 BIT gridcurr,X          ; NW alive?
                 BPL deadNW
-                INY                     ; add NW neighbor to tally
+                INC R1                  ; add NW neighbor to tally
 deadNW:         INX                     ; move from NW to N neighbor (origin-16)
                 BIT gridcurr,X          ; N alive?
                 BPL deadN
-                INY                     ; add N neighbor to tally
+                INC R1                  ; add N neighbor to tally
 deadN:          INX                     ; move from N->NE neighbor (origin-15)
                 BIT gridcurr,X          ; NE alive?
                 BPL deadNE
-                INY                     ; add N neighbor to tally
+                INC R1                  ; add N neighbor to tally
 deadNE:         TXA                     ; transfer cell index to A for addition
                 CLC                     ; prepare carry bit for addition
                 ADC #14                 ; jump one row (16) minus two cells (NE->W) (origin-1)
                 TAX                     ; transfer result back into X for indexed addressing
                 BIT gridcurr,X          ; W alive?
                 BPL deadW
-                INY                     ; add W neighbor to tally
+                INC R1                  ; add W neighbor to tally
 deadW:          INX                     ; move W->origin, skip this one
                 INX                     ; move origin->E (origin+1)
                 BIT gridcurr,X          ; E alive?
                 BPL deadE
-                INY                     ; add E neighbor to tally
+                INC R1                  ; add E neighbor to tally
 deadE:          TXA                     ; transfer cell index to A for addition
                 CLC                     ; prepare carry bit for addition
                 ADC #14                 ; jump one row (16) minus two cells (E->SW) (origin+15)
                 TAX                     ; transfer result back into X for indexed addressing
                 BIT gridcurr,X          ; SW alive?
                 BPL deadSW
-                INY                     ; add SW neighbor to tally
+                INC R1                  ; add SW neighbor to tally
 deadSW:         INX                     ; move SW->S (origin+16)
                 BIT gridcurr,X          ; S alive?
                 BPL deadS
-                INY                     ; add S neighbor to tally
+                INC R1                  ; add S neighbor to tally
 deadS:          INX                     ; move S->SE (origin+17)
                 BIT gridcurr,X          ; SE alive?
                 BPL deadSE
-                INY                     ; add SE neighbor to tally
+                INC R1                  ; add SE neighbor to tally
 deadSE:         TXA                     ; transfer cell index to A for subtraction
                 SEC                     ; prepare carry bit for subtraction
                 SBC #17                 ; jump one row (16) plus one cell (SE->origin)
                 TAX                     ; transfer result back into X for indexed addressing
-                TYA                     ; transfer alive-neighbor tally to A
+                LDA R1                  ; transfer alive-neighbor tally to A
                 BIT gridcurr,X          ; origin cell alive?
                 BPL origindead
 originalive:    CMP #2                  ; if neighbors<=1 (i.e. neighbors-2 is negative)
