@@ -6,10 +6,10 @@
 
 .segment "bss"
 
-.segment "os"
+gridcurr:       .res 256                ; 16x16 Game of Life current generation grid
+gridnext:       .res 256                ; 16x16 Game of Life next-generation grid
 
-GRIDADDR  = $0200 ; a page of memory for Game of Life main grid
-GRIDADDRB = $0300 ; a page of memory for Game of Life tmp/next grid
+.segment "os"
 
 message:        .byte "A STRANGE GAME.", $0D, $0A
                 .byte "THE ONLY WINNING MOVE IS", $0D, $0A
@@ -54,7 +54,7 @@ eachcell:       TXA
 makealive:      LDA #$FF
                 JMP store
 makedead:       LDA #$00
-store:          STA GRIDADDR,X
+store:          STA gridcurr,X
                 INX
                 BNE eachcell
                 RTS
@@ -63,7 +63,7 @@ store:          STA GRIDADDR,X
 ; render a 16x16 game of life grid as ASCII over UART
 .proc LifeRender
                 LDX #0
-eachcell:       BIT GRIDADDR,X
+eachcell:       BIT gridcurr,X
                 BPL alive
 dead:           LDA #'*'
                 JMP deadoralive
@@ -109,42 +109,42 @@ eachcell:       LDY #0                  ; neighbor count
                 SEC                     ; prepare carry bit for subtraction
                 SBC #17                 ; jump back a full row (16) plus one cell (origin->NW neighbor)
                 TAX                     ; transfer result back into X for indexed addressing
-                BIT GRIDADDR,X          ; NW alive?
+                BIT gridcurr,X          ; NW alive?
                 BPL deadNW
                 INY                     ; add NW neighbor to tally
 deadNW:         INX                     ; move from NW to N neighbor (origin-16)
-                BIT GRIDADDR,X          ; N alive?
+                BIT gridcurr,X          ; N alive?
                 BPL deadN
                 INY                     ; add N neighbor to tally
 deadN:          INX                     ; move from N->NE neighbor (origin-15)
-                BIT GRIDADDR,X          ; NE alive?
+                BIT gridcurr,X          ; NE alive?
                 BPL deadNE
                 INY                     ; add N neighbor to tally
 deadNE:         TXA                     ; transfer cell index to A for addition
                 CLC                     ; prepare carry bit for addition
                 ADC #14                 ; jump one row (16) minus two cells (NE->W) (origin-1)
                 TAX                     ; transfer result back into X for indexed addressing
-                BIT GRIDADDR,X          ; W alive?
+                BIT gridcurr,X          ; W alive?
                 BPL deadW
                 INY                     ; add W neighbor to tally
 deadW:          INX                     ; move W->origin, skip this one
                 INX                     ; move origin->E (origin+1)
-                BIT GRIDADDR,X          ; E alive?
+                BIT gridcurr,X          ; E alive?
                 BPL deadE
                 INY                     ; add E neighbor to tally
 deadE:          TXA                     ; transfer cell index to A for addition
                 CLC                     ; prepare carry bit for addition
                 ADC #14                 ; jump one row (16) minus two cells (E->SW) (origin+15)
                 TAX                     ; transfer result back into X for indexed addressing
-                BIT GRIDADDR,X          ; SW alive?
+                BIT gridcurr,X          ; SW alive?
                 BPL deadSW
                 INY                     ; add SW neighbor to tally
 deadSW:         INX                     ; move SW->S (origin+16)
-                BIT GRIDADDR,X          ; S alive?
+                BIT gridcurr,X          ; S alive?
                 BPL deadS
                 INY                     ; add S neighbor to tally
 deadS:          INX                     ; move S->SE (origin+17)
-                BIT GRIDADDR,X          ; SE alive?
+                BIT gridcurr,X          ; SE alive?
                 BPL deadSE
                 INY                     ; add SE neighbor to tally
 deadSE:         TXA                     ; transfer cell index to A for subtraction
@@ -152,7 +152,7 @@ deadSE:         TXA                     ; transfer cell index to A for subtracti
                 SBC #17                 ; jump one row (16) plus one cell (SE->origin)
                 TAX                     ; transfer result back into X for indexed addressing
                 TYA                     ; transfer alive-neighbor tally to A
-                BIT GRIDADDR,X          ; origin cell alive?
+                BIT gridcurr,X          ; origin cell alive?
                 BPL origindead
 originalive:    CMP #2                  ; if neighbors<=1 (i.e. neighbors-2 is negative)
                 BMI makedead            ; our living cell dies from underpopulation
@@ -165,11 +165,11 @@ origindead:     CMP #3                  ; if neighbors==3
 makealive:      LDA #$FF                ; prepare to set our cell's bit 7 (and other bits for good measure)
                 JMP writecell
 makedead:       LDA #$00                ; prepare to clear our cell's bit 7 (and other bits, for good measure)
-writecell:      STA GRIDADDRB,X         ; write the new state into the "next generation" grid.
+writecell:      STA gridnext,X          ; write the new state into the "next generation" grid.
 donecell:       INX                     ; Move to the next cell.
                 BNE eachcell            ; process it unless we've wrapped around to zero.
-copyeachcell:   LDA GRIDADDRB,X         ; All cells evaluated; copy each cell from the next generation grid...
-                STA GRIDADDR,X          ; ... into the primary grid.
+copyeachcell:   LDA gridnext,X          ; All cells evaluated; copy each cell from the next generation grid...
+                STA gridcurr,X          ; ... into the primary grid.
                 INX
                 BNE copyeachcell        ; Until we wrap around to zero.
                 RTS
