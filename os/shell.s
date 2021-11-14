@@ -15,7 +15,13 @@ cmdbuf_pos:     .res 1
 
 welcome:        .byte "Welcome to pda6502v2", $0D, $0A, $00
 prompt:         .byte "> ", $00
+helpmsg:        .byte "Available commands:", $0D, $0A
+                .byte "  help: this message", $0D, $0A
+                .byte "  hello: just being friendly", $0D, $0A
+                .byte "  life: conway's game of life (ctrl-c to interrupt)", $0D, $0A
+                .byte $00
 e_notfound:     .byte "command not found", $0D, $0A, $00
+cmdhelp:        .byte "help", $00
 cmdhello:       .byte "hello", $00
 cmdlife:        .byte "life", $00
 
@@ -89,6 +95,12 @@ return:         RTS                     ; this never happens
                 STX R0
                 LDX #>cmdbuf
                 STX R1
+                LDX #<cmdhelp           ; R2,R3 pointer to cmdhello...
+                STX R2
+                LDX #>cmdhelp
+                STX R3
+                JSR StrEq               ; compare (R0) and (R2)
+                BEQ help
                 LDX #<cmdhello          ; R2,R3 pointer to cmdhello...
                 STX R2
                 LDX #>cmdhello
@@ -102,6 +114,10 @@ return:         RTS                     ; this never happens
                 JSR StrEq               ; compare (R0) and (R2)
                 BEQ life
                 JMP default             ; cmdbuf didn't match any commands
+help:           LDX #<helpmsg
+                LDY #>helpmsg
+                JSR UartTxStr
+                JMP return
 hello:          LDX #<welcome
                 LDY #>welcome
                 JSR UartTxStr
