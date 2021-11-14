@@ -1,5 +1,6 @@
 .export TermNewline
 .export TermCursorUp16
+.export TermCursorUp32
 .export TermCursorHide
 .export TermCursorShow
 
@@ -19,6 +20,17 @@
 .endproc
 
 .proc TermCursorUp16
+                LDX #0
+eachchar:       LDA vt100up16,X
+                BEQ return
+                JSR UartTxBufWriteBlocking
+                INX
+                JMP eachchar
+return:         RTS
+vt100up16:      .byte $1B, "[16A", $00
+.endproc
+
+.proc TermCursorUp32
                 LDX #0
 eachchar:       LDA vt100up16,X
                 BEQ return

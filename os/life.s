@@ -1,16 +1,16 @@
 .export LifeMain
 
-.importzp R0, R1
+.importzp R0, R1, R4, R5, R6, R7, R8, R9, RA, RB
 .import UartTxStr, UartTxBufWriteBlocking
-.import TermNewline, TermCursorUp16, TermCursorHide, TermCursorShow
+.import TermNewline, TermCursorUp32, TermCursorHide, TermCursorShow
 .import VIA1
 .importzp VIA_IRA, VIA_T1CL
 .importzp ZP_INTERRUPT
 
 .segment "bss"
 
-gridcurr:       .res 256                ; 16x16 Game of Life current generation grid
-gridnext:       .res 256                ; 16x16 Game of Life next-generation grid
+gridcurr:       .res 256*4              ; 32x32 Game of Life current generation grid
+gridnext:       .res 256*4              ; 32x32 Game of Life next-generation grid
 
 .segment "os"
 
@@ -27,12 +27,10 @@ message:        .byte "A STRANGE GAME.", $0D, $0A
 forever:        JSR TermCursorHide
                 JSR LifeRender
                 JSR LifeTick
-                JSR TermCursorUp16
+                JSR TermCursorUp32
                 LDX #0
                 LDY #0
 delay:          INX
-                BNE delay
-                INY
                 BNE delay
                 BIT ZP_INTERRUPT
                 BMI interrupted
@@ -46,18 +44,28 @@ interrupted:    LDA #1<<7
 
 
 .proc LifeInit
+                ; create pointer to the first page of the grid
+                LDA #<gridcurr
+                STA R4
+                LDA #>gridcurr
+                STA R5
+
+                LDA #0
+                STA R0                  ; page number
                 LDX #0
-eachcell:       TXA
+eachcell:       LDA R0
+                BNE makedead
+                TXA
                 ; seed a glider
                 CMP #1
                 BEQ makealive
-                CMP #18
+                CMP #(32+2)
                 BEQ makealive
-                CMP #32
+                CMP #(32*2)
                 BEQ makealive
-                CMP #33
+                CMP #(32*2)+1
                 BEQ makealive
-                CMP #34
+                CMP #(32*2)+2
                 BEQ makealive
                 JMP makedead
 makealive:      LDA #$FF
@@ -66,13 +74,21 @@ makedead:       LDA #$00
 store:          STA gridcurr,X
                 INX
                 BNE eachcell
+                INC R5                  ; move grid pointer to next page
+                INC R0
+                CMP #4
+                BNE eachcell
                 RTS
 .endproc
 
-; render a 16x16 game of life grid as ASCII over UART
+; render a 32x32 game of life grid as ASCII over UART
 .proc LifeRender
+                LDA #0
+                STA R0                  ; page number
                 LDX #0
-eachcell:       BIT gridcurr,X
+eachcell:       TXA
+                TAY
+                BIT (R4),Y
                 BPL alive
 dead:           LDA #'*'
                 JMP deadoralive
@@ -84,7 +100,7 @@ deadoralive:    JSR UartTxBufWriteBlocking
                 BEQ donegrid           ; wrapped around; done
                 TXA
                 SEC
-modulus:        SBC #16                ; number of columns
+modulus:        SBC #32                ; number of columns
                 BEQ newline            ; end of column
                 BCS modulus
                 JMP donecell
@@ -143,6 +159,6 @@ copyeachcell:   LDA gridnext,X          ; All cells evaluated; copy each cell fr
                 INX
                 BNE copyeachcell        ; Until we wrap around to zero.
                 RTS
-neighbours:     .byte 256-17, 256-16, 256-15, 256-1, 1, 15, 16, 17, $00
-                ;         NW       N      NE      W  E  SW   S  SE
+neighbours:     .byte 256-32-1, 256-32, (256-32)+1, 256-1, 1, 32-1, 32, 32+1, $00
+                ;           NW       N          NE      W  E    SW   S    SE
 .endproc
