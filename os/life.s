@@ -29,10 +29,7 @@ forever:        JSR TermCursorHide
                 JSR LifeTick
                 JSR TermCursorUp16
                 LDX #0
-                LDY #0
 delay:          INX
-                BNE delay
-                INY
                 BNE delay
                 BIT ZP_INTERRUPT
                 BMI interrupted
