@@ -6,8 +6,8 @@ module spi_tb;
 
   reg clock_spi = 0;
   wire clock_sys;
-  reg [3:0] addr = 4'bXXXX;
-  reg [7:0] data = 8'bZZZZZZZZ;
+  reg [7:0] addr = 8'hXX;
+  reg [7:0] data = 8'hZZ;
   reg rw = 1'b1;
   reg cs = 1'b1;
   reg miso = 1'b1;
@@ -49,7 +49,7 @@ module spi_tb;
 
     #2
     cs = 0;             // select SPI module (simulate address decoder)
-    addr = 4'b0000;     // CS/GPIO register address within SPI module
+    addr = 8'h10;       // CS/GPIO register address within SPI module
     rw = 1;             // 6502 reading this register
 
     // TODO: expect CS initial state 8'b11111111 on data_out with data_out_en
@@ -61,7 +61,7 @@ module spi_tb;
     // 6502 read cycle completes
     #3
     cs = 1;             // deselect SPI module (simulate address decoder)
-    addr = 4'bXXXX;     // addr bus no longer relevant
+    addr = 8'hXX;       // addr bus no longer relevant
 
     // another clock_spi cycle to return clock_sys high
     #2 clock_spi = 0;
@@ -72,7 +72,7 @@ module spi_tb;
 
     #2
     cs = 0;             // select SPI module (simulate address decoder)
-    addr = 4'b0000;     // register address within SPI module
+    addr = 8'h10;       // register address within SPI module
     data = 8'b11111110; // CS/GPIO pin state
     rw = 0;             // 6502 writing to this register
 
@@ -83,8 +83,8 @@ module spi_tb;
     // 6502 write cycle completes
     #3
     cs = 1;             // deselect SPI module (simulate address decoder)
-    addr = 4'bXXXX;     // addr bus no longer relevant
-    data = 8'bZZZZZZZZ; // data bus no longer relevant
+    addr = 8'hXX;       // addr bus no longer relevant
+    data = 8'hZZ;       // data bus no longer relevant
     rw = 1;             // stop writing
 
     // another clock_spi cycle to return clock_sys high
@@ -96,7 +96,7 @@ module spi_tb;
 
     #2
     cs = 0;             // select SPI module (simulate address decoder)
-    addr = 4'b0001;     // register address within SPI module
+    addr = 8'h11;       // register address within SPI module
     data = 8'b11011011; // an SPI byte to send
     rw = 0;             // 6502 writing to this register
 
@@ -107,8 +107,8 @@ module spi_tb;
     // 6502 write cycle completes
     #3
     cs = 1;             // deselect SPI module (simulate address decoder)
-    addr = 4'bXXXX;     // addr bus no longer relevant
-    data = 8'bZZZZZZZZ; // data bus no longer relevant
+    addr = 8'hXX;       // addr bus no longer relevant
+    data = 8'hZZ;       // data bus no longer relevant
     rw = 1;             // stop writing
 
     // another clock_spi cycle to return clock_sys high
@@ -130,7 +130,7 @@ module spi_tb;
 
     #2
     cs = 0;             // select SPI module (simulate address decoder)
-    addr = 4'b0000;     // CS/GPIO register address within SPI module
+    addr = 8'h10;       // CS/GPIO register address within SPI module
     rw = 1;             // 6502 reading this register
 
     // TODO: expect CS initial state 8'b11111111 on data_out with data_out_en
@@ -142,7 +142,7 @@ module spi_tb;
     // 6502 read cycle completes
     #3
     cs = 1;             // deselect SPI module (simulate address decoder)
-    addr = 4'bXXXX;     // addr bus no longer relevant
+    addr = 8'hXX;       // addr bus no longer relevant
 
     // another clock_spi cycle to return clock_sys high
     #2 clock_spi = 0;
@@ -153,7 +153,7 @@ module spi_tb;
 
     #2
     cs = 0;             // select SPI module (simulate address decoder)
-    addr = 4'b0000;     // register address within SPI module
+    addr = 8'h10;       // register address within SPI module
     data = 8'b11111111; // CS/GPIO pin state
     rw = 0;             // 6502 writing to this register
 
@@ -164,8 +164,8 @@ module spi_tb;
     // 6502 write cycle completes
     #3
     cs = 1;             // deselect SPI module (simulate address decoder)
-    addr = 4'bXXXX;     // addr bus no longer relevant
-    data = 8'bZZZZZZZZ; // data bus no longer relevant
+    addr = 8'hXX;       // addr bus no longer relevant
+    data = 8'hZZ;       // data bus no longer relevant
     rw = 1;             // stop writing
 
     // another clock_spi cycle to return clock_sys high

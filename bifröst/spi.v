@@ -3,7 +3,7 @@
 module spi(
   input clock_spi,
   input clock_sys,
-  input [3:0] addr,
+  input [7:0] addr,
   input [7:0] data,
   input rw,
   input cs,
@@ -32,10 +32,10 @@ always @(posedge clock_spi) begin
   if (clock_sys) begin
     if (~cs && ~rw) begin
       case (addr)
-        4'h0: begin
+        8'h10: begin
           spi_cs <= data;
         end
-        4'h1: begin
+        8'h11: begin
           spi_buf <= data;
           spi_bits <= 4'd8;
         end
@@ -51,8 +51,8 @@ always @(negedge clock_spi) begin
 end
 
 assign data_out =
-  addr == 4'h0 ? spi_cs :
-  addr == 4'h1 ? spi_buf :
+  addr == 8'h10 ? spi_cs :
+  addr == 8'h11 ? spi_buf :
   8'h00;
 
 assign data_out_en = clock_sys && ~cs && rw;
