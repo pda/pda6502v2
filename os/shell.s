@@ -25,6 +25,7 @@ e_notfound:     .byte "command not found", $0D, $0A, $00
 cmdhelp:        .byte "help", $00
 cmdhello:       .byte "hello", $00
 cmdlife:        .byte "life", $00
+cmdspi:         .byte "spi", $00
 
 .proc ShellMain
                 JSR UartInit
@@ -96,7 +97,7 @@ return:         RTS                     ; this never happens
                 STX R0
                 LDX #>cmdbuf
                 STX R1
-                LDX #<cmdhelp           ; R2,R3 pointer to cmdhello...
+                LDX #<cmdhelp           ; R2,R3 pointer to cmdhelp...
                 STX R2
                 LDX #>cmdhelp
                 STX R3
@@ -114,6 +115,12 @@ return:         RTS                     ; this never happens
                 STX R3
                 JSR StrEq               ; compare (R0) and (R2)
                 BEQ life
+                LDX #<cmdspi            ; R2,R3 pointer to cmdspi...
+                STX R2
+                LDX #>cmdspi
+                STX R3
+                JSR StrEq               ; compare (R0) and (R2)
+                BEQ spi
                 JMP default             ; cmdbuf didn't match any commands
 help:           LDX #<helpmsg
                 LDY #>helpmsg
@@ -125,8 +132,24 @@ hello:          LDX #<welcome
                 JMP return
 life:           JSR LifeMain
                 JMP return
+spi:            JSR ShellSPI
+                JMP return
 default:        LDX #<e_notfound
                 LDY #>e_notfound
                 JSR UartTxStr
 return:         RTS
+.endproc
+
+.proc ShellSPI
+                LDA #1<<0
+                TRB $DE10               ; SPI CS[0] active low
+                LDX #0
+eachchar:       LDA welcome,X           ;                 4 cycles ] Total:
+                BEQ done                ;                 2 cycles ]   15 cycles
+                STA $DE11               ; SPI data        4 cycles ]    3.75 µs per byte @ 4 MHz
+                INX                     ;                 2 cycles ]  260 KiB/sec @ 4 MHz
+                JMP eachchar            ;                 3 cycles ]  (bottleneck: 6502, not SPI clock)
+done:           LDA #1<<0
+                TSB $DE10               ; release SPI CS[0]
+                RTS
 .endproc
