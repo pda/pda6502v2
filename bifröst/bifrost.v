@@ -1,6 +1,7 @@
 `include "blinken.v"
 `include "adec.v"
 `include "boot.v"
+`include "spi.v"
 
 `timescale 100ns/10ns
 
@@ -43,6 +44,13 @@ module bifrost(
   output wire ram_cs,
   output wire uart_cs,
   output wire sid_cs,
+
+  input spi_miso,
+  output spi_mosi,
+  output spi_clock,
+  output [7:0] spi_cs,
+  inout spi_exp0,
+  inout spi_exp1,
 
   output wire [15:0] ext
 );
@@ -94,6 +102,23 @@ boot boot(
   .rw(rw_boot),
   .reset(reset_fixup),
   .booting(booting)
+);
+
+wire [7:0] spi_data_out;
+wire spi_data_out_en;
+spi spi(
+  .clock_spi(clock),
+  .clock_sys(clockout),
+  .addr(addr[7:0]),
+  .data(data),
+  .rw(rw),
+  .cs(bifrost_cs),
+  .miso(spi_miso),
+  .mosi(spi_mosi),
+  .sck(spi_clock),
+  .spi_cs(spi_cs),
+  .data_out(spi_data_out),
+  .data_out_en(spi_data_out_en)
 );
 
 // divide 8 MHz clock down to 1 MHz
@@ -151,6 +176,7 @@ end
 wire bifrost_reg_read = clockout && ~bifrost_cs && rw;
 assign data = (booting || bifrost_reg_read) ? (
     booting ? data_boot :
+    spi_data_out_en ? spi_data_out :
     addr[7:0] == 8'h00 ? leds_reg :
     addr[7:0] == 8'h01 ? leds_src :
     8'h00

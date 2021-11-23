@@ -27,6 +27,20 @@ set_io flash_miso 68
 set_io flash_sck  70
 set_io flash_cs   71
 
+set_io spi_clock 73
+set_io spi_miso  74
+set_io spi_mosi  75
+set_io spi_cs[0] 76
+set_io spi_cs[1] 78
+set_io spi_cs[2] 79
+set_io spi_cs[3] 80
+set_io spi_cs[4] 81
+set_io spi_cs[5] 82
+set_io spi_cs[6] 83
+set_io spi_cs[7] 84
+set_io spi_exp0  85
+set_io spi_exp1  87
+
 set_io -pullup yes uart_irq     90
 set_io uart_im      91
 set_io uart_txbirq  93
