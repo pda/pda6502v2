@@ -17,6 +17,7 @@ module spi(
 
 reg [7:0] spi_buf = 8'h00;
 reg [3:0] spi_bits = 4'd0;
+reg clock_sys_prev;
 
 always @(posedge clock_spi) begin
   if (spi_bits > 0) begin
@@ -29,7 +30,8 @@ always @(posedge clock_spi) begin
 
   // handle posedge clock_sys in this same process to avoid
   // multiple conflicting drivers for spi_buf and spi_bits.
-  if (clock_sys) begin
+  // Simulate @(posedge clock_sys) by tracking clock_sys_prev.
+  if (clock_sys && !clock_sys_prev) begin
     if (~cs && ~rw) begin
       case (addr)
         8'h10: begin
@@ -42,6 +44,8 @@ always @(posedge clock_spi) begin
       endcase
     end
   end
+
+  clock_sys_prev <= clock_sys;
 end
 
 always @(negedge clock_spi) begin
