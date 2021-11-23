@@ -133,14 +133,13 @@ always @(posedge clock) clock_divide++;
 // 6:    62,500 Hz
 // 7:    31,250 Hz
 // 8:    15,625 Hz
-assign clockout = clock_divide[0];
+assign clockout = clock_divide[2];
 
 assign setov = 1'b1;
 assign ready = 1'b1;
 assign nmirq = 1'b1;
 
 // multiplex IRQ signals into 6502 IRQB.
-// VIA1 IRQ currently flakey soldering at the FPGA, so exclude it for now.
 assign irq = via1_irq & via2_irq & uart_irq;
 
 assign ext[14:0] = 15'bZZZZZZZZZZZZZZZ; // ext[15] is 6502 reset_fixup
