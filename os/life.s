@@ -28,9 +28,6 @@ forever:        JSR TermCursorHide
                 JSR LifeRender
                 JSR LifeTick
                 JSR TermCursorUp16
-                LDX #0
-delay:          INX
-                BNE delay
                 BIT ZP_INTERRUPT
                 BMI interrupted
                 JMP forever
