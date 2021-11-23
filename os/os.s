@@ -1,6 +1,7 @@
 .import BlinkenStart, BlinkenTick
 .import UartRxInterrupt, UartTxInterrupt
 .import ShellMain
+.import SidBleep
 
 .import BLINKEN, BLINKSRC
 .import VIA1, VIA2, VIA_IFR : zp
@@ -14,6 +15,7 @@
                 STA ZP_INTERRUPT        ; Clear the user-mode interrupt flag(s)
                 LDA #$04
                 STA BLINKSRC            ; 0:reg 1:data 2:addrl 3:addrh 4:IRQ
+                JSR SidBleep
                 JSR ShellMain
 halt:           JMP halt
 .endproc
