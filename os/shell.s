@@ -6,7 +6,7 @@
 .import LifeMain
 .import BLINKEN, BLINKSRC
 .import StrEq
-.import SidBleep
+.import SidTunes
 
 .segment "bss"
 
@@ -18,18 +18,18 @@ cmdbuf_pos:     .res 1
 welcome:        .byte "Welcome to pda6502v2", $0D, $0A, $00
 prompt:         .byte "> ", $00
 helpmsg:        .byte "Available commands:", $0D, $0A
-                .byte "  help: this message", $0D, $0A
                 .byte "  hello: just being friendly", $0D, $0A
+                .byte "  help: this message", $0D, $0A
                 .byte "  life: conway's game of life (ctrl-c to interrupt)", $0D, $0A
                 .byte "  spi: send a greeting over SPI", $0D, $0A
-                .byte "  bleep: make some noise on the SID", $0D, $0A
+                .byte "  tunes: SID tunes (ctrl-c to interrupt)", $0D, $0A
                 .byte $00
 e_notfound:     .byte "command not found", $0D, $0A, $00
 cmdhelp:        .byte "help", $00
 cmdhello:       .byte "hello", $00
 cmdlife:        .byte "life", $00
 cmdspi:         .byte "spi", $00
-cmdbleep:       .byte "bleep", $00
+cmdtunes:       .byte "tunes", $00
 
 .proc ShellMain
                 JSR UartInit
@@ -125,12 +125,12 @@ return:         RTS                     ; this never happens
                 STX R3
                 JSR StrEq               ; compare (R0) and (R2)
                 BEQ spi
-                LDX #<cmdbleep          ; R2,R3 pointer to cmdbleep...
+                LDX #<cmdtunes          ; R2,R3 pointer to cmdtunes...
                 STX R2
-                LDX #>cmdbleep
+                LDX #>cmdtunes
                 STX R3
                 JSR StrEq               ; compare (R0) and (R2)
-                BEQ bleep
+                BEQ tunes
                 JMP default             ; cmdbuf didn't match any commands
 help:           LDX #<helpmsg
                 LDY #>helpmsg
@@ -144,7 +144,7 @@ life:           JSR LifeMain
                 JMP return
 spi:            JSR ShellSPI
                 JMP return
-bleep:          JSR SidBleep
+tunes:          JSR SidTunes
                 JMP return
 default:        LDX #<e_notfound
                 LDY #>e_notfound
