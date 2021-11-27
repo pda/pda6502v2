@@ -1,11 +1,13 @@
 .export LifeMain
 
 .importzp R0, R1
-.import UartTxStr, UartTxBufWriteBlocking
+.import UartTxStr, UartTxBufWriteBlocking, UartRxBufRead, UartRxBufLen
 .import TermNewline, TermCursorUp16, TermCursorHide, TermCursorShow
 .import VIA1
 .importzp VIA_IRA, VIA_T1CL
 .importzp ZP_INTERRUPT
+.import SID
+.importzp FRELO3, FREHI3, VCREG3, RANDOM
 
 .segment "bss"
 
@@ -23,12 +25,24 @@ message:        .byte "A STRANGE GAME.", $0D, $0A
                 LDX #<message           ; A fitting welcome.
                 LDY #>message
                 JSR UartTxStr
-                JSR LifeInit
+                JSR LifeRandom
 forever:        JSR TermCursorHide
                 JSR LifeRender
                 JSR LifeTick
                 JSR TermCursorUp16
-                BIT ZP_INTERRUPT
+                JSR UartRxBufLen
+                BEQ noinput
+                JSR UartRxBufRead
+                CMP #'g'
+                BEQ glider
+                CMP #'r'
+                BEQ random
+                JMP noinput
+glider:         JSR LifeGlider
+                JMP noinput
+random:         JSR LifeRandom
+                JMP noinput
+noinput:        BIT ZP_INTERRUPT
                 BMI interrupted
                 JMP forever
 interrupted:    LDA #1<<7
@@ -39,7 +53,27 @@ interrupted:    LDA #1<<7
 .endproc
 
 
-.proc LifeInit
+.proc LifeRandom
+                LDA #%10000000          ; noise
+                STA SID+VCREG3
+                LDA #$FF
+                STA SID+FRELO3
+                LDA #$FF
+                STA SID+FREHI3
+                LDX #0
+eachcell:       LDA SID+RANDOM
+                BPL makealive
+                JMP makedead
+makealive:      LDA #$FF
+                JMP store
+makedead:       LDA #$00
+store:          STA gridcurr,X
+                INX
+                BNE eachcell
+                RTS
+.endproc
+
+.proc LifeGlider
                 LDX #0
 eachcell:       TXA
                 ; seed a glider

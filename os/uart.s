@@ -1,6 +1,7 @@
 .segment "os"
 
 .export UartInit
+.export UartRxBufLen
 .export UartRxBufRead
 .export UartTxBufWrite
 .export UartTxBufWriteBlocking
@@ -202,7 +203,7 @@ waittxbuf:      JSR UartTxBufLen
                 RTS                     ; return A: TX byte
 .endproc
 
-; UartRxBufLen calculates the length of data that has been buffered to the
+; UartTxBufLen calculates the length of data that has been buffered to the
 ; in-memory TX buffer but not yet flushed to UART TX FIFO.
 .proc UartTxBufLen
                 LDA txbuf_w             ; load write pointer
