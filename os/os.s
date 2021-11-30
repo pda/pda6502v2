@@ -7,6 +7,7 @@
 .import VIA1, VIA2, VIA_IFR : zp
 .import UART, UART_ISR : zp, UART_MISC : zp
 .importzp ZP_INTERRUPT
+.import SidTick
 
 .segment "os"
 
@@ -34,6 +35,8 @@ halt:           JMP halt
                 PHA
                 BIT VIA1+VIA_IFR
                 BVS v1t1                ; VIA1 T1 if V=1 from BIT:6
+                BIT VIA2+VIA_IFR
+                BVS v2t1                ; VIA2 T1 if V=1 from BIT:6
                 LDA #1<<0               ; TxRDYA
                 AND UART+UART_MISC      ; readable copy of UART Interrupt Mask Register
                 AND UART+UART_ISR       ; UART Interrupt Status Register
@@ -45,6 +48,8 @@ halt:           JMP halt
                 JMP done
 
 v1t1:           JSR BlinkenTick
+                JMP done
+v2t1:           JSR SidTick
                 JMP done
 uartrx:         JSR UartRxInterrupt
                 JMP done

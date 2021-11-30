@@ -46,10 +46,10 @@
                                         ; $2D
                                         ; $2E
                                         ; $2F
-                                        ; $30
-                                        ; $31
-                                        ; $32
-                                        ; $33
+.export ZP_SID0 = $30                   ; $30: SID general purpose registers
+.export ZP_SID1 = $31                   ; $31: " "
+.export ZP_SID2 = $32                   ; $32: " "
+.export ZP_SID3 = $33                   ; $33: " "
                                         ; $34
                                         ; $35
                                         ; $36
@@ -65,7 +65,7 @@
 .export ZP_UARTMODE = $40               ; $40
                                         ; $41
 .export ZP_BLNKAUX = $42                ; $42: BIFRÖST BLINKEN auxiliary data
-                                        ; $43
+.export ZP_BLINKENWAT = $43             ; $43
                                         ; $44
                                         ; $45
                                         ; $46

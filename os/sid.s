@@ -1,7 +1,15 @@
 .export SidInit
+.export SidTick
 .export SidTunes
+.export SidPlay
+.export SidPause
 
 .importzp ZP_INTERRUPT
+.importzp ZP_SID0, ZP_SID1, ZP_SID2, ZP_SID3
+.import BLINKEN, BLINKSRC, ZP_BLINKENWAT : zp
+
+.import VIA2
+.importzp VIA_IER, VIA_ACR, VIA_T1CL, VIA_T1CH, VIA_IFR
 
 .export SID  := $D400 ; (SID register names from to Mapping the Commodore 64, 1984)
 .export FRELO1 = $00 ; Voice 1 Frequency Control (low byte)
@@ -147,13 +155,29 @@ tune:
                 .byte $FF ; terminator
 
 .proc SidInit
+                LDA #0
+                STA ZP_BLINKENWAT
+                STA BLINKSRC
+                STA BLINKEN
+
                 LDA #$00
                 STA SID+SIGVOL          ; turn off SID main volume (and filters)
+
+                LDA #$00
+                STA ZP_SID0
+                STA ZP_SID1
+                STA ZP_SID2
+                STA ZP_SID3
+
                 RTS
 .endproc
 
-.proc SidTunes
-forever:        LDA #%00011111
+.proc SidPlay
+                ; experimenting.. counter
+                LDA #10
+                STA ZP_SID0
+
+                LDA #%00011111
                     ; ||||++++----------> main volume 0..15
                     ; |||+--------------> 4: lowpass
                     ; ||+---------------> 5: band pass
@@ -171,7 +195,7 @@ forever:        LDA #%00011111
                     ; |||||||+----------> filter voice 1?
                     ; ||||||+-----------> filter voice 2?
                     ; |||||+------------> filter voice 3?
-                    ; ||||+-------------> fitler external?
+                    ; ||||+-------------> filter external?
                     ; ++++--------------> filter resonance
                 STA SID+RESON
 
@@ -186,10 +210,73 @@ forever:        LDA #%00011111
                 STA SID+ATDCY1
                 LDA #$A8                ; sustain, release
                 STA SID+SUREL1
-                LDX #0                  ; X will be index into tune data
-eachnote:       LDA tune,X              ; A <- index into scale array
-                CMP #$FF                ; tune is terminated by $FF
-                BEQ tune_done
+
+
+                LDA #%11000000
+                    ; |+----------------> 6: Timer 1 (T1)
+                    ; +-----------------> 7: enable/disable selected interrupts
+                STA VIA2+VIA_IER
+                LDA VIA2+VIA_ACR        ; 7:6: T1 timer control
+                AND #%01111111          ; ACR[7] = 0 (PB6 disabled)
+                ORA #%01000000          ; ACR[6] = 1 (Continuous interrupts)
+                STA VIA2+VIA_ACR
+                irqfreq = 16666         ; 1 MHz / 16666 = 60 times per second
+                LDA #<irqfreq
+                STA VIA2+VIA_T1CL
+                LDA #>irqfreq
+                STA VIA2+VIA_T1CH       ; trigger T1 counter
+                RTS
+.endproc
+
+.proc SidPause
+                LDA #%00000000
+                    ; ||||++++----------> main volume 0..15
+                    ; |||+--------------> 4: lowpass
+                    ; ||+---------------> 5: band pass
+                    ; |+----------------> 6: high pass
+                    ; +-----------------> 7: mute voice 3
+                STA SID+SIGVOL
+
+                LDA #1<<6               ; T1 continuous interrupt
+                TRB VIA2+VIA_ACR        ; reset (clear) bit to disable
+                RTS
+.endproc
+
+; Called frequently by interrupt handler
+.proc SidTick
+                SEI
+                LDA #%01000000
+                    ;  +----------------> 6: clear Timer 1 (T1) interrupt
+                STA VIA2+VIA_IFR
+
+                DEC ZP_SID0
+                BNE return
+                LDA #10
+                STA ZP_SID0
+
+                ;INC BLINKEN seems to be reading 0, always setting 1
+                LDX ZP_BLINKENWAT
+                INX
+                STX ZP_BLINKENWAT
+                STX BLINKEN
+
+                INC ZP_SID2
+                LDA ZP_SID2
+                AND #%00000001
+                BEQ attack
+                JMP release
+attack:         JSR SidAttack
+                JMP played
+release:        JSR SidRelease
+played:
+return:
+                CLI
+                RTS
+.endproc
+
+.proc SidAttack
+                LDX ZP_SID1             ; X will be index into tune data
+                LDA tune,X              ; A <- index into scale array
                 TAY                     ; Y <- A to use as index into scale data
                 LDA scale_lo,Y          ; A <- low byte of frequency for this note
                 STA SID+FRELO1
@@ -206,16 +293,10 @@ eachnote:       LDA tune,X              ; A <- index into scale array
                     ; |+----------------> pulse
                     ; +-----------------> noise
                 STA SID+VCREG1
+                RTS
+.endproc
 
-                PHX
-                LDX #$00
-                LDY #$50
-delaysust:      DEX
-                BNE delaysust
-                DEY
-                BNE delaysust
-                PLX
-
+.proc SidRelease
                 LDA #%00100000
                     ; NPST
                     ; |||||||+----------> gate
@@ -228,22 +309,16 @@ delaysust:      DEX
                     ; +-----------------> noise
                 STA SID+VCREG1          ; close voice 1 gate
 
-                PHX                     ; X is index into tune, so save it
-                LDX #$00                ; and use it as part of the
-                LDY #$30                ; release delay after closing the gate.
-delayrel:       DEX                     ; ...
-                BNE delayrel            ; ...
-                DEY                     ; ...
-                BNE delayrel            ; ...
-                PLX                     ; delay is done, restore X.
-
-                BIT ZP_INTERRUPT        ; bail if we've been interrupted (ctrl-c)
-                BMI interrupted
+                LDX ZP_SID1
                 INX                     ; next note in tune
-                JMP eachnote
-tune_done:      JMP forever
-interrupted:    LDA #1<<7
-                TRB ZP_INTERRUPT        ; clear the interrupt flag
-                JSR SidInit
+                LDA tune,X
+                CMP #$FF
+                BNE storesid1
+                LDX #0
+storesid1:      STX ZP_SID1
+                RTS
+.endproc
+
+.proc SidTunes
                 RTS
 .endproc

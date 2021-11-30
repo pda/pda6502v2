@@ -6,7 +6,7 @@
 .import LifeMain
 .import BLINKEN, BLINKSRC
 .import StrEq
-.import SidTunes
+.import SidPlay, SidPause
 
 .segment "bss"
 
@@ -22,7 +22,8 @@ helpmsg:        .byte "Available commands:", $0D, $0A
                 .byte "  help: this message", $0D, $0A
                 .byte "  life: conway's game of life (ctrl-c to interrupt)", $0D, $0A
                 .byte "  spi: send a greeting over SPI", $0D, $0A
-                .byte "  tunes: SID tunes (ctrl-c to interrupt)", $0D, $0A
+                .byte "  tunes: SID tunes", $0D, $0A
+                .byte "  pause: stop SID tunes", $0D, $0A
                 .byte $00
 e_notfound:     .byte "command not found", $0D, $0A, $00
 cmdhelp:        .byte "help", $00
@@ -30,6 +31,7 @@ cmdhello:       .byte "hello", $00
 cmdlife:        .byte "life", $00
 cmdspi:         .byte "spi", $00
 cmdtunes:       .byte "tunes", $00
+cmdpause:       .byte "pause", $00
 
 .proc ShellMain
                 JSR UartInit
@@ -47,15 +49,17 @@ cmdtunes:       .byte "tunes", $00
 .endproc
 
 .proc ShellPrompt
-                LDA #0
-                STA BLINKSRC
+                LDA #$AA
+                STA BLINKEN
+                ;LDA #0
+                ;STA BLINKSRC
                 LDA #0
                 STA cmdbuf_pos          ; init cmdbuf position
 showprompt:     LDX #<prompt
                 LDY #>prompt
                 JSR UartTxStr
 eachchar:       LDA cmdbuf_pos
-                STA BLINKEN
+                ;STA BLINKEN
                 SEC                     ; UartRxBufRead blocking mode
                 JSR UartRxBufRead       ; A <- rxbuf after waiting
                 TAY                     ; Y <- A (spare copy)
@@ -131,6 +135,12 @@ return:         RTS                     ; this never happens
                 STX R3
                 JSR StrEq               ; compare (R0) and (R2)
                 BEQ tunes
+                LDX #<cmdpause          ; R2,R3 pointer to cmdpause...
+                STX R2
+                LDX #>cmdpause
+                STX R3
+                JSR StrEq               ; compare (R0) and (R2)
+                BEQ pause
                 JMP default             ; cmdbuf didn't match any commands
 help:           LDX #<helpmsg
                 LDY #>helpmsg
@@ -144,7 +154,9 @@ life:           JSR LifeMain
                 JMP return
 spi:            JSR ShellSPI
                 JMP return
-tunes:          JSR SidTunes
+tunes:          JSR SidPlay
+                JMP return
+pause:          JSR SidPause
                 JMP return
 default:        LDX #<e_notfound
                 LDY #>e_notfound
