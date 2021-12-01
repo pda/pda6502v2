@@ -296,29 +296,6 @@ done:           PLX
                 RTS
 .endproc
 
-; UartEcho loops forever echo UART RX bytes back to UART TX.
-; Some extra character handling is done for newline, backspace etc.
-.proc UartEcho
-loop:           SEC                     ; UartRxBufRead blocking mode
-                JSR UartRxBufRead       ; A <- rxbuf
-                TAY                     ; Y <- A (spare copy because A is destroyed by UartTxBufWrite)
-                JSR UartTxBufWrite      ; txbuf <- A
-                TYA
-                CMP #$0D                ; if RX was CR
-                BNE notcr
-                LDA #$0A                ; then also send LF
-                JSR UartTxBufWrite
-notcr:          TYA
-                CMP #$08                ; if RX was backspace, also send:
-                BNE notbksp
-                LDA #$20                ; space
-                JSR UartTxBufWrite
-                LDA #$08                ; backspace
-                JSR UartTxBufWrite
-notbksp:        JMP loop
-                RTS
-.endproc
-
 .segment "bss"
 
 rxbuf:          .res 256                ; UART receive buffer; filled from UART RX FIFO by ISR
