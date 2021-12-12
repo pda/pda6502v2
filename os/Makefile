@@ -12,7 +12,7 @@ all: $(OBJECTS)
 	$(LD) $(LDFLAGS) $^
 
 %.o: %.s
-	$(ASM) $(ASMFLAGS) -o $@ $(@:.o=.s)
+	$(ASM) $(ASMFLAGS) -o $@ --listing $(@:.o=.list) $(@:.o=.s)
 
 clean:
 	$(RM) -- $(OBJECTS) map.out debug.out

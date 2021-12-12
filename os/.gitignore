@@ -1,4 +1,5 @@
 map.out
 debug.out
 *.o
+*.list
 os.rom
