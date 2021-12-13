@@ -164,9 +164,7 @@ no_poll:        LDX rxbuf_r             ; load read pointer (first unread byte)
 
 ; UartTxBufWrite queues the byte in A register to be written to UART TX FIFO.
 ; UART interrupts for TxRDY are enabled.
-; If carry bit is set, blocks polling for space on txbuf first.
-; If carry bit is clear, it is assumed the caller knows there is space available
-; in the buffer, in which case the buffer may be corrupted.
+; See also UartTxBufWriteBlocking.
 .proc UartTxBufWrite
                 PHA
                 PHX
@@ -224,7 +222,7 @@ waittxbuf:      JSR UartTxBufLen
                 PHA
                 STX R0                  ; X: *string low byte
                 STY R1                  ; Y: *string high byte
-waittxbuf:      JSR UartTxBufLen        ; Wait for space on txbuf
+waittxbuf:      JSR UartTxBufLen        ; Wait for empty txbuf
                 BNE waittxbuf
                 SEI                     ; mask IRQ so UartTxInterrupt only fires once at the end
                 LDY #0
