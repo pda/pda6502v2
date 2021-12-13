@@ -245,36 +245,31 @@ tune:
 ; Called frequently by interrupt handler
 .proc SidTick
                 PHA
+                LDA #%01000000
+                    ; |+----------------> 6: Timer 1 (T1) interrupt
+                    ; +-----------------> 7: clear (0) or set (1) bits
+                STA VIA2+VIA_IFR
+                DEC ZP_SID0             ; decrement count-down to next event
+                BNE return_a            ; return (only restoring A from stack) if still counting
+                LDA #5                  ; else it's reached zero; reset it
+                STA ZP_SID0
                 PHX
                 PHY
-                LDA #%01000000
-                    ;  +----------------> 6: clear Timer 1 (T1) interrupt
-                STA VIA2+VIA_IFR
-
-                DEC ZP_SID0
-                BNE return
-                LDA #10
-                STA ZP_SID0
-
-                ;INC BLINKEN seems to be reading 0, always setting 1
-                LDX ZP_BLINKENWAT
+                LDX ZP_BLINKENWAT       ; TODO: INC BLINKEN seems to be reading 0, always setting 1
                 INX
                 STX ZP_BLINKENWAT
-                STX BLINKEN
-
-                INC ZP_SID2
+                STX BLINKEN             ; increment BLINKEN on each event
+                INC ZP_SID2             ; inefficient 1-bit counter to track attack/release
                 LDA ZP_SID2
-                AND #%00000001
-                BEQ attack
-                JMP release
+                AND #%00000001          ; every second tick
+                BEQ attack              ; alternate between attack (gate=1)
+                JMP release             ; and release (gate=0)
 attack:         JSR SidAttack
-                JMP played
+                JMP return
 release:        JSR SidRelease
-played:
-return:
-                PLY
+return:         PLY
                 PLX
-                PLA
+return_a:       PLA
                 RTS
 .endproc
 
