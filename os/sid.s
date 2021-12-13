@@ -244,7 +244,9 @@ tune:
 
 ; Called frequently by interrupt handler
 .proc SidTick
-                SEI
+                PHA
+                PHX
+                PHY
                 LDA #%01000000
                     ;  +----------------> 6: clear Timer 1 (T1) interrupt
                 STA VIA2+VIA_IFR
@@ -270,7 +272,9 @@ attack:         JSR SidAttack
 release:        JSR SidRelease
 played:
 return:
-                CLI
+                PLY
+                PLX
+                PLA
                 RTS
 .endproc
 
