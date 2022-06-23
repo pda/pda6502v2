@@ -293,7 +293,7 @@ fn build_opcode_table() -> [Option<Instruction>; 256] {
     return optab;
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 struct Instruction {
     code: u8,
     mnemonic: Mnemonic,
@@ -307,6 +307,16 @@ impl Instruction {
             mnemonic,
             mode,
         }
+    }
+}
+
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Instruction")
+            .field("code", &format_args!("${:02X}", &self.code))
+            .field("mnemonic", &self.mnemonic)
+            .field("mode", &self.mode)
+            .finish()
     }
 }
 
