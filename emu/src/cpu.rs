@@ -112,7 +112,7 @@ impl Cpu {
 }
 
 impl Debug for Cpu {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let stat: String = "nv-bdizc"
             .chars()
             .enumerate()
@@ -125,7 +125,7 @@ impl Debug for Cpu {
             })
             .collect();
         f.write_fmt(format_args!(
-            "<6502 {} PC:${:04X} SP:${:02X} A:${:02X} X:${:02X} Y:${:02X}>",
+            "Cpu {{ SR: {} PC: ${:04X} SP: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
             stat, self.pc, self.sp, self.a, self.x, self.y,
         ))
     }
