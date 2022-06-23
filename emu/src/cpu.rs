@@ -48,6 +48,7 @@ impl Cpu {
     }
 
     fn execute(&mut self, instruction: Instruction) {
+        println!("{:?}", instruction);
         match instruction.mnemonic {
             // Mnemonic::ADC => {}
             // Mnemonic::AND => {}
