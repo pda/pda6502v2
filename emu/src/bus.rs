@@ -21,6 +21,7 @@ impl Bus {
 
     pub fn write(&mut self, addr: u16, data: u8) {
         self.ram[addr as usize] = data;
+        println!("write(${:04X}) ← ${:02X}", addr, data);
     }
 }
 

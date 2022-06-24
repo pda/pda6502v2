@@ -1,19 +1,33 @@
+mod asm;
 mod bus;
 mod cpu;
+mod isa;
 
+use crate::asm::Assembler;
 use crate::bus::Bus;
 use crate::cpu::Cpu;
 
 fn main() {
     let mut bus = Bus::default();
 
-    // fill with NOPs for now
-    for addr in 0..=65535 {
-        bus.write(addr, cpu::OP_NOP)
+    let base: u16 = 0x1234;
+    let prog = Assembler::new()
+        .nop() // 0
+        .nop() // 1
+        .nop() // 2 <----------------------.
+        .inx() // 3                        |
+        .jmp(asm::Op::Abs(base + 2)) // ---
+        .assemble();
+
+    println!("{:X?}", prog);
+
+    for (i, byte) in prog.iter().enumerate() {
+        bus.write(base + (i as u16), *byte);
     }
-    // write a rando reset vector
-    bus.write(0xFFFC, 0x34);
-    bus.write(0xFFFD, 0x12);
+
+    // set reset vector to base address where program is installed
+    bus.write(0xFFFC, base as u8);
+    bus.write(0xFFFD, (base >> 8) as u8);
 
     let mut cpu = Cpu::new(bus);
     cpu.reset();
