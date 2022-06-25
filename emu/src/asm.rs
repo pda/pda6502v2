@@ -64,10 +64,10 @@ impl Assembler {
     fn find_instruction(&self, mnemonic: &Mnemonic, op: &Op) -> Instruction {
         *self
             .opcode_table
-            .get(&mnemonic)
-            .unwrap()
-            .get(&op_mode(&op))
-            .unwrap()
+            .get(mnemonic)
+            .unwrap() // all Mnemonic values should be in the HashMap
+            .get(&op_mode(op))
+            .unwrap() // TODO: gracefully fail unsupported AddressMode
     }
 
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Op) -> &mut Assembler {

@@ -4,6 +4,7 @@ mod cpu;
 mod isa;
 
 use crate::asm::Assembler;
+use crate::asm::Op;
 use crate::bus::Bus;
 use crate::cpu::Cpu;
 
@@ -14,12 +15,10 @@ fn main() {
     let prog = Assembler::new()
         .nop() // 0
         .nop() // 1
-        .nop() // 2 <----------------------.
-        .inx() // 3                        |
-        .jmp(asm::Op::Abs(base + 2)) // ---
+        .nop() // 2 <-----------------.
+        .inx() // 3                   |
+        .jmp(Op::Abs(base + 2)) // ---
         .assemble();
-
-    println!("{:X?}", prog);
 
     for (i, byte) in prog.iter().enumerate() {
         bus.write(base + (i as u16), *byte);
