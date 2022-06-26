@@ -10,11 +10,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn it_assembles_single_nop() {
         let mut asm = Assembler::new();
-        asm.nop().nop().jmp(Op::Abs(0x1234));
-        let bin = asm.assemble();
-        assert_eq!(bin, vec![0xEA, 0xEA, 0x4C, 0x34, 0x12]);
+        assert_eq!(asm.nop().assemble().unwrap(), vec![0xEA]);
+    }
+
+    #[test]
+    fn it_assembles_tiny_program_with_absolute_operand() {
+        let mut asm = Assembler::new();
+        assert_eq!(
+            asm.nop().nop().jmp(Op::Abs(0x1234)).assemble().unwrap(),
+            vec![0xEA, 0xEA, 0x4C, 0x34, 0x12]
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "IllegalAddressMode(JMP, Relative)")]
+    fn it_errors_on_illegal_address_mode() {
+        let mut asm = Assembler::new();
+        asm.jmp(Op::Rel(0xFF)).assemble().unwrap();
     }
 }
 
@@ -45,10 +59,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::INX, Op::Impl)
     }
 
-    pub fn assemble(&mut self) -> Vec<u8> {
-        let mut bin = Vec::new();
+    pub fn assemble(&mut self) -> Result<Vec<u8>, Error> {
+        let mut bin: Vec<u8> = Vec::new();
         for line in self.lines.iter() {
-            bin.push(line.instruction.code);
+            bin.push(line.instruction?.code);
             match op_value(&line.operand) {
                 OpValue::None => {}
                 OpValue::U8(x) => bin.push(x),
@@ -56,18 +70,9 @@ impl Assembler {
                     bin.push(x as u8);
                     bin.push((x >> 8) as u8);
                 }
-            }
+            };
         }
-        bin
-    }
-
-    fn find_instruction(&self, mnemonic: &Mnemonic, op: &Op) -> Instruction {
-        *self
-            .opcode_table
-            .get(mnemonic)
-            .unwrap() // all Mnemonic values should be in the HashMap
-            .get(&op_mode(op))
-            .unwrap() // TODO: gracefully fail unsupported AddressMode
+        Ok(bin)
     }
 
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Op) -> &mut Assembler {
@@ -78,11 +83,26 @@ impl Assembler {
         });
         self
     }
+
+    fn find_instruction(&self, m: &Mnemonic, op: &Op) -> Result<Instruction, Error> {
+        let mode = address_mode_for_op(op);
+        self.opcode_table
+            .get(m)
+            .unwrap() // all Mnemonic values should be in the HashMap
+            .get(&mode) // might be None for this Op's AddressMode
+            .copied() // Option<&Instruction> -> Option<Instruction>
+            .ok_or(Error::IllegalAddressMode(*m, mode))
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Error {
+    IllegalAddressMode(Mnemonic, AddressMode),
 }
 
 struct Line {
     // label: Option<String>,
-    instruction: Instruction,
+    instruction: Result<Instruction, Error>,
     operand: Op,
 }
 
@@ -105,7 +125,7 @@ pub enum Op {
     ZY(u8),
 }
 
-fn op_mode(op: &Op) -> AddressMode {
+fn address_mode_for_op(op: &Op) -> AddressMode {
     match op {
         Op::A => AddressMode::Accumulator,
         Op::Abs(_) => AddressMode::Absolute,

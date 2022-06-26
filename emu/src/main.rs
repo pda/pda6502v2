@@ -18,7 +18,8 @@ fn main() {
         .nop() // 2 <-----------------.
         .inx() // 3                   |
         .jmp(Op::Abs(base + 2)) // ---
-        .assemble();
+        .assemble()
+        .unwrap();
 
     for (i, byte) in prog.iter().enumerate() {
         bus.write(base + (i as u16), *byte);
