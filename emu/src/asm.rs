@@ -19,28 +19,23 @@ mod tests {
     #[test]
     fn it_assembles_tiny_program_with_absolute_operand() {
         let mut asm = Assembler::new();
-        assert_eq!(
-            asm.nop()
-                .nop()
-                .jmp(Operand::Abs(Addr::Literal(0x1234)))
-                .assemble()
-                .unwrap(),
-            vec![0xEA, 0xEA, 0x4C, 0x34, 0x12]
-        );
+        asm.nop().nop().jmp(Operand::Abs(Addr::Literal(0x1234)));
+        println!("{}", asm);
+        assert_eq!(asm.assemble().unwrap(), vec![0xEA, 0xEA, 0x4C, 0x34, 0x12]);
     }
 
     #[test]
     fn it_assembles_labels() {
         let mut asm = Assembler::new();
-        asm.nop()
+        asm.org(0x1000)
             .label("foo")
-            .jmp(Operand::Abs(Addr::Label(String::from("bar"))))
+            .jmp(Operand::Abs(label("bar")))
             .label("bar")
-            .jmp(Operand::Abs(Addr::Label(String::from("foo"))));
+            .jmp(Operand::Abs(label("foo")));
         println!("{}", asm);
         assert_eq!(
             asm.assemble().unwrap(),
-            vec![0x4C, 0x03, 0x00, 0x4C, 0x00, 0x00]
+            vec![0x4C, 0x03, 0x10, 0x4C, 0x00, 0x10]
         );
     }
 
@@ -134,32 +129,14 @@ impl Assembler {
     }
 
     fn op_value(&self, op: &Operand, labtab: &HashMap<&str, u16>) -> OpValue {
+        use Operand::*;
         match op {
-            Operand::A => OpValue::None,
-            Operand::Abs(x) => match x {
+            A | Impl => OpValue::None,
+            Abs(x) | AbsX(x) | AbsY(x) | Ind(x) => match x {
                 Addr::Literal(x) => OpValue::U16(*x),
                 Addr::Label(x) => OpValue::U16(*labtab.get(x.as_str()).unwrap()), // TODO: Result not unwrap
             },
-            Operand::AbsX(x) => match x {
-                Addr::Literal(x) => OpValue::U16(*x),
-                Addr::Label(_) => todo!(),
-            },
-            Operand::AbsY(x) => match x {
-                Addr::Literal(x) => OpValue::U16(*x),
-                Addr::Label(_) => todo!(),
-            },
-            Operand::Imm(x) => OpValue::U8(*x),
-            Operand::Impl => OpValue::None,
-            Operand::Ind(x) => match x {
-                Addr::Literal(x) => OpValue::U16(*x),
-                Addr::Label(_) => todo!(),
-            },
-            Operand::XInd(x) => OpValue::U8(*x),
-            Operand::IndY(x) => OpValue::U8(*x),
-            Operand::Rel(x) => OpValue::U8(*x),
-            Operand::Z(x) => OpValue::U8(*x),
-            Operand::ZX(x) => OpValue::U8(*x),
-            Operand::ZY(x) => OpValue::U8(*x),
+            Imm(x) | XInd(x) | IndY(x) | Rel(x) | Z(x) | ZX(x) | ZY(x) => OpValue::U8(*x),
         }
     }
 
@@ -218,19 +195,20 @@ impl From<Error> for fmt::Error {
 
 impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Operand::*;
         match self {
-            Operand::A => write!(f, "{}", "A"),
-            Operand::Abs(x) => write!(f, "{}", x),
-            Operand::AbsX(x) => write!(f, "{},X", x),
-            Operand::AbsY(x) => write!(f, "{},Y", x),
-            Operand::Imm(x) => write!(f, "${:02X}", x),
-            Operand::Impl => Ok(()),
-            Operand::Ind(x) => write!(f, "({})", x),
-            Operand::XInd(x) => write!(f, "(${:02X},X)", x),
-            Operand::IndY(x) => write!(f, "(${:02X}),Y", x),
-            Operand::Rel(x) | Operand::Z(x) => write!(f, "${:02X}", x),
-            Operand::ZX(x) => write!(f, "${:02X},X", x),
-            Operand::ZY(x) => write!(f, "${:02X},Y", x),
+            A => write!(f, "{}", "A"),
+            Abs(x) => write!(f, "{}", x),
+            AbsX(x) => write!(f, "{},X", x),
+            AbsY(x) => write!(f, "{},Y", x),
+            Imm(x) => write!(f, "${:02X}", x),
+            Impl => Ok(()),
+            Ind(x) => write!(f, "({})", x),
+            XInd(x) => write!(f, "(${:02X},X)", x),
+            IndY(x) => write!(f, "(${:02X}),Y", x),
+            Rel(x) | Operand::Z(x) => write!(f, "${:02X}", x),
+            ZX(x) => write!(f, "${:02X},X", x),
+            ZY(x) => write!(f, "${:02X},Y", x),
         }
     }
 }
@@ -277,21 +255,20 @@ pub enum Operand {
 
 impl Operand {
     fn mode(&self) -> AddressMode {
-        use Operand::*;
         match self {
-            A => AddressMode::Accumulator,
-            Abs(_) => AddressMode::Absolute,
-            AbsX(_) => AddressMode::AbsoluteX,
-            AbsY(_) => AddressMode::AbsoluteY,
-            Imm(_) => AddressMode::Immediate,
-            Impl => AddressMode::Implied,
-            Ind(_) => AddressMode::Indirect,
-            XInd(_) => AddressMode::XIndirect,
-            IndY(_) => AddressMode::IndirectY,
-            Rel(_) => AddressMode::Relative,
-            Z(_) => AddressMode::Zeropage,
-            ZX(_) => AddressMode::ZeropageX,
-            ZY(_) => AddressMode::ZeropageY,
+            Operand::A => AddressMode::Accumulator,
+            Operand::Abs(_) => AddressMode::Absolute,
+            Operand::AbsX(_) => AddressMode::AbsoluteX,
+            Operand::AbsY(_) => AddressMode::AbsoluteY,
+            Operand::Imm(_) => AddressMode::Immediate,
+            Operand::Impl => AddressMode::Implied,
+            Operand::Ind(_) => AddressMode::Indirect,
+            Operand::XInd(_) => AddressMode::XIndirect,
+            Operand::IndY(_) => AddressMode::IndirectY,
+            Operand::Rel(_) => AddressMode::Relative,
+            Operand::Z(_) => AddressMode::Zeropage,
+            Operand::ZX(_) => AddressMode::ZeropageX,
+            Operand::ZY(_) => AddressMode::ZeropageY,
         }
     }
 
