@@ -4,30 +4,21 @@ mod cpu;
 mod isa;
 
 use crate::asm::Assembler;
-use crate::asm::Op;
 use crate::bus::Bus;
 use crate::cpu::Cpu;
 
 fn main() {
+    let asm = asm();
+    println!("\n{}", asm);
+
     let mut bus = Bus::default();
-
-    let base: u16 = 0x1234;
-    let prog = Assembler::new()
-        .nop() // 0
-        .nop() // 1
-        .nop() // 2 <-----------------.
-        .inx() // 3                   |
-        .jmp(Op::Abs(base + 2)) // ---
-        .assemble()
-        .unwrap();
-
-    for (i, byte) in prog.iter().enumerate() {
-        bus.write(base + (i as u16), *byte);
+    for (i, byte) in asm.assemble().unwrap().iter().enumerate() {
+        bus.write(asm.org + (i as u16), *byte);
     }
 
     // set reset vector to base address where program is installed
-    bus.write(0xFFFC, base as u8);
-    bus.write(0xFFFD, (base >> 8) as u8);
+    bus.write(0xFFFC, asm.org as u8);
+    bus.write(0xFFFD, (asm.org >> 8) as u8);
 
     let mut cpu = Cpu::new(bus);
     cpu.reset();
@@ -36,4 +27,18 @@ fn main() {
         println!("{:?}", cpu);
         cpu.step();
     }
+}
+
+fn asm() -> Assembler {
+    use asm::{label, val, Operand::*};
+    let mut asm = Assembler::new();
+    asm.org(0x1234)
+        .nop()
+        .ldx(Imm(0x10))
+        .label("loop")
+        .inx()
+        .nop()
+        .jmp(Abs(label("loop")))
+        .jmp(Abs(val(0)));
+    asm
 }

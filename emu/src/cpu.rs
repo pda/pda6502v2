@@ -51,6 +51,7 @@ impl Cpu {
     }
 
     fn execute(&mut self, instruction: Instruction) {
+        use AddressMode::*;
         println!("{:?}", instruction);
         match instruction.mnemonic {
             // Mnemonic::ADC => {}
@@ -79,7 +80,7 @@ impl Cpu {
             // Mnemonic::EOR => {}
             // Mnemonic::INC => {}
             Mnemonic::INX => match instruction.mode {
-                AddressMode::Implied => {
+                Implied => {
                     self.x = self.x.wrapping_add(1);
                     // TODO: update self.status N and Z bits
                 }
@@ -87,13 +88,21 @@ impl Cpu {
             },
             // Mnemonic::INY => {}
             Mnemonic::JMP => match instruction.mode {
-                AddressMode::Absolute => self.pc = self.bus.read16(self.pc),
-                AddressMode::Indirect => todo!("{:?}", instruction.mode),
+                Absolute => self.pc = self.bus.read16(self.pc),
+                Indirect => todo!("{:?}", instruction.mode),
                 other => panic!("illegal AddressMode: {:?}", other),
             },
             // Mnemonic::JSR => {}
             // Mnemonic::LDA => {}
-            // Mnemonic::LDX => {}
+            Mnemonic::LDX => match instruction.mode {
+                Immediate => {
+                    self.x = self.bus.read(self.pc);
+                    self.pc += 1;
+                    // TODO: update self.status N and Z bits
+                }
+                Zeropage | ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
+                other => panic!("illegal AddressMode: {:?}", other),
+            },
             // Mnemonic::LDY => {}
             // Mnemonic::LSR => {}
             Mnemonic::NOP => {}
