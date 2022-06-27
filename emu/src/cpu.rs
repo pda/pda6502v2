@@ -32,7 +32,7 @@ impl Cpu {
 
     // Reset internal CPU state, as if the reset line had been asserted.
     pub fn reset(&mut self) {
-        self.pc = self.bus.read16(0xFFFC);
+        self.pc = read16(&self.bus, 0xFFFC);
         self.sp = 0x00;
         self.a = 0x00;
         self.x = 0x00;
@@ -91,7 +91,7 @@ impl Cpu {
             },
             // M::INY => {}
             M::JMP => match instruction.mode {
-                Absolute => self.pc = self.bus.read16(self.pc),
+                Absolute => self.pc = read16(&self.bus, self.pc),
                 Indirect => todo!("{:?}", instruction.mode),
                 other => panic!("illegal AddressMode: {:?}", other),
             },
@@ -144,6 +144,13 @@ impl fmt::Debug for Cpu {
             stat, self.pc, self.sp, self.a, self.x, self.y,
         ))
     }
+}
+
+// read a u16 in little-endian order from the bus
+fn read16(bus: &bus::Bus, addr: u16) -> u16 {
+    let lo = bus.read(addr as u16);
+    let hi = bus.read(addr.wrapping_add(1) as u16);
+    ((hi as u16) << 8) | (lo as u16)
 }
 
 // a string representation of the 8-bit status register;
