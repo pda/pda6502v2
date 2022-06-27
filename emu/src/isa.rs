@@ -1,16 +1,15 @@
-use core::fmt::Debug;
-use core::fmt::Formatter;
+use std::fmt;
 
 #[derive(Copy, Clone)]
-pub struct Instruction {
+pub struct Opcode {
     pub code: u8,
     pub mnemonic: Mnemonic,
     pub mode: AddressMode,
 }
 
-impl Instruction {
-    pub fn new(mnemonic: Mnemonic, mode: AddressMode, code: u8) -> Instruction {
-        Instruction {
+impl Opcode {
+    pub fn new(mnemonic: Mnemonic, mode: AddressMode, code: u8) -> Opcode {
+        Opcode {
             code,
             mnemonic,
             mode,
@@ -18,13 +17,13 @@ impl Instruction {
     }
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Instruction")
-            .field("code", &format_args!("${:02X}", &self.code))
-            .field("mnemonic", &self.mnemonic)
-            .field("mode", &self.mode)
-            .finish()
+impl fmt::Debug for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Opcode {{ ${:02X} {:?} {:?} }}",
+            self.code, self.mnemonic, self.mode
+        )
     }
 }
 
@@ -105,10 +104,11 @@ pub enum AddressMode {
     ZeropageY, // $LL,Y
 }
 
-pub fn instruction_list() -> Vec<Instruction> {
+// All supported Opcodes
+pub fn opcode_list() -> Vec<Opcode> {
     use AddressMode::*; // Absolute, Immediate etc
     use Mnemonic::*; // ADC, AND etc
-    let new = Instruction::new;
+    let new = Opcode::new;
     vec![
         new(ADC, Absolute, 0x6D),
         new(ADC, AbsoluteX, 0x7D),

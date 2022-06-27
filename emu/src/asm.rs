@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::isa::instruction_list;
-use crate::isa::AddressMode;
-use crate::isa::Instruction;
-use crate::isa::Mnemonic;
+use crate::isa;
+use crate::isa::{AddressMode, Mnemonic, Opcode};
 
 #[cfg(test)]
 mod tests {
@@ -51,7 +49,7 @@ pub struct Assembler {
     pub org: u16,
     lines: Vec<Line>,
     next_label: Option<String>,
-    opcode_table: HashMap<Mnemonic, HashMap<AddressMode, Instruction>>,
+    opcode_table: HashMap<Mnemonic, HashMap<AddressMode, Opcode>>,
 }
 
 impl Assembler {
@@ -118,13 +116,13 @@ impl Assembler {
         self
     }
 
-    fn find_instruction(&self, m: &Mnemonic, op: &Operand) -> Result<Instruction, Error> {
+    fn find_instruction(&self, m: &Mnemonic, op: &Operand) -> Result<Opcode, Error> {
         let mode = op.mode();
         self.opcode_table
             .get(m)
             .unwrap() // all Mnemonic values should be in the HashMap
             .get(&mode) // might be None for this Operand's AddressMode
-            .copied() // Option<&Instruction> -> Option<Instruction>
+            .copied() // Option<&Opcode> -> Option<Opcode>
             .ok_or(Error::IllegalAddressMode(*m, mode))
     }
 
@@ -230,11 +228,11 @@ pub enum Error {
 #[derive(Debug)]
 struct Line {
     label: Option<String>,
-    instruction: Result<Instruction, Error>,
+    instruction: Result<Opcode, Error>,
     operand: Operand,
 }
 
-// Instruction Operands
+// Opcode Operands
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum Operand {
@@ -295,9 +293,9 @@ enum OpValue {
     U16(u16),
 }
 
-fn build_opcode_table() -> HashMap<Mnemonic, HashMap<AddressMode, Instruction>> {
+fn build_opcode_table() -> HashMap<Mnemonic, HashMap<AddressMode, Opcode>> {
     let mut map: HashMap<_, HashMap<_, _>> = HashMap::new();
-    for instruction in instruction_list() {
+    for instruction in isa::opcode_list() {
         map.entry(instruction.mnemonic)
             .or_default()
             .insert(instruction.mode, instruction);

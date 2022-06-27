@@ -13,7 +13,7 @@ pub struct Cpu {
     y: u8,   // Y register
     sr: u8,  // status register
 
-    optab: [Option<isa::Instruction>; 256],
+    optab: [Option<isa::Opcode>; 256],
 }
 
 impl Cpu {
@@ -51,7 +51,7 @@ impl Cpu {
     }
 
     // Execute an instruction, reading the operands for its address mode from the bus.
-    fn execute(&mut self, instruction: isa::Instruction) {
+    fn execute(&mut self, instruction: isa::Opcode) {
         use isa::AddressMode::*;
         use isa::Mnemonic as M;
 
@@ -162,10 +162,10 @@ fn stat(sr: &u8) -> String {
         .collect()
 }
 
-// Build an array of all known ISA instructions indexed by their opcode.
-pub fn build_opcode_table() -> [Option<isa::Instruction>; 256] {
+// Build an array of isa::Opcode indexed by by their u8 opcode.
+pub fn build_opcode_table() -> [Option<isa::Opcode>; 256] {
     let mut optab = [None; 256];
-    for opcode in isa::instruction_list() {
+    for opcode in isa::opcode_list() {
         optab[opcode.code as usize] = Some(opcode);
     }
     optab
