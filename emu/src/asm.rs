@@ -107,6 +107,41 @@ impl Assembler {
         Ok(bin)
     }
 
+    pub fn listing(&self) -> Result<String, fmt::Error> {
+        use std::fmt::Write;
+        let mut f = String::new();
+
+        let labtab = self.build_label_table();
+
+        writeln!(f, "* = ${:04X}", self.org)?;
+        let mut addr = self.org;
+        for line in self.lines.iter() {
+            let instruction = line.instruction?;
+            let opvalue = self.op_value(&line.operand, &labtab);
+            let ophex = match opvalue {
+                OpValue::None => format!(""),
+                OpValue::U8(x) => format!("${:02X}", x),
+                OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
+            };
+            writeln!(
+                f,
+                "${:04X}  ${:02X} {:7}  {:16} {:?} {}",
+                addr,
+                instruction.code,
+                ophex,
+                if let Some(label) = &line.label {
+                    format!("{}:", label)
+                } else {
+                    String::from("")
+                },
+                instruction.mnemonic,
+                line.operand,
+            )?;
+            addr += 1 + (line.operand.length() as u16);
+        }
+        Ok(f)
+    }
+
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
         self.lines.push(Line {
             label: self.next_label.take(),
@@ -153,35 +188,7 @@ impl Assembler {
 
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let labtab = self.build_label_table();
-
-        writeln!(f, "* = ${:04X}", self.org)?;
-        let mut addr = self.org;
-        for line in self.lines.iter() {
-            let instruction = line.instruction?;
-            let opvalue = self.op_value(&line.operand, &labtab);
-            let ophex = match opvalue {
-                OpValue::None => format!(""),
-                OpValue::U8(x) => format!("${:02X}", x),
-                OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
-            };
-            writeln!(
-                f,
-                "${:04X}  ${:02X} {:7}  {:16} {:?} {}",
-                addr,
-                instruction.code,
-                ophex,
-                if let Some(label) = &line.label {
-                    format!("{}:", label)
-                } else {
-                    String::from("")
-                },
-                instruction.mnemonic,
-                line.operand,
-            )?;
-            addr += 1 + (line.operand.length() as u16);
-        }
-        Ok(())
+        write!(f, "{}", self.listing()?)
     }
 }
 
