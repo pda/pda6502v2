@@ -1,33 +1,61 @@
 pda6502v2
 =========
 
-Version two (complete redesign) of https://github.com/pda/pda6502
+pda6502v2 is a single-board homebrew computer built around the 8-bit
+[6502][6502] CPU, varitions of which powered the venerable [Commodore 64][c64],
+[Apple II][appleii], [Nintendo Entertainment System][nes] and lots more.
 
-A single board computer with 6502 CPU, 512 KiB RAM, 32 GPIO pins, dual UART,
-high speed SPI, SID sound, FPGA system controller, ICSP-programmable EEPROM
-boot loader.
+This repository contains all aspects of its development:
 
-The main v1 pain points being addressed by v2:
+| Directory             | Description                      | Language / Tool |
+| --------------------- | -------------------------------- | --------------- |
+| [`kicad/`](kicad)     | hardware schematic / PCB design  | KiCad           |
+| [`bifröst/`](bifröst) | BIFRÖST FPGA system controller   | Verilog         |
+| [`os/`](os)           | pda6502v2 firmware/OS/software   | 6502 assembly   |
+| [`emu/`](emu)         | pda6502v2 emulator               | Rust            |
+| [`eeprog/`](eeprog)   | SPI EEPROM in-circuit programmer | C, Arduino C++  |
 
-* tedious software/bootloader development cycle, removing and reprogramming EEPROM.
-* limited/slow serial communications (bit-banged via 6522 GPIO).
-* no UART for serial console etc.
-* inflexible address bus mapping with hard-wired logic gates.
+Hardware specifications
+-----------------------
+
+- 6502 CPU ([WDC 65C02][W65C02])
+- “BIFRÖST” FPGA system controller ([Lattice ICE40HX4K][ice40])
+- 512 KiB static RAM
+- 2 x [6522 VIA][W65C22]; 4 x 8-bit ports; 32 GPIO pins
+- [SID][sid] sound generator ([ARMSID][armsid])
+- SPI controller (BIFRÖST FPGA)
+- UART ([NXP SC28L92 dual UART][nxpuart])
 
 
-Comparison table
-----------------
+Compared to original pda6502
+----------------------------
 
-|                       | v1                  | v2                             |
-| --------------------- | ------------------- | ------------------------------ |
-| Voltage               | 5.0V                | 3.3V                           |
-| Address decode logic  | 7400-series chips   | FPGA                           |
-| Schematic/layout tool | EAGLE               | KiCad                          |
-| Boot                  | EEPROM              | FPGA loads boostrap from flash |
-| Clock                 | 1 MHz               | variable, target 8 MHz         |
-| I/O                   | GPIO                | GPIO, UART, SPI                |
-| RAM                   | 32 KiB              | 512 KiB                        |
-| Sound                 | (none)              | ARMSID (SID emulator)          |
+pda6502v2 is redesigned from scratch to address the pain points encountered
+creating and programming the original [pda6502][pda6502]
+several years earlier:
+
+* Tedious software/bootloader development cycle, physically removing and slowly
+  reprogramming an EEPROM on every software iteration.
+* Limited, very slow SPI communications (bit-banged via 6522 GPIO) not viable
+  for SPI displays etc.
+* No UART for serial console or other communications with modern systems.
+* Inflexible address bus mapping with hard-wired logic gates.
+
+These issues and more have been improved:
+
+
+|                       | pda6502             | pda6502v2                             |
+| --------------------- | ------------------- | ------------------------------------- |
+| Bootloader / firmware | EEPROM              | In-circuit programmable Flash EEPROM  |
+| SPI                   | 6522 bit-bang       | FPGA hardware accelerated             |
+| UART                  | *none*              | Dual UART (SC28L92)                   |
+| GPIO                  | 6522 VIA            | Dual 6522 VIA                         |
+| Sound                 | *none*              | ARMSID (SID emulation)                |
+| RAM                   | 32 KiB              | 512 KiB (FPGA can bank-switch)        |
+| Clock                 | 1 MHz oscillator    | FPGA generated; variable              |
+| Address decode logic  | 7400-series chips   | FPGA programmable                     |
+| Voltage               | 5.0V                | 3.3V                                  |
+| Schematic/layout tool | EAGLE               | KiCad                                 |
 
 
 FPGA system controller: BIFRÖST
@@ -75,48 +103,27 @@ which can be easily altered after assembly.
 
 BIFRÖST needs the following signals:
 
-| Signal       | Pins |
-| --------     | ---- |
-| ADDR 0..15   |  16  |
-| ADDR 16..18  |   3  |
-| CLOCK        |   1  |
-| CLOCK SRC    |   1  |
-| CPU BUSEN    |   1  |
-| CPU IRQ      |   1  |
-| CPU MLOCK    |   1  |
-| CPU NMIRQ    |   1  |
-| CPU READY    |   1  |
-| CPU SETOV    |   1  |
-| CPU SYNC     |   1  |
-| CPU VECPULL  |   1  |
-| DATA         |   8  |
-| RESET        |   1  |
-| RESET (inv)  |   1  |
-| RW           |   1  |
-| SPI MISO     |   1  |
-| SPI MOSI     |   1  |
-| SPI SCLK     |   1  |
-| SPI SS       |   8  |
-| SRAM CS      |   2  |
-| UART CS      |   1  |
-| UART IM      |   1  |
-| UART IRQ     |   1  |
-| UART RDN     |   1  |
-| UART RXAIRQ  |   1  |
-| UART RXBIRQ  |   1  |
-| UART TXAIRQ  |   1  |
-| UART TXBIRQ  |   1  |
-| UART WRN     |   1  |
-| VIA1 CS      |   1  |
-| VIA1 IRQ     |   1  |
-| VIA2 CS      |   1  |
-| VIA2 IRQ     |   1  |
+| Signals                                                                       | Count   |
+| ----------------------------------------------------------------------------- | ------- |
+| Bus: `ADDR 0..15` + extended `ADDR 16..18`                                    | **19**  |
+| SPI: `MISO`, `MOSI`, `SCLK`, `SS` x 8                                         | **11**  |
+| 6502: `CLK` `RWB` `BE` `IRQB` `MLB` `NMIB` `RDY` `SOB` `SYNC` `VPB` `RESB`    | **10**  |
+| UART: `CS`, `IM`, `IRQ`, `RDN`, `RXAIRQ`, `RXBIRQ`, `TXAIRQ`, `TXBIRQ`, `WRN` | **9**   |
+| Bus: `DATA 0..7`                                                              | **8**   |
+| VIA1 & VIA2: `CS`, `IRQ`                                                      | **4**   |
+| SRAM `CS`                                                                     | **1**   |
+| `CLOCKSRC` (in from oscillator)                                               | **1**   |
+| `~RESET`                                                                      | **1**   |
 
 This brings the total I/O pin requirement to at least 64.
 
-The ICE40HX1K-VQ100 FPGA lacks PLL which might be useful?
+The ICE40HX1K-VQ100 FPGA lacks PLL; PLL could be useful?
+
 The TQ144 package includes PLL and has the same 0.5 mm pitch, so shouldn't be
 materially harder to hand-solder.
+
+The ICE40HX**4**K is bigger/better, with immaterial cost difference at this
+volume.
 
 RAM
 ---
@@ -161,7 +168,7 @@ Useful information on [UARTs: REPLACING THE 65C51 on 6502.org forums](http://for
 
 ### SID Sound
 
-[ARMSID](https://www.nobomi.cz/8bit/armsid/index_en.php) emulates MOS6581 or MOS8580 SID.
+[ARMSID][armsid] emulates MOS6581 or MOS8580 SID.
 
 I believe this will only function correctly when running at ~1 MHz.
 
@@ -188,12 +195,6 @@ EEPROM (1.7–5.5V) only, isolated from the rest of the system via 1N4148 Diode.
 
 Maxim DS1818-5 “3.3V EconoReset with Pushbutton” handles holding RESET
 active-low during power-on, brown-out, and when a RESET button is pressed.
-
-
-Block diagram
--------------
-
-![](docs/block.png)
 
 
 Memory map
@@ -237,3 +238,16 @@ terrible idea; BIFRÖST needs to reset the CPU without resetting itself.
 Workaround: use a knife to physically cut the RESET trace coming from top-right
 pin of RESET switch, next to pin 1 of ARMSID, and then airwire from EXT[0] to
 6502 RESET.
+
+
+[6502]: http://en.wikipedia.org/wiki/MOS_Technology_6502
+[W65C02]: http://en.wikipedia.org/wiki/WDC_65C02
+[W65C22]: http://en.wikipedia.org/wiki/WDC_65C22
+[appleii]: https://en.wikipedia.org/wiki/Apple_II
+[armsid]: https://www.nobomi.cz/8bit/armsid/index_en.php
+[c64]: https://en.wikipedia.org/wiki/Commodore_64
+[ice40]: https://www.latticesemi.com/iCE40
+[nes]: https://en.wikipedia.org/wiki/Nintendo_Entertainment_System
+[nxpuart]: https://www.nxp.com/products/interfaces/uarts/3-3-v-5-0-v-dual-universal-asynchronous-receiver-transmitter-duart:SC28L92
+[sid]: https://en.wikipedia.org/wiki/MOS_Technology_6581
+[pda6502]: https://github.com/pda/pda6502
