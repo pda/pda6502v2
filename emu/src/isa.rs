@@ -21,7 +21,7 @@ impl fmt::Debug for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Opcode {{ ${:02X} {:?} {:?} }}",
+            "Opcode {{ ${:02X} {} {:?} }}",
             self.code, self.mnemonic, self.mode
         )
     }
@@ -262,4 +262,10 @@ pub fn opcode_list() -> Vec<Opcode> {
         new(Txs, Implied, 0x9A),
         new(Tya, Implied, 0x98),
     ]
+}
+
+impl fmt::Display for Mnemonic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_uppercase())
+    }
 }
