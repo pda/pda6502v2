@@ -119,7 +119,7 @@ impl Assembler {
             let instruction = line.instruction?;
             let opvalue = self.op_value(&line.operand, &labtab);
             let ophex = match opvalue {
-                OpValue::None => format!(""),
+                OpValue::None => String::new(),
                 OpValue::U8(x) => format!("${:02X}", x),
                 OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
             };
@@ -202,7 +202,7 @@ impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Operand::*;
         match self {
-            A => write!(f, "{}", "A"),
+            A => write!(f, "A"),
             Abs(x) => write!(f, "{}", x),
             AbsX(x) => write!(f, "{},X", x),
             AbsY(x) => write!(f, "{},Y", x),
