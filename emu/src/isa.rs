@@ -29,62 +29,62 @@ impl fmt::Debug for Opcode {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Mnemonic {
-    ADC, // add with carry
-    AND, // and (with accumulator)
-    ASL, // arithmetic shift left
-    BCC, // branch on carry clear
-    BCS, // branch on carry set
-    BEQ, // branch on equal (zero set)
-    BIT, // bit test
-    BMI, // branch on minus (negative set)
-    BNE, // branch on not equal (zero clear)
-    BPL, // branch on plus (negative clear)
-    BRK, // break / interrupt
-    BVC, // branch on overflow clear
-    BVS, // branch on overflow set
-    CLC, // clear carry
-    CLD, // clear decimal
-    CLI, // clear interrupt disable
-    CLV, // clear overflow
-    CMP, // compare (with accumulator)
-    CPX, // compare with X
-    CPY, // compare with Y
-    DEC, // decrement
-    DEX, // decrement X
-    DEY, // decrement Y
-    EOR, // exclusive or (with accumulator)
-    INC, // increment
-    INX, // increment X
-    INY, // increment Y
-    JMP, // jump
-    JSR, // jump subroutine
-    LDA, // load accumulator
-    LDX, // load X
-    LDY, // load Y
-    LSR, // logical shift right
-    NOP, // no operation
-    ORA, // or with accumulator
-    PHA, // push accumulator
-    PHP, // push processor status (SR)
-    PLA, // pull accumulator
-    PLP, // pull processor status (SR)
-    ROL, // rotate left
-    ROR, // rotate right
-    RTI, // return from interrupt
-    RTS, // return from subroutine
-    SBC, // subtract with carry
-    SEC, // set carry
-    SED, // set decimal
-    SEI, // set interrupt disable
-    STA, // store accumulator
-    STX, // store X
-    STY, // store Y
-    TAX, // transfer accumulator to X
-    TAY, // transfer accumulator to Y
-    TSX, // transfer stack pointer to X
-    TXA, // transfer X to accumulator
-    TXS, // transfer X to stack pointer
-    TYA, // transfer Y to accumulator
+    Adc, // add with carry
+    And, // and (with accumulator)
+    Asl, // arithmetic shift left
+    Bcc, // branch on carry clear
+    Bcs, // branch on carry set
+    Beq, // branch on equal (zero set)
+    Bit, // bit test
+    Bmi, // branch on minus (negative set)
+    Bne, // branch on not equal (zero clear)
+    Bpl, // branch on plus (negative clear)
+    Brk, // break / interrupt
+    Bvc, // branch on overflow clear
+    Bvs, // branch on overflow set
+    Clc, // clear carry
+    Cld, // clear decimal
+    Cli, // clear interrupt disable
+    Clv, // clear overflow
+    Cmp, // compare (with accumulator)
+    Cpx, // compare with X
+    Cpy, // compare with Y
+    Dec, // decrement
+    Dex, // decrement X
+    Dey, // decrement Y
+    Eor, // exclusive or (with accumulator)
+    Inc, // increment
+    Inx, // increment X
+    Iny, // increment Y
+    Jmp, // jump
+    Jsr, // jump subroutine
+    Lda, // load accumulator
+    Ldx, // load X
+    Ldy, // load Y
+    Lsr, // logical shift right
+    Nop, // no operation
+    Ora, // or with accumulator
+    Pha, // push accumulator
+    Php, // push processor status (SR)
+    Pla, // pull accumulator
+    Plp, // pull processor status (SR)
+    Rol, // rotate left
+    Ror, // rotate right
+    Rti, // return from interrupt
+    Rts, // return from subroutine
+    Sbc, // subtract with carry
+    Sec, // set carry
+    Sed, // set decimal
+    Sei, // set interrupt disable
+    Sta, // store accumulator
+    Stx, // store X
+    Sty, // store Y
+    Tax, // transfer accumulator to X
+    Tay, // transfer accumulator to Y
+    Tsx, // transfer stack pointer to X
+    Txa, // transfer X to accumulator
+    Txs, // transfer X to stack pointer
+    Tya, // transfer Y to accumulator
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -107,159 +107,159 @@ pub enum AddressMode {
 // All supported Opcodes
 pub fn opcode_list() -> Vec<Opcode> {
     use AddressMode::*; // Absolute, Immediate etc
-    use Mnemonic::*; // ADC, AND etc
+    use Mnemonic::*; // Adc, Bcc, Clc etc
     let new = Opcode::new;
     vec![
-        new(ADC, Absolute, 0x6D),
-        new(ADC, AbsoluteX, 0x7D),
-        new(ADC, AbsoluteY, 0x79),
-        new(ADC, Immediate, 0x69),
-        new(ADC, IndirectY, 0x71),
-        new(ADC, XIndirect, 0x61),
-        new(ADC, Zeropage, 0x65),
-        new(ADC, ZeropageX, 0x75),
-        new(AND, Absolute, 0x2D),
-        new(AND, AbsoluteX, 0x3D),
-        new(AND, AbsoluteY, 0x39),
-        new(AND, Immediate, 0x29),
-        new(AND, IndirectY, 0x31),
-        new(AND, XIndirect, 0x21),
-        new(AND, Zeropage, 0x25),
-        new(AND, ZeropageX, 0x35),
-        new(ASL, Absolute, 0x0E),
-        new(ASL, AbsoluteX, 0x1E),
-        new(ASL, Accumulator, 0x0A),
-        new(ASL, Zeropage, 0x06),
-        new(ASL, ZeropageX, 0x16),
-        new(BCC, Relative, 0x90),
-        new(BCS, Relative, 0xB0),
-        new(BEQ, Relative, 0xF0),
-        new(BIT, Absolute, 0x2C),
-        new(BIT, Zeropage, 0x24),
-        new(BMI, Relative, 0x30),
-        new(BNE, Relative, 0xD0),
-        new(BPL, Relative, 0x10),
-        new(BRK, Implied, 0x00),
-        new(BVC, Relative, 0x50),
-        new(BVS, Relative, 0x70),
-        new(CLC, Implied, 0x18),
-        new(CLD, Implied, 0xD8),
-        new(CLI, Implied, 0x58),
-        new(CLV, Implied, 0xB8),
-        new(CMP, Absolute, 0xCD),
-        new(CMP, AbsoluteX, 0xDD),
-        new(CMP, AbsoluteY, 0xD9),
-        new(CMP, Immediate, 0xC9),
-        new(CMP, IndirectY, 0xD1),
-        new(CMP, XIndirect, 0xC1),
-        new(CMP, Zeropage, 0xC5),
-        new(CMP, ZeropageX, 0xD5),
-        new(CPX, Absolute, 0xEC),
-        new(CPX, Immediate, 0xE0),
-        new(CPX, Zeropage, 0xE4),
-        new(CPY, Absolute, 0xCC),
-        new(CPY, Immediate, 0xC0),
-        new(CPY, Zeropage, 0xC4),
-        new(DEC, Absolute, 0xCE),
-        new(DEC, AbsoluteX, 0xDE),
-        new(DEC, Zeropage, 0xC6),
-        new(DEC, ZeropageX, 0xD6),
-        new(DEX, Implied, 0xCA),
-        new(DEY, Implied, 0x88),
-        new(EOR, Absolute, 0x4D),
-        new(EOR, AbsoluteX, 0x5D),
-        new(EOR, AbsoluteY, 0x59),
-        new(EOR, Immediate, 0x49),
-        new(EOR, IndirectY, 0x51),
-        new(EOR, XIndirect, 0x41),
-        new(EOR, Zeropage, 0x45),
-        new(EOR, ZeropageX, 0x55),
-        new(INC, Absolute, 0xEE),
-        new(INC, AbsoluteX, 0xFE),
-        new(INC, Zeropage, 0xE6),
-        new(INC, ZeropageX, 0xF6),
-        new(INX, Implied, 0xE8),
-        new(INY, Implied, 0xC8),
-        new(JMP, Absolute, 0x4C),
-        new(JMP, Indirect, 0x6C),
-        new(JSR, Absolute, 0x20),
-        new(LDA, Absolute, 0xAD),
-        new(LDA, AbsoluteX, 0xBD),
-        new(LDA, AbsoluteY, 0xB9),
-        new(LDA, Immediate, 0xA9),
-        new(LDA, IndirectY, 0xB1),
-        new(LDA, XIndirect, 0xA1),
-        new(LDA, Zeropage, 0xA5),
-        new(LDA, ZeropageX, 0xB5),
-        new(LDX, Absolute, 0xAE),
-        new(LDX, AbsoluteY, 0xBE),
-        new(LDX, Immediate, 0xA2),
-        new(LDX, Zeropage, 0xA6),
-        new(LDX, ZeropageY, 0xB6),
-        new(LDY, Absolute, 0xAC),
-        new(LDY, AbsoluteX, 0xBC),
-        new(LDY, Immediate, 0xA0),
-        new(LDY, Zeropage, 0xA4),
-        new(LDY, ZeropageX, 0xB4),
-        new(LSR, Absolute, 0x4E),
-        new(LSR, AbsoluteX, 0x5E),
-        new(LSR, Accumulator, 0x4A),
-        new(LSR, Zeropage, 0x46),
-        new(LSR, ZeropageX, 0x56),
-        new(NOP, Implied, 0xEA),
-        new(ORA, Absolute, 0x0D),
-        new(ORA, AbsoluteX, 0x1D),
-        new(ORA, AbsoluteY, 0x19),
-        new(ORA, Immediate, 0x09),
-        new(ORA, IndirectY, 0x11),
-        new(ORA, XIndirect, 0x01),
-        new(ORA, Zeropage, 0x05),
-        new(ORA, ZeropageX, 0x15),
-        new(PHA, Implied, 0x48),
-        new(PHP, Implied, 0x08),
-        new(PLA, Implied, 0x68),
-        new(PLP, Implied, 0x28),
-        new(ROL, Absolute, 0x2E),
-        new(ROL, AbsoluteX, 0x3E),
-        new(ROL, Accumulator, 0x2A),
-        new(ROL, Zeropage, 0x26),
-        new(ROL, ZeropageX, 0x36),
-        new(ROR, Absolute, 0x6E),
-        new(ROR, AbsoluteX, 0x7E),
-        new(ROR, Accumulator, 0x6A),
-        new(ROR, Zeropage, 0x66),
-        new(ROR, ZeropageX, 0x76),
-        new(RTI, Implied, 0x40),
-        new(RTS, Implied, 0x60),
-        new(SBC, Absolute, 0xED),
-        new(SBC, AbsoluteX, 0xFD),
-        new(SBC, AbsoluteY, 0xF9),
-        new(SBC, Immediate, 0xE9),
-        new(SBC, IndirectY, 0xF1),
-        new(SBC, XIndirect, 0xE1),
-        new(SBC, Zeropage, 0xE5),
-        new(SBC, ZeropageX, 0xF5),
-        new(SEC, Implied, 0x38),
-        new(SED, Implied, 0xF8),
-        new(SEI, Implied, 0x78),
-        new(STA, Absolute, 0x8D),
-        new(STA, AbsoluteX, 0x9D),
-        new(STA, AbsoluteY, 0x99),
-        new(STA, IndirectY, 0x91),
-        new(STA, XIndirect, 0x81),
-        new(STA, Zeropage, 0x85),
-        new(STA, ZeropageX, 0x95),
-        new(STX, Absolute, 0x8E),
-        new(STX, Zeropage, 0x86),
-        new(STX, ZeropageY, 0x96),
-        new(STY, Absolute, 0x8C),
-        new(STY, Zeropage, 0x84),
-        new(STY, ZeropageX, 0x94),
-        new(TAX, Implied, 0xAA),
-        new(TAY, Implied, 0xA8),
-        new(TSX, Implied, 0xBA),
-        new(TXA, Implied, 0x8A),
-        new(TXS, Implied, 0x9A),
-        new(TYA, Implied, 0x98),
+        new(Adc, Absolute, 0x6D),
+        new(Adc, AbsoluteX, 0x7D),
+        new(Adc, AbsoluteY, 0x79),
+        new(Adc, Immediate, 0x69),
+        new(Adc, IndirectY, 0x71),
+        new(Adc, XIndirect, 0x61),
+        new(Adc, Zeropage, 0x65),
+        new(Adc, ZeropageX, 0x75),
+        new(And, Absolute, 0x2D),
+        new(And, AbsoluteX, 0x3D),
+        new(And, AbsoluteY, 0x39),
+        new(And, Immediate, 0x29),
+        new(And, IndirectY, 0x31),
+        new(And, XIndirect, 0x21),
+        new(And, Zeropage, 0x25),
+        new(And, ZeropageX, 0x35),
+        new(Asl, Absolute, 0x0E),
+        new(Asl, AbsoluteX, 0x1E),
+        new(Asl, Accumulator, 0x0A),
+        new(Asl, Zeropage, 0x06),
+        new(Asl, ZeropageX, 0x16),
+        new(Bcc, Relative, 0x90),
+        new(Bcs, Relative, 0xB0),
+        new(Beq, Relative, 0xF0),
+        new(Bit, Absolute, 0x2C),
+        new(Bit, Zeropage, 0x24),
+        new(Bmi, Relative, 0x30),
+        new(Bne, Relative, 0xD0),
+        new(Bpl, Relative, 0x10),
+        new(Brk, Implied, 0x00),
+        new(Bvc, Relative, 0x50),
+        new(Bvs, Relative, 0x70),
+        new(Clc, Implied, 0x18),
+        new(Cld, Implied, 0xD8),
+        new(Cli, Implied, 0x58),
+        new(Clv, Implied, 0xB8),
+        new(Cmp, Absolute, 0xCD),
+        new(Cmp, AbsoluteX, 0xDD),
+        new(Cmp, AbsoluteY, 0xD9),
+        new(Cmp, Immediate, 0xC9),
+        new(Cmp, IndirectY, 0xD1),
+        new(Cmp, XIndirect, 0xC1),
+        new(Cmp, Zeropage, 0xC5),
+        new(Cmp, ZeropageX, 0xD5),
+        new(Cpx, Absolute, 0xEC),
+        new(Cpx, Immediate, 0xE0),
+        new(Cpx, Zeropage, 0xE4),
+        new(Cpy, Absolute, 0xCC),
+        new(Cpy, Immediate, 0xC0),
+        new(Cpy, Zeropage, 0xC4),
+        new(Dec, Absolute, 0xCE),
+        new(Dec, AbsoluteX, 0xDE),
+        new(Dec, Zeropage, 0xC6),
+        new(Dec, ZeropageX, 0xD6),
+        new(Dex, Implied, 0xCA),
+        new(Dey, Implied, 0x88),
+        new(Eor, Absolute, 0x4D),
+        new(Eor, AbsoluteX, 0x5D),
+        new(Eor, AbsoluteY, 0x59),
+        new(Eor, Immediate, 0x49),
+        new(Eor, IndirectY, 0x51),
+        new(Eor, XIndirect, 0x41),
+        new(Eor, Zeropage, 0x45),
+        new(Eor, ZeropageX, 0x55),
+        new(Inc, Absolute, 0xEE),
+        new(Inc, AbsoluteX, 0xFE),
+        new(Inc, Zeropage, 0xE6),
+        new(Inc, ZeropageX, 0xF6),
+        new(Inx, Implied, 0xE8),
+        new(Iny, Implied, 0xC8),
+        new(Jmp, Absolute, 0x4C),
+        new(Jmp, Indirect, 0x6C),
+        new(Jsr, Absolute, 0x20),
+        new(Lda, Absolute, 0xAD),
+        new(Lda, AbsoluteX, 0xBD),
+        new(Lda, AbsoluteY, 0xB9),
+        new(Lda, Immediate, 0xA9),
+        new(Lda, IndirectY, 0xB1),
+        new(Lda, XIndirect, 0xA1),
+        new(Lda, Zeropage, 0xA5),
+        new(Lda, ZeropageX, 0xB5),
+        new(Ldx, Absolute, 0xAE),
+        new(Ldx, AbsoluteY, 0xBE),
+        new(Ldx, Immediate, 0xA2),
+        new(Ldx, Zeropage, 0xA6),
+        new(Ldx, ZeropageY, 0xB6),
+        new(Ldy, Absolute, 0xAC),
+        new(Ldy, AbsoluteX, 0xBC),
+        new(Ldy, Immediate, 0xA0),
+        new(Ldy, Zeropage, 0xA4),
+        new(Ldy, ZeropageX, 0xB4),
+        new(Lsr, Absolute, 0x4E),
+        new(Lsr, AbsoluteX, 0x5E),
+        new(Lsr, Accumulator, 0x4A),
+        new(Lsr, Zeropage, 0x46),
+        new(Lsr, ZeropageX, 0x56),
+        new(Nop, Implied, 0xEA),
+        new(Ora, Absolute, 0x0D),
+        new(Ora, AbsoluteX, 0x1D),
+        new(Ora, AbsoluteY, 0x19),
+        new(Ora, Immediate, 0x09),
+        new(Ora, IndirectY, 0x11),
+        new(Ora, XIndirect, 0x01),
+        new(Ora, Zeropage, 0x05),
+        new(Ora, ZeropageX, 0x15),
+        new(Pha, Implied, 0x48),
+        new(Php, Implied, 0x08),
+        new(Pla, Implied, 0x68),
+        new(Plp, Implied, 0x28),
+        new(Rol, Absolute, 0x2E),
+        new(Rol, AbsoluteX, 0x3E),
+        new(Rol, Accumulator, 0x2A),
+        new(Rol, Zeropage, 0x26),
+        new(Rol, ZeropageX, 0x36),
+        new(Ror, Absolute, 0x6E),
+        new(Ror, AbsoluteX, 0x7E),
+        new(Ror, Accumulator, 0x6A),
+        new(Ror, Zeropage, 0x66),
+        new(Ror, ZeropageX, 0x76),
+        new(Rti, Implied, 0x40),
+        new(Rts, Implied, 0x60),
+        new(Sbc, Absolute, 0xED),
+        new(Sbc, AbsoluteX, 0xFD),
+        new(Sbc, AbsoluteY, 0xF9),
+        new(Sbc, Immediate, 0xE9),
+        new(Sbc, IndirectY, 0xF1),
+        new(Sbc, XIndirect, 0xE1),
+        new(Sbc, Zeropage, 0xE5),
+        new(Sbc, ZeropageX, 0xF5),
+        new(Sec, Implied, 0x38),
+        new(Sed, Implied, 0xF8),
+        new(Sei, Implied, 0x78),
+        new(Sta, Absolute, 0x8D),
+        new(Sta, AbsoluteX, 0x9D),
+        new(Sta, AbsoluteY, 0x99),
+        new(Sta, IndirectY, 0x91),
+        new(Sta, XIndirect, 0x81),
+        new(Sta, Zeropage, 0x85),
+        new(Sta, ZeropageX, 0x95),
+        new(Stx, Absolute, 0x8E),
+        new(Stx, Zeropage, 0x86),
+        new(Stx, ZeropageY, 0x96),
+        new(Sty, Absolute, 0x8C),
+        new(Sty, Zeropage, 0x84),
+        new(Sty, ZeropageX, 0x94),
+        new(Tax, Implied, 0xAA),
+        new(Tay, Implied, 0xA8),
+        new(Tsx, Implied, 0xBA),
+        new(Txa, Implied, 0x8A),
+        new(Txs, Implied, 0x9A),
+        new(Tya, Implied, 0x98),
     ]
 }

@@ -57,47 +57,47 @@ impl Cpu {
 
         println!("{:?}", instruction);
         match instruction.mnemonic {
-            // M::ADC => {}
-            // M::AND => {}
-            // M::ASL => {}
-            // M::BCC => {}
-            // M::BCS => {}
-            // M::BEQ => {}
-            // M::BIT => {}
-            // M::BMI => {}
-            // M::BNE => {}
-            // M::BPL => {}
-            // M::BRK => {}
-            // M::BVC => {}
-            // M::BVS => {}
-            // M::CLC => {}
-            // M::CLD => {}
-            // M::CLI => {}
-            // M::CLV => {}
-            // M::CMP => {}
-            // M::CPX => {}
-            // M::CPY => {}
-            // M::DEC => {}
-            // M::DEX => {}
-            // M::DEY => {}
-            // M::EOR => {}
-            // M::INC => {}
-            M::INX => match instruction.mode {
+            // M::Adc => {}
+            // M::And => {}
+            // M::Asl => {}
+            // M::Bcc => {}
+            // M::Bcs => {}
+            // M::Beq => {}
+            // M::Bit => {}
+            // M::Bmi => {}
+            // M::Bne => {}
+            // M::Bpl => {}
+            // M::Brk => {}
+            // M::Bvc => {}
+            // M::Bvs => {}
+            // M::Clc => {}
+            // M::Cld => {}
+            // M::Cli => {}
+            // M::Clv => {}
+            // M::Cmp => {}
+            // M::Cpx => {}
+            // M::Cpy => {}
+            // M::Dec => {}
+            // M::Dex => {}
+            // M::Dey => {}
+            // M::Eor => {}
+            // M::Inc => {}
+            M::Inx => match instruction.mode {
                 Implied => {
                     self.x = self.x.wrapping_add(1);
                     // TODO: update self.status N and Z bits
                 }
                 other => panic!("illegal AddressMode: {:?}", other),
             },
-            // M::INY => {}
-            M::JMP => match instruction.mode {
+            // M::Iny => {}
+            M::Jmp => match instruction.mode {
                 Absolute => self.pc = read16(&self.bus, self.pc),
                 Indirect => todo!("{:?}", instruction.mode),
                 other => panic!("illegal AddressMode: {:?}", other),
             },
-            // M::JSR => {}
-            // M::LDA => {}
-            M::LDX => match instruction.mode {
+            // M::Jsr => {}
+            // M::Lda => {}
+            M::Ldx => match instruction.mode {
                 Immediate => {
                     self.x = self.bus.read(self.pc);
                     self.pc += 1;
@@ -106,31 +106,31 @@ impl Cpu {
                 Zeropage | ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
                 other => panic!("illegal AddressMode: {:?}", other),
             },
-            // M::LDY => {}
-            // M::LSR => {}
-            M::NOP => {}
-            // M::ORA => {}
-            // M::PHA => {}
-            // M::PHP => {}
-            // M::PLA => {}
-            // M::PLP => {}
-            // M::ROL => {}
-            // M::ROR => {}
-            // M::RTI => {}
-            // M::RTS => {}
-            // M::SBC => {}
-            // M::SEC => {}
-            // M::SED => {}
-            // M::SEI => {}
-            // M::STA => {}
-            // M::STX => {}
-            // M::STY => {}
-            // M::TAX => {}
-            // M::TAY => {}
-            // M::TSX => {}
-            // M::TXA => {}
-            // M::TXS => {}
-            // M::TYA => {}
+            // M::Ldy => {}
+            // M::Lsr => {}
+            M::Nop => {}
+            // M::Ora => {}
+            // M::Pha => {}
+            // M::Php => {}
+            // M::Pla => {}
+            // M::Plp => {}
+            // M::Rol => {}
+            // M::Ror => {}
+            // M::Rti => {}
+            // M::Rts => {}
+            // M::Sbc => {}
+            // M::Sec => {}
+            // M::Sed => {}
+            // M::Sei => {}
+            // M::Sta => {}
+            // M::Stx => {}
+            // M::Sty => {}
+            // M::Tax => {}
+            // M::Tay => {}
+            // M::Tsx => {}
+            // M::Txa => {}
+            // M::Txs => {}
+            // M::Tya => {}
             other => todo!("{:?}", other),
         }
     }

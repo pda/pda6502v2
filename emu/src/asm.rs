@@ -38,7 +38,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "IllegalAddressMode(JMP, Relative)")]
+    #[should_panic(expected = "IllegalAddressMode(Jmp, Relative)")]
     fn it_errors_on_illegal_address_mode() {
         let mut asm = Assembler::new();
         asm.jmp(Operand::Rel(0xFF)).assemble().unwrap();
@@ -73,19 +73,19 @@ impl Assembler {
     }
 
     pub fn nop(&mut self) -> &mut Assembler {
-        self.push_instruction(Mnemonic::NOP, Operand::Impl)
+        self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }
 
     pub fn jmp(&mut self, op: Operand) -> &mut Self {
-        self.push_instruction(Mnemonic::JMP, op)
+        self.push_instruction(Mnemonic::Jmp, op)
     }
 
     pub fn ldx(&mut self, op: Operand) -> &mut Self {
-        self.push_instruction(Mnemonic::LDX, op)
+        self.push_instruction(Mnemonic::Ldx, op)
     }
 
     pub fn inx(&mut self) -> &mut Self {
-        self.push_instruction(Mnemonic::INX, Operand::Impl)
+        self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
 
     pub fn assemble(&self) -> Result<Vec<u8>, Error> {
