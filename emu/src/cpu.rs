@@ -16,6 +16,39 @@ pub struct Cpu {
     optab: [Option<isa::Opcode>; 256],
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_nop() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.execute(isa::Opcode {
+            code: 0x00,
+            mnemonic: isa::Mnemonic::Nop,
+            mode: isa::AddressMode::Implied,
+        });
+        assert_eq!(cpu.sr, 0x00);
+    }
+
+    #[test]
+    fn test_inx() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.x = 0xFF;
+        let op = isa::Opcode {
+            code: 0xE8,
+            mnemonic: isa::Mnemonic::Inx,
+            mode: isa::AddressMode::Implied,
+        };
+        cpu.execute(op);
+        assert_eq!(cpu.x, 0x00);
+        assert_eq!(cpu.sr, 0b00000010, "SR of 0b{:08b} != 0b00000010", cpu.sr);
+        cpu.execute(op);
+        assert_eq!(cpu.x, 0x01);
+        assert_eq!(cpu.sr, 0b00000000, "SR of 0b{:08b} != 0b00000000", cpu.sr);
+    }
+}
+
 impl Cpu {
     pub fn new(bus: bus::Bus) -> Cpu {
         Cpu {
@@ -37,7 +70,7 @@ impl Cpu {
         self.a = 0x00;
         self.x = 0x00;
         self.y = 0x00;
-        self.sr = 0x00;
+        self.sr = 0x00; // TODO: manual says xx1101xx, so set 00110100?
     }
 
     // Load and execute a single instruction.
@@ -82,13 +115,15 @@ impl Cpu {
             // M::Dey => {}
             // M::Eor => {}
             // M::Inc => {}
-            M::Inx => match instruction.mode {
-                Implied => {
-                    self.x = self.x.wrapping_add(1);
-                    // TODO: update self.status N and Z bits
+            M::Inx => {
+                match instruction.mode {
+                    Implied => {
+                        self.x = self.x.wrapping_add(1);
+                    }
+                    other => panic!("illegal AddressMode: {:?}", other),
                 }
-                other => panic!("illegal AddressMode: {:?}", other),
-            },
+                self.update_status(self.x);
+            }
             // M::Iny => {}
             M::Jmp => match instruction.mode {
                 Absolute => self.pc = read16(&self.bus, self.pc),
@@ -97,15 +132,17 @@ impl Cpu {
             },
             // M::Jsr => {}
             // M::Lda => {}
-            M::Ldx => match instruction.mode {
-                Immediate => {
-                    self.x = self.bus.read(self.pc);
-                    self.pc += 1;
-                    // TODO: update self.status N and Z bits
+            M::Ldx => {
+                match instruction.mode {
+                    Immediate => {
+                        self.x = self.bus.read(self.pc);
+                        self.pc += 1;
+                    }
+                    Zeropage | ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
+                    other => panic!("illegal AddressMode: {:?}", other),
                 }
-                Zeropage | ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
-                other => panic!("illegal AddressMode: {:?}", other),
-            },
+                self.update_status(self.x);
+            }
             // M::Ldy => {}
             // M::Lsr => {}
             M::Nop => {}
@@ -133,6 +170,16 @@ impl Cpu {
             // M::Tya => {}
             other => todo!("{:?}", other),
         }
+    }
+
+    fn update_status(&mut self, val: u8) {
+        let sr_bit = 1;
+        if val == 0 {
+            self.sr |= 1 << sr_bit;
+        } else {
+            self.sr &= !(1 << sr_bit);
+        }
+        // TODO: update negative status bits
     }
 }
 
