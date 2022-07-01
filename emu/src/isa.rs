@@ -112,6 +112,13 @@ pub enum AddressMode {
     ZeropageY, // $LL,Y
 }
 
+// OpValue represents the resolved value of an Opcode operand, after indirection, indexing etc.
+pub enum OpValue {
+    None,
+    U8(u8),
+    U16(u16),
+}
+
 // All supported Opcodes
 pub fn opcode_list() -> Vec<Opcode> {
     use AddressMode::*; // Absolute, Immediate etc

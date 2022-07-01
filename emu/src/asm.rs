@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use crate::isa;
-use crate::isa::{AddressMode, Mnemonic, Opcode};
+use crate::isa::{AddressMode, Mnemonic, OpValue, Opcode};
 
 #[cfg(test)]
 mod tests {
@@ -276,12 +276,6 @@ impl Operand {
 pub enum Addr {
     Literal(u16),
     Label(String),
-}
-
-enum OpValue {
-    None,
-    U8(u8),
-    U16(u16),
 }
 
 // val is shorthand for a literal address, as opposed to a labelled address.
