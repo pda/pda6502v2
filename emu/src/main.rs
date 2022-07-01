@@ -21,8 +21,7 @@ fn main() {
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)));
 
-    // print assembly listing
-    println!("\n{}", asm);
+    asm.print_listing();
 
     // preload program to RAM
     bus.load(asm.org, asm.assemble().unwrap());
