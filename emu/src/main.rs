@@ -25,9 +25,7 @@ fn main() {
     println!("\n{}", asm);
 
     // preload program to RAM
-    for (i, byte) in asm.assemble().unwrap().iter().enumerate() {
-        bus.write(asm.org + (i as u16), *byte);
-    }
+    bus.load(asm.org, asm.assemble().unwrap());
 
     // set reset vector to program address
     bus.write(0xFFFC, asm.org as u8);

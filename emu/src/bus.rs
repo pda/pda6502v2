@@ -17,6 +17,13 @@ impl Bus {
         self.ram[addr as usize] = data;
         println!("Bus write(${:04X}) ← ${:02X}", addr, data);
     }
+
+    // load is a convenience method to bulk-write data to RAM
+    pub fn load(&mut self, addr: u16, data: Vec<u8>) {
+        for (i, byte) in data.iter().enumerate() {
+            self.write(addr + (i as u16), *byte);
+        }
+    }
 }
 
 impl Default for Bus {
