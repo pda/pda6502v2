@@ -170,13 +170,19 @@ impl Cpu {
     }
 
     fn update_status(&mut self, val: u8) {
-        let sr_bit = 1;
+        let z_bit = 1;
         if val == 0 {
-            self.sr |= 1 << sr_bit;
+            self.sr |= 1 << z_bit;
         } else {
-            self.sr &= !(1 << sr_bit);
+            self.sr &= !(1 << z_bit);
         }
-        // TODO: update negative status bits
+
+        let n_bit = 7;
+        if (val as i8) < 0 {
+            self.sr |= 1 << n_bit;
+        } else {
+            self.sr &= !(1 << n_bit);
+        }
     }
 }
 
