@@ -279,10 +279,12 @@ enum OpValue {
     U16(u16),
 }
 
+// val is shorthand for a literal address, as opposed to a labelled address.
 pub fn val(v: u16) -> Addr {
     Addr::Literal(v)
 }
 
+// label is shorthand for a labelled address, as opposed to a literal address.
 pub fn label(s: &str) -> Addr {
     Addr::Label(s.to_string())
 }
