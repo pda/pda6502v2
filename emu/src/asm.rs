@@ -142,6 +142,11 @@ impl Assembler {
         Ok(f)
     }
 
+    pub fn print_listing(&mut self) -> &mut Self {
+        println!("{}", self.listing().unwrap());
+        self
+    }
+
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
         self.lines.push(Line {
             label: self.next_label.take(),
