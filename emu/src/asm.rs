@@ -145,10 +145,7 @@ impl Assembler {
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
         self.lines.push(Line {
             label: self.next_label.take(),
-            instruction: self
-                .opcode_map
-                .get(&mnemonic, &op.mode())
-                .map_err(Into::into),
+            instruction: self.opcode_map.get(mnemonic, op.mode()).map_err(Into::into),
             operand: op,
         });
         self

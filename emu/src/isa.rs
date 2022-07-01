@@ -285,13 +285,13 @@ impl OpcodeByMnemonicAndAddressMode {
         Self { map }
     }
 
-    pub fn get(&self, m: &Mnemonic, am: &AddressMode) -> Result<Opcode, Error> {
+    pub fn get(&self, m: Mnemonic, am: AddressMode) -> Result<Opcode, Error> {
         self.map
-            .get(m)
+            .get(&m)
             .unwrap() // all Mnemonic values should be in the HashMap
-            .get(am) // might be None for this AddressMode
+            .get(&am) // might be None for this AddressMode
             .copied() // Option<&Opcode> -> Option<Opcode>
-            .ok_or(Error::IllegalAddressMode(*m, *am))
+            .ok_or(Error::IllegalAddressMode(m, am))
     }
 }
 

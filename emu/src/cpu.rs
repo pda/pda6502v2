@@ -19,15 +19,12 @@ pub struct Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::isa::{AddressMode, Mnemonic, OpcodeByMnemonicAndAddressMode};
 
     #[test]
     fn test_nop() {
         let mut cpu = Cpu::new(bus::Bus::default());
-        cpu.execute(isa::Opcode {
-            code: 0x00,
-            mnemonic: isa::Mnemonic::Nop,
-            mode: isa::AddressMode::Implied,
-        });
+        cpu.execute(op(Mnemonic::Nop, AddressMode::Implied));
         assert_eq!(cpu.sr, 0x00);
     }
 
@@ -35,17 +32,17 @@ mod test {
     fn test_inx() {
         let mut cpu = Cpu::new(bus::Bus::default());
         cpu.x = 0xFF;
-        let op = isa::Opcode {
-            code: 0xE8,
-            mnemonic: isa::Mnemonic::Inx,
-            mode: isa::AddressMode::Implied,
-        };
+        let op = op(Mnemonic::Inx, AddressMode::Implied);
         cpu.execute(op);
         assert_eq!(cpu.x, 0x00);
         assert_eq!(cpu.sr, 0b00000010, "SR of 0b{:08b} != 0b00000010", cpu.sr);
         cpu.execute(op);
         assert_eq!(cpu.x, 0x01);
         assert_eq!(cpu.sr, 0b00000000, "SR of 0b{:08b} != 0b00000000", cpu.sr);
+    }
+
+    fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
+        OpcodeByMnemonicAndAddressMode::build().get(m, am).unwrap()
     }
 }
 
