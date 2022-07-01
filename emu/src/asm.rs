@@ -125,7 +125,7 @@ impl Assembler {
             };
             writeln!(
                 f,
-                "${:04X}  ${:02X} {:7}  {:16} {:?} {}",
+                "${:04X}  ${:02X} {:7}  {:16} {} {}",
                 addr,
                 instruction.code,
                 ophex,
