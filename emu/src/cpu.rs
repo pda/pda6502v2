@@ -19,6 +19,7 @@ pub struct Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::asm::{Assembler, Operand};
     use crate::isa::{AddressMode, Mnemonic, OpcodeByMnemonicAndAddressMode};
 
     #[test]
@@ -39,6 +40,37 @@ mod test {
         cpu.execute(op);
         assert_eq!(cpu.x, 0x01);
         assert_eq!(cpu.sr, 0b00000000, "SR of 0b{:08b} != 0b00000000", cpu.sr);
+    }
+
+    #[test]
+    fn test_ldx() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+
+        let mut asm = Assembler::new();
+        cpu.bus.load(
+            cpu.pc,
+            asm.ldx(Operand::Imm(0xAA))
+                .ldx(Operand::Imm(0x00))
+                .ldx(Operand::Z(0x04))
+                .print_listing()
+                .assemble()
+                .unwrap(),
+        );
+
+        cpu.step();
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xAA);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step();
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x00);
+        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+
+        cpu.step();
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xA6); // the LDX opcode at 0x0004 via AddressMode::Zeropage
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
     }
 
     fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
@@ -135,7 +167,11 @@ impl Cpu {
                         self.x = self.bus.read(self.pc);
                         self.pc += 1;
                     }
-                    Zeropage | ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
+                    Zeropage => {
+                        self.x = self.bus.read(self.bus.read(self.pc) as u16);
+                        self.pc += 1;
+                    }
+                    ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
                     other => panic!("illegal AddressMode: {:?}", other),
                 }
                 self.update_status(self.x);
