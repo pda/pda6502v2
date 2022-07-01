@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::fmt;
 
+// Opcode is an 8-bit machine instruction alongside its Mnemonic and AddressMode.
 #[derive(Copy, Clone)]
 pub struct Opcode {
     pub code: u8,
@@ -85,6 +87,12 @@ pub enum Mnemonic {
     Txa, // transfer X to accumulator
     Txs, // transfer X to stack pointer
     Tya, // transfer Y to accumulator
+}
+
+impl fmt::Display for Mnemonic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_uppercase())
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -264,8 +272,30 @@ pub fn opcode_list() -> Vec<Opcode> {
     ]
 }
 
-impl fmt::Display for Mnemonic {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_uppercase())
+pub struct OpcodeByMnemonicAndAddressMode {
+    map: HashMap<Mnemonic, HashMap<AddressMode, Opcode>>,
+}
+
+impl OpcodeByMnemonicAndAddressMode {
+    pub fn build() -> Self {
+        let mut map: HashMap<_, HashMap<_, _>> = HashMap::new();
+        for op in opcode_list() {
+            map.entry(op.mnemonic).or_default().insert(op.mode, op);
+        }
+        Self { map }
     }
+
+    pub fn get(&self, m: &Mnemonic, am: &AddressMode) -> Result<Opcode, Error> {
+        self.map
+            .get(m)
+            .unwrap() // all Mnemonic values should be in the HashMap
+            .get(am) // might be None for this AddressMode
+            .copied() // Option<&Opcode> -> Option<Opcode>
+            .ok_or(Error::IllegalAddressMode(*m, *am))
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Error {
+    IllegalAddressMode(Mnemonic, AddressMode),
 }

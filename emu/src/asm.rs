@@ -49,7 +49,7 @@ pub struct Assembler {
     pub org: u16,
     lines: Vec<Line>,
     next_label: Option<String>,
-    opcode_table: HashMap<Mnemonic, HashMap<AddressMode, Opcode>>,
+    opcode_map: isa::OpcodeByMnemonicAndAddressMode,
 }
 
 impl Assembler {
@@ -58,7 +58,7 @@ impl Assembler {
             org: 0x0000,
             lines: Vec::new(),
             next_label: None,
-            opcode_table: build_opcode_table(),
+            opcode_map: isa::OpcodeByMnemonicAndAddressMode::build(),
         }
     }
 
@@ -145,20 +145,13 @@ impl Assembler {
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
         self.lines.push(Line {
             label: self.next_label.take(),
-            instruction: self.find_instruction(&mnemonic, &op),
+            instruction: self
+                .opcode_map
+                .get(&mnemonic, &op.mode())
+                .map_err(Into::into),
             operand: op,
         });
         self
-    }
-
-    fn find_instruction(&self, m: &Mnemonic, op: &Operand) -> Result<Opcode, Error> {
-        let mode = op.mode();
-        self.opcode_table
-            .get(m)
-            .unwrap() // all Mnemonic values should be in the HashMap
-            .get(&mode) // might be None for this Operand's AddressMode
-            .copied() // Option<&Opcode> -> Option<Opcode>
-            .ok_or(Error::IllegalAddressMode(*m, mode))
     }
 
     fn op_value(&self, op: &Operand, labtab: &HashMap<&str, u16>) -> OpValue {
@@ -192,12 +185,6 @@ impl fmt::Display for Assembler {
     }
 }
 
-impl From<Error> for fmt::Error {
-    fn from(_: Error) -> Self {
-        Self
-    }
-}
-
 impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Operand::*;
@@ -225,11 +212,6 @@ impl fmt::Display for Addr {
             Addr::Label(l) => write!(f, "{}", l),
         }
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Error {
-    IllegalAddressMode(Mnemonic, AddressMode),
 }
 
 #[derive(Debug)]
@@ -300,20 +282,29 @@ enum OpValue {
     U16(u16),
 }
 
-fn build_opcode_table() -> HashMap<Mnemonic, HashMap<AddressMode, Opcode>> {
-    let mut map: HashMap<_, HashMap<_, _>> = HashMap::new();
-    for instruction in isa::opcode_list() {
-        map.entry(instruction.mnemonic)
-            .or_default()
-            .insert(instruction.mode, instruction);
-    }
-    map
-}
-
 pub fn val(v: u16) -> Addr {
     Addr::Literal(v)
 }
 
 pub fn label(s: &str) -> Addr {
     Addr::Label(s.to_string())
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Error {
+    IllegalAddressMode(Mnemonic, AddressMode),
+}
+
+impl From<Error> for fmt::Error {
+    fn from(_: Error) -> Self {
+        Self
+    }
+}
+
+impl From<isa::Error> for Error {
+    fn from(err: isa::Error) -> Self {
+        match err {
+            isa::Error::IllegalAddressMode(m, am) => Error::IllegalAddressMode(m, am),
+        }
+    }
 }
