@@ -112,11 +112,36 @@ pub enum AddressMode {
     ZeropageY, // $LL,Y
 }
 
+/// Length in bytes of operand associated with given AddressMode
+pub fn operand_length(mode: AddressMode) -> u16 {
+    use AddressMode::*;
+    match mode {
+        Accumulator | Implied => 0,
+        Immediate | XIndirect | IndirectY | Relative | Zeropage | ZeropageX | ZeropageY => 1,
+        Absolute | AbsoluteX | AbsoluteY | Indirect => 2,
+    }
+}
+
 // OpValue represents the resolved value of an Opcode operand, after indirection, indexing etc.
+#[derive(Debug)]
 pub enum OpValue {
     None,
     U8(u8),
     U16(u16),
+}
+
+pub trait UnwrapOpValue {
+    fn unwrap_u8(&self) -> u8;
+}
+
+impl UnwrapOpValue for OpValue {
+    fn unwrap_u8(&self) -> u8 {
+        if let OpValue::U8(x) = self {
+            *x
+        } else {
+            panic!("{:?} expected OpValue::U8", self)
+        }
+    }
 }
 
 // All supported Opcodes

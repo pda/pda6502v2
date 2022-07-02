@@ -261,13 +261,8 @@ impl Operand {
         }
     }
 
-    fn length(&self) -> u8 {
-        use Operand::*;
-        match self {
-            A | Impl => 0,
-            Imm(_) | XInd(_) | IndY(_) | Rel(_) | Z(_) | ZX(_) | ZY(_) => 1,
-            Abs(_) | AbsX(_) | AbsY(_) | Ind(_) => 2,
-        }
+    fn length(&self) -> u16 {
+        isa::operand_length(self.mode())
     }
 }
 

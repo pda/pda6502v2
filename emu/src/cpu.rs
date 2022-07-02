@@ -116,6 +116,7 @@ impl Cpu {
     fn execute(&mut self, instruction: isa::Opcode) {
         use isa::AddressMode::*;
         use isa::Mnemonic as M;
+        use isa::UnwrapOpValue;
 
         println!("{:?}", instruction);
         match instruction.mnemonic {
@@ -161,21 +162,13 @@ impl Cpu {
             },
             // M::Jsr => {}
             // M::Lda => {}
-            M::Ldx => {
-                match instruction.mode {
-                    Immediate => {
-                        self.x = self.bus.read(self.pc);
-                        self.pc += 1;
-                    }
-                    Zeropage => {
-                        self.x = self.bus.read(self.bus.read(self.pc) as u16);
-                        self.pc += 1;
-                    }
-                    ZeropageY | Absolute | AbsoluteY => todo!("{:?}", instruction.mode),
-                    other => panic!("illegal AddressMode: {:?}", other),
+            M::Ldx => match instruction.mode {
+                Immediate | Zeropage | ZeropageY | Absolute | AbsoluteY => {
+                    self.x = self.consume_operand(instruction.mode).unwrap_u8();
+                    self.update_status(self.x);
                 }
-                self.update_status(self.x);
-            }
+                other => panic!("illegal AddressMode: {:?}", other),
+            },
             // M::Ldy => {}
             // M::Lsr => {}
             M::Nop => {}
@@ -203,6 +196,32 @@ impl Cpu {
             // M::Tya => {}
             other => todo!("{:?}", other),
         }
+    }
+
+    fn consume_operand(&mut self, mode: isa::AddressMode) -> isa::OpValue {
+        use isa::{AddressMode::*, OpValue};
+
+        let b = &self.bus;
+
+        let val = match mode {
+            Accumulator => OpValue::None,
+            Absolute => todo!(),
+            AbsoluteY => todo!(),
+            AbsoluteX => todo!(),
+            Immediate => OpValue::U8(b.read(self.pc)),
+            Implied => OpValue::None,
+            Indirect => todo!(),
+            XIndirect => todo!(),
+            IndirectY => todo!(),
+            Relative => todo!(),
+            Zeropage => OpValue::U8(b.read(b.read(self.pc) as u16)),
+            ZeropageX => todo!(),
+            ZeropageY => todo!(),
+        };
+
+        self.pc += isa::operand_length(mode);
+
+        val
     }
 
     fn update_status(&mut self, val: u8) {
