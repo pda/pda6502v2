@@ -45,6 +45,7 @@ mod test {
     #[test]
     fn test_ldx() {
         let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.y = 0x02; // for testing AddressMode::ZeropageY
 
         let mut asm = Assembler::new();
         cpu.bus.load(
@@ -52,24 +53,30 @@ mod test {
             asm.ldx(Operand::Imm(0xAA))
                 .ldx(Operand::Imm(0x00))
                 .ldx(Operand::Z(0x04))
+                .ldx(Operand::ZY(0x04))
                 .print_listing()
                 .assemble()
                 .unwrap(),
         );
 
-        cpu.step();
+        cpu.step(); // LDX #$AA
         println!("{:?}", cpu);
         assert_eq!(cpu.x, 0xAA);
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 
-        cpu.step();
+        cpu.step(); // LDX #$00
         println!("{:?}", cpu);
         assert_eq!(cpu.x, 0x00);
         assert_eq!(stat(&cpu.sr), "nv-bdiZc");
 
-        cpu.step();
+        cpu.step(); // LDX $04
         println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xA6); // the LDX opcode at 0x0004 via AddressMode::Zeropage
+        assert_eq!(cpu.x, 0xA6); // LDX opcode at 0x0004 via AddressMode::Zeropage
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // LDX $04,Y
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6); // LDX opcode at $04+$02=$06 via AddressMode::ZeropageY
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
     }
 
@@ -205,18 +212,19 @@ impl Cpu {
 
         let val = match mode {
             Accumulator => OpValue::None,
-            Absolute => todo!(),
-            AbsoluteY => todo!(),
-            AbsoluteX => todo!(),
+            // Absolute => {},
+            // AbsoluteY => {},
+            // AbsoluteX => {},
             Immediate => OpValue::U8(b.read(self.pc)),
             Implied => OpValue::None,
-            Indirect => todo!(),
-            XIndirect => todo!(),
-            IndirectY => todo!(),
-            Relative => todo!(),
+            // Indirect => {},
+            // XIndirect => {},
+            // IndirectY => {},
+            // Relative => {},
             Zeropage => OpValue::U8(b.read(b.read(self.pc) as u16)),
-            ZeropageX => todo!(),
-            ZeropageY => todo!(),
+            // ZeropageX => {},
+            ZeropageY => OpValue::U8(b.read(b.read(self.pc).wrapping_add(self.y) as u16)),
+            x => todo!("consume_operand({:?})", x),
         };
 
         self.pc += isa::operand_length(mode);
