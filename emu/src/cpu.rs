@@ -26,7 +26,7 @@ mod test {
     fn test_nop() {
         let mut cpu = Cpu::new(bus::Bus::default());
         cpu.execute(op(Mnemonic::Nop, AddressMode::Implied));
-        assert_eq!(cpu.sr, 0x00);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
     }
 
     #[test]
@@ -36,10 +36,10 @@ mod test {
         let op = op(Mnemonic::Inx, AddressMode::Implied);
         cpu.execute(op);
         assert_eq!(cpu.x, 0x00);
-        assert_eq!(cpu.sr, 0b00000010, "SR of 0b{:08b} != 0b00000010", cpu.sr);
+        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
         cpu.execute(op);
         assert_eq!(cpu.x, 0x01);
-        assert_eq!(cpu.sr, 0b00000000, "SR of 0b{:08b} != 0b00000000", cpu.sr);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
     }
 
     #[test]
@@ -166,18 +166,15 @@ impl Cpu {
             // M::Inc => {}
             M::Inx => {
                 match opcode.mode {
-                    Implied => {
-                        self.x = self.x.wrapping_add(1);
-                    }
-                    other => panic!("illegal AddressMode: {:?}", other),
+                    Implied => self.x = self.x.wrapping_add(1),
+                    _ => panic!("illegal AddressMode: {:?}", opcode),
                 }
                 self.update_status(self.x);
             }
             // M::Iny => {}
-            M::Jmp => match opcode.mode {
-                Absolute => self.pc = self.read_u16(self.pc),
-                Indirect => todo!("{:?}", opcode.mode),
-                other => panic!("illegal AddressMode: {:?}", other),
+            M::Jmp => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => self.pc = addr,
+                _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             // M::Jsr => {}
             // M::Lda => {}
