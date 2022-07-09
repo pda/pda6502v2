@@ -19,7 +19,7 @@ pub struct Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::asm::{Assembler, Operand};
+    use crate::asm::{val, Assembler, Operand};
     use crate::isa::{AddressMode, Mnemonic, OpcodeByMnemonicAndAddressMode};
 
     #[test]
@@ -45,7 +45,9 @@ mod test {
     #[test]
     fn test_ldx() {
         let mut cpu = Cpu::new(bus::Bus::default());
-        cpu.y = 0x02; // for testing AddressMode::ZeropageY
+        cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
+        cpu.bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
+        cpu.bus.write(0x0201, 0x22); // for testing AddressMode::AbsoluteY
 
         let mut asm = Assembler::new();
         cpu.bus.load(
@@ -54,6 +56,8 @@ mod test {
                 .ldx(Operand::Imm(0x00))
                 .ldx(Operand::Z(0x04))
                 .ldx(Operand::ZY(0x04))
+                .ldx(Operand::Abs(val(0x01FF)))
+                .ldx(Operand::AbsY(val(0x01FF)))
                 .print_listing()
                 .assemble()
                 .unwrap(),
@@ -71,13 +75,23 @@ mod test {
 
         cpu.step(); // LDX $04
         println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xA6); // LDX opcode at 0x0004 via AddressMode::Zeropage
+        assert_eq!(cpu.x, 0xA6);
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 
         cpu.step(); // LDX $04,Y
         println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6); // LDX opcode at $04+$02=$06 via AddressMode::ZeropageY
+        assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6);
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // LDX $01FF ; Y=2
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x11, "{:#04X} != {:#04X}", cpu.x, 0x11);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+        cpu.step(); // LDX $01FF,Y ; Y=2
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x22, "{:#04X} != {:#04X}", cpu.x, 0x22);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
     }
 
     fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
@@ -101,7 +115,7 @@ impl Cpu {
 
     // Reset internal CPU state, as if the reset line had been asserted.
     pub fn reset(&mut self) {
-        self.pc = read16(&self.bus, 0xFFFC);
+        self.pc = self.read_u16(0xFFFC);
         self.sp = 0x00;
         self.a = 0x00;
         self.x = 0x00;
@@ -111,22 +125,20 @@ impl Cpu {
 
     // Load and execute a single instruction.
     pub fn step(&mut self) {
-        let opcode = self.bus.read(self.pc);
-        self.pc = self.pc.wrapping_add(1);
-        match self.optab[opcode as usize] {
+        match self.optab[self.read_pc_u8() as usize] {
             None => panic!("illegal opcode"),
-            Some(instruction) => self.execute(instruction),
+            Some(opcode) => self.execute(opcode),
         }
     }
 
     // Execute an instruction, reading the operands for its address mode from the bus.
-    fn execute(&mut self, instruction: isa::Opcode) {
+    fn execute(&mut self, opcode: isa::Opcode) {
         use isa::AddressMode::*;
         use isa::Mnemonic as M;
-        use isa::UnwrapOpValue;
+        use isa::OpValue;
 
-        println!("{:?}", instruction);
-        match instruction.mnemonic {
+        println!("{:?}", opcode);
+        match opcode.mnemonic {
             // M::Adc => {}
             // M::And => {}
             // M::Asl => {}
@@ -153,7 +165,7 @@ impl Cpu {
             // M::Eor => {}
             // M::Inc => {}
             M::Inx => {
-                match instruction.mode {
+                match opcode.mode {
                     Implied => {
                         self.x = self.x.wrapping_add(1);
                     }
@@ -162,20 +174,21 @@ impl Cpu {
                 self.update_status(self.x);
             }
             // M::Iny => {}
-            M::Jmp => match instruction.mode {
-                Absolute => self.pc = read16(&self.bus, self.pc),
-                Indirect => todo!("{:?}", instruction.mode),
+            M::Jmp => match opcode.mode {
+                Absolute => self.pc = self.read_u16(self.pc),
+                Indirect => todo!("{:?}", opcode.mode),
                 other => panic!("illegal AddressMode: {:?}", other),
             },
             // M::Jsr => {}
             // M::Lda => {}
-            M::Ldx => match instruction.mode {
-                Immediate | Zeropage | ZeropageY | Absolute | AbsoluteY => {
-                    self.x = self.consume_operand(instruction.mode).unwrap_u8();
-                    self.update_status(self.x);
+            M::Ldx => {
+                match self.read_operand(opcode.mode) {
+                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
+                    OpValue::U8(val) => self.x = val,
+                    OpValue::U16(addr) => self.x = self.bus.read(addr),
                 }
-                other => panic!("illegal AddressMode: {:?}", other),
-            },
+                self.update_status(self.x);
+            }
             // M::Ldy => {}
             // M::Lsr => {}
             M::Nop => {}
@@ -205,31 +218,71 @@ impl Cpu {
         }
     }
 
-    fn consume_operand(&mut self, mode: isa::AddressMode) -> isa::OpValue {
-        use isa::{AddressMode::*, OpValue};
+    /// Read a u16 in little-endian order from the bus
+    fn read_u16(&self, addr: u16) -> u16 {
+        let lo = self.bus.read(addr as u16);
+        let hi = self.bus.read(addr.wrapping_add(1) as u16);
+        ((hi as u16) << 8) | (lo as u16)
+    }
 
-        let b = &self.bus;
+    /// Read u8 from address pointed to by PC, incrementing PC
+    fn read_pc_u8(&mut self) -> u8 {
+        let val = self.bus.read(self.pc);
+        self.pc = self.pc.wrapping_add(1);
+        val
+    }
 
-        let val = match mode {
-            Accumulator => OpValue::None,
-            // Absolute => {},
-            // AbsoluteY => {},
-            // AbsoluteX => {},
-            Immediate => OpValue::U8(b.read(self.pc)),
-            Implied => OpValue::None,
-            // Indirect => {},
-            // XIndirect => {},
-            // IndirectY => {},
-            // Relative => {},
-            Zeropage => OpValue::U8(b.read(b.read(self.pc) as u16)),
-            // ZeropageX => {},
-            ZeropageY => OpValue::U8(b.read(b.read(self.pc).wrapping_add(self.y) as u16)),
-            x => todo!("consume_operand({:?})", x),
+    /// Read u16 from address pointed to by PC, incrementing PC
+    fn read_pc_u16(&mut self) -> u16 {
+        let val = self.read_u16(self.pc);
+        self.pc = self.pc.wrapping_add(2);
+        val
+    }
+
+    /// Read an index-offset zero-page address pointed to by PC, returning as u16 address after
+    /// incrementing PC by one
+    fn read_pc_zp(&mut self, index: u8) -> u16 {
+        self.read_pc_u8().wrapping_add(index) as u16
+    }
+
+    /// Reads the operand from self.bus, following indirection/indexing where necessary, returning
+    /// an address or immediate value, and incrementing PC.
+    fn read_operand(&mut self, mode: isa::AddressMode) -> isa::OpValue {
+        use isa::AddressMode::*;
+        use isa::OpValue as OV;
+
+        let addr = match mode {
+            Absolute => OV::U16(self.read_pc_u16()),
+            AbsoluteX => OV::U16(self.read_pc_u16().wrapping_add(self.x as u16)),
+            AbsoluteY => OV::U16(self.read_pc_u16().wrapping_add(self.y as u16)),
+            Accumulator => OV::None,
+            Immediate => OV::U8(self.read_pc_u8()),
+            Implied => OV::None,
+            Indirect => {
+                let ptr = self.read_pc_u16();
+                OV::U16(self.read_u16(ptr))
+            }
+            IndirectY => {
+                let ptr = self.read_pc_zp(0);
+                OV::U16(self.read_u16(ptr).wrapping_add(self.y as u16))
+            }
+            Relative => {
+                // #![feature(mixed_integer_ops)]
+                // OV::U16(self.pc.wrapping_add_signed(self.read_pc_u8().into()))
+                let base = self.pc as i16;
+                let offset: i16 = (self.read_pc_u8() as i8).into(); // not sure if this is legit
+                OV::U16((base + offset) as u16)
+            }
+            XIndirect => {
+                let ptr = self.read_pc_zp(self.x);
+                OV::U16(self.read_u16(ptr))
+            }
+            Zeropage => OV::U16(self.read_pc_zp(0)),
+            ZeropageX => OV::U16(self.read_pc_zp(self.x)),
+            ZeropageY => OV::U16(self.read_pc_zp(self.y)),
         };
 
-        self.pc += isa::operand_length(mode);
-
-        val
+        addr
     }
 
     fn update_status(&mut self, val: u8) {
@@ -257,13 +310,6 @@ impl fmt::Debug for Cpu {
             stat, self.pc, self.sp, self.a, self.x, self.y,
         ))
     }
-}
-
-// read a u16 in little-endian order from the bus
-fn read16(bus: &bus::Bus, addr: u16) -> u16 {
-    let lo = bus.read(addr as u16);
-    let hi = bus.read(addr.wrapping_add(1) as u16);
-    ((hi as u16) << 8) | (lo as u16)
 }
 
 // a string representation of the 8-bit status register;

@@ -130,20 +130,6 @@ pub enum OpValue {
     U16(u16),
 }
 
-pub trait UnwrapOpValue {
-    fn unwrap_u8(&self) -> u8;
-}
-
-impl UnwrapOpValue for OpValue {
-    fn unwrap_u8(&self) -> u8 {
-        if let OpValue::U8(x) = self {
-            *x
-        } else {
-            panic!("{:?} expected OpValue::U8", self)
-        }
-    }
-}
-
 // All supported Opcodes
 pub fn opcode_list() -> Vec<Opcode> {
     use AddressMode::*; // Absolute, Immediate etc
