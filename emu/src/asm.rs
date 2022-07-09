@@ -125,7 +125,7 @@ impl Assembler {
             };
             writeln!(
                 f,
-                "${:04X}  ${:02X} {:7}  {:16} {} {}",
+                "${:04X}  ${:02X} {:7}  {:16} {} {}{}",
                 addr,
                 instruction.code,
                 ophex,
@@ -135,6 +135,11 @@ impl Assembler {
                     String::from("")
                 },
                 instruction.mnemonic,
+                if let AddressMode::Immediate = instruction.mode {
+                    "#"
+                } else {
+                    ""
+                },
                 line.operand,
             )?;
             addr += 1 + (line.operand.length() as u16);
