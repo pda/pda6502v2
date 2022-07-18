@@ -9,13 +9,13 @@ pub struct Bus {
 impl Bus {
     pub fn read(&self, addr: u16) -> u8 {
         let val = self.ram[addr as usize];
-        println!("Bus read(${:04X}) → ${:02X}", addr, val);
+        //println!("Bus read(${:04X}) → ${:02X}", addr, val);
         val
     }
 
     pub fn write(&mut self, addr: u16, data: u8) {
         self.ram[addr as usize] = data;
-        println!("Bus write(${:04X}) ← ${:02X}", addr, data);
+        //println!("Bus write(${:04X}) ← ${:02X}", addr, data);
     }
 
     // load is a convenience method to bulk-write data to RAM

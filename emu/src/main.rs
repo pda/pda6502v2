@@ -11,12 +11,14 @@ fn main() {
     let mut bus = bus::Bus::default();
 
     // assemble a trivial demo program
+    let org: u16 = 0x1234;
     let mut asm = asm::Assembler::new();
-    asm.org(0x1234)
+    asm.org(org)
         .nop()
         .ldx(Imm(0x10))
         .label("loop")
         .inx()
+        .adc(Abs(val(org + 2))) // LDX #$10 operand
         .nop()
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)));

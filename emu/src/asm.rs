@@ -72,6 +72,13 @@ impl Assembler {
         self
     }
 
+    // ----------------------------------------
+    // Instructions
+
+    pub fn adc(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Adc, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }
@@ -87,6 +94,8 @@ impl Assembler {
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
+
+    // ----------------------------------------
 
     pub fn assemble(&self) -> Result<Vec<u8>, Error> {
         let mut bin: Vec<u8> = Vec::new();

@@ -94,6 +94,82 @@ mod test {
         assert_eq!(stat(&cpu.sr), "nv-bdizc");
     }
 
+    #[test]
+    fn test_adc() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.a = 0x10; // starting value
+        cpu.x = 0x21; // for testing X-indexed address modes
+        cpu.y = 0x46; // for testing Y-indexed address modes
+        cpu.bus.write(0x00F0, 0xEF); // for testing zero-page address mode
+        cpu.bus.write(0x00F1, 0x80); // for testing zp,X address mode
+        cpu.bus.write(0x00F2, 0x37); // for testing X,ind address mode (ptr LO)
+        cpu.bus.write(0x00F3, 0x12); // for testing X,ind address mode (ptr HI)
+        cpu.bus.write(0x00F4, 0xF2); // for testing ind,Y address mode (ptr LO)
+        cpu.bus.write(0x00F5, 0x11); // for testing ind,Y address mode (ptr HI)
+        cpu.bus.write(0x1234, 0x04); // for testing absolute address mode
+        cpu.bus.write(0x1235, 0x6B); // for testing abs,X address mode
+        cpu.bus.write(0x1236, 0x00); // for testing abs,X address mode
+        cpu.bus.write(0x1237, 0x42); // for testing X,ind address mode (val)
+        cpu.bus.write(0x1238, 0xBC); // for testing ind,Y address mode (val)
+
+        use crate::asm::Operand::{Abs, AbsX, AbsY, Imm, IndY, XInd, Z, ZX};
+        let mut asm = Assembler::new();
+        cpu.bus.load(
+            cpu.pc,
+            asm.adc(Imm(0x11)) //          C:0+A:$10+#$11                            =$21+C:0
+                .adc(Z(0xF0)) //           C:0+A:$21+[$F0→#$EF]                      =$10+C:1
+                .adc(ZX(0xD0)) //          C:1+A:$10+[$D0+X:$21→$F1→#$80]            =$91+C:0
+                .adc(Abs(val(0x1234))) //  C:0+A:$91+[$1234→#$04]                    =$95+C:0
+                .adc(AbsX(val(0x1214))) // C:0+A:$95+[$1214+X:$21→$1235→#$6B]        =$00+C:1
+                .adc(AbsY(val(0x12F0))) // C:1+A:$00+[$12F0+Y:$46→$1236→#$00]        =$01+C:0
+                .adc(XInd(0xD1)) //        C:0+A:$01+[($D1+X:$21)→($F2)→$1237→#$42]  =$43+C:0
+                .adc(IndY(0xF4)) //        C:0+A:$43+[($F4)+Y→$11F2+Y:$46→$1238→#$BC]=$FF+C:0
+                .print_listing()
+                .assemble()
+                .unwrap(),
+        );
+
+        cpu.step(); // ADC #$11
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x21, "{:#04X} != {:#04X}", cpu.a, 0x21);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+        cpu.step(); // ADC $F0
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x10, "{:#04X} != {:#04X}", cpu.a, 0x10);
+        assert_eq!(stat(&cpu.sr), "nv-bdizC");
+
+        cpu.step(); // ADC $D0,X
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x91, "{:#04X} != {:#04X}", cpu.a, 0x91);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // ADC $1234
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x95, "{:#04X} != {:#04X}", cpu.a, 0x95);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // ADC $1214,X
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x00, "{:#04X} != {:#04X}", cpu.a, 0x00);
+        assert_eq!(stat(&cpu.sr), "nv-bdiZC");
+
+        cpu.step(); // ADC $12F0,Y
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x01, "{:#04X} != {:#04X}", cpu.a, 0x01);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+        cpu.step(); // ADC ($D1,X)
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0x43, "{:#04X} != {:#04X}", cpu.a, 0x43);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+        cpu.step(); // ADC ($F4),Y
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0xFF, "{:#04X} != {:#04X}", cpu.a, 0xFF);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    }
+
     fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
         OpcodeByMnemonicAndAddressMode::build().get(m, am).unwrap()
     }
@@ -139,7 +215,17 @@ impl Cpu {
 
         println!("{:?}", opcode);
         match opcode.mnemonic {
-            // M::Adc => {}
+            M::Adc => {
+                let val = match self.read_operand(opcode.mode) {
+                    OpValue::U8(val) => val,
+                    OpValue::U16(addr) => self.bus.read(addr),
+                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
+                };
+                let sum16: u16 = self.carry() as u16 + (self.a as u16) + (val as u16);
+                self.a = sum16 as u8;
+                self.update_sr_z_n(self.a);
+                self.set_sr_bit(StatusMask::Carry, self.a < val);
+            }
             // M::And => {}
             // M::Asl => {}
             // M::Bcc => {}
@@ -169,7 +255,7 @@ impl Cpu {
                     Implied => self.x = self.x.wrapping_add(1),
                     _ => panic!("illegal AddressMode: {:?}", opcode),
                 }
-                self.update_status(self.x);
+                self.update_sr_z_n(self.x);
             }
             // M::Iny => {}
             M::Jmp => match self.read_operand(opcode.mode) {
@@ -184,7 +270,7 @@ impl Cpu {
                     OpValue::U8(val) => self.x = val,
                     OpValue::U16(addr) => self.x = self.bus.read(addr),
                 }
-                self.update_status(self.x);
+                self.update_sr_z_n(self.x);
             }
             // M::Ldy => {}
             // M::Lsr => {}
@@ -282,20 +368,25 @@ impl Cpu {
         addr
     }
 
-    fn update_status(&mut self, val: u8) {
-        let z_bit = 1;
-        if val == 0 {
-            self.sr |= 1 << z_bit;
-        } else {
-            self.sr &= !(1 << z_bit);
-        }
+    /// Update the Status Register's Zero and Negative bits based on the specified value.
+    fn update_sr_z_n(&mut self, val: u8) {
+        self.set_sr_bit(StatusMask::Zero, val == 0);
+        self.set_sr_bit(StatusMask::Negative, (val as i8) < 0);
+    }
 
-        let n_bit = 7;
-        if (val as i8) < 0 {
-            self.sr |= 1 << n_bit;
+    fn set_sr_bit(&mut self, mask: StatusMask, val: bool) {
+        let m = mask as u8;
+        if val {
+            self.sr |= m
         } else {
-            self.sr &= !(1 << n_bit);
+            self.sr &= !m
         }
+    }
+
+    fn carry(&mut self) -> u8 {
+        let bit = StatusBit::Carry as u8;
+        let mask = StatusMask::Carry as u8;
+        (self.sr & mask) >> bit
     }
 }
 
@@ -332,4 +423,28 @@ pub fn build_opcode_table() -> [Option<isa::Opcode>; 256] {
         optab[opcode.code as usize] = Some(opcode);
     }
     optab
+}
+
+#[repr(u8)]
+enum StatusBit {
+    Carry = 0,
+    Zero = 1,
+    Interrupt = 2,
+    Decimal = 3,
+    Break = 4,
+    // unused bit 5
+    Overflow = 6,
+    Negative = 7,
+}
+
+#[allow(unused)]
+#[repr(u8)]
+enum StatusMask {
+    Carry = 1 << StatusBit::Carry as u8,
+    Zero = 1 << StatusBit::Zero as u8,
+    Interrupt = 1 << StatusBit::Interrupt as u8,
+    Decimal = 1 << StatusBit::Decimal as u8,
+    Break = 1 << StatusBit::Break as u8,
+    Overflow = 1 << StatusBit::Overflow as u8,
+    Negative = 1 << StatusBit::Negative as u8,
 }
