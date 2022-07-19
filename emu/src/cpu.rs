@@ -19,7 +19,7 @@ pub struct Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::asm::{val, Assembler, Operand};
+    use crate::asm::{label, val, Assembler, Operand};
     use crate::isa::{AddressMode, Mnemonic, OpcodeByMnemonicAndAddressMode};
 
     #[test]
@@ -127,6 +127,38 @@ mod test {
         cpu.execute(op);
         assert_eq!(cpu.x, 0x01);
         assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.bus.write(0xFFFC, 0x00);
+        cpu.bus.write(0xFFFD, 0x80);
+        cpu.reset(); // reset vector 0x8000
+
+        let mut asm = Assembler::new();
+        cpu.bus.load(
+            cpu.pc,
+            asm.org(cpu.pc)
+                .jmp(Operand::Abs(label("testlabel")))
+                .nop()
+                .label("testlabel")
+                .jmp(Operand::Ind(val(0xFFFC))) // back to start via reset vector
+                .print_listing()
+                .assemble()
+                .unwrap(),
+        );
+
+        cpu.step(); // JMP testlabel
+        println!("{:?}", cpu);
+        assert_eq!(cpu.pc, 0x8004, "{:#04X} != {:#04X}", cpu.pc, 0x8004);
+        assert_eq!(stat(&cpu.sr), "nv-BdIzc"); // unchanged
+
+        cpu.sr = !cpu.sr;
+        cpu.step(); // JMP ($FFFC)
+        println!("{:?}", cpu);
+        assert_eq!(cpu.pc, 0x8000, "{:#04X} != {:#04X}", cpu.pc, 0x8000);
+        assert_eq!(stat(&cpu.sr), "NV-bDiZC"); // unchanged
     }
 
     #[test]
