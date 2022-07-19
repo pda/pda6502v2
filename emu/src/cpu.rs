@@ -235,24 +235,16 @@ impl Cpu {
         match opcode.mnemonic {
             M::Adc => {
                 let a = self.a;
-                let b = match self.read_operand(opcode.mode) {
-                    OpValue::U8(val) => val,
-                    OpValue::U16(addr) => self.bus.read(addr),
-                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
-                };
+                let b = self.read_operand_value(opcode);
                 let sum16 = (self.carry() as u16) + (a as u16) + (b as u16);
                 let sum = sum16 as u8;
                 self.a = sum;
-                self.update_sr_z_n(self.a);
                 self.set_sr_bit(StatusMask::Carry, sum < a);
                 self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
+                self.update_sr_z_n(self.a);
             }
             M::And => {
-                self.a &= match self.read_operand(opcode.mode) {
-                    OpValue::U8(val) => val,
-                    OpValue::U16(addr) => self.bus.read(addr),
-                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
-                };
+                self.a &= self.read_operand_value(opcode);
                 self.update_sr_z_n(self.a);
             }
             // M::Asl => {}
@@ -293,11 +285,7 @@ impl Cpu {
             // M::Jsr => {}
             // M::Lda => {}
             M::Ldx => {
-                match self.read_operand(opcode.mode) {
-                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
-                    OpValue::U8(val) => self.x = val,
-                    OpValue::U16(addr) => self.x = self.bus.read(addr),
-                }
+                self.x = self.read_operand_value(opcode);
                 self.update_sr_z_n(self.x);
             }
             // M::Ldy => {}
@@ -394,6 +382,15 @@ impl Cpu {
         };
 
         addr
+    }
+
+    fn read_operand_value(&mut self, opcode: isa::Opcode) -> u8 {
+        use isa::OpValue;
+        match self.read_operand(opcode.mode) {
+            OpValue::U8(val) => val,
+            OpValue::U16(addr) => self.bus.read(addr),
+            OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
+        }
     }
 
     /// Update the Status Register's Zero and Negative bits based on the specified value.
