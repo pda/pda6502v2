@@ -196,7 +196,7 @@ impl Cpu {
         self.a = 0x00;
         self.x = 0x00;
         self.y = 0x00;
-        self.sr = 0x00; // TODO: manual says xx1101xx, so set 00110100?
+        self.sr = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
     }
 
     // Load and execute a single instruction.
