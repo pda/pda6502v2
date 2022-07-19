@@ -19,6 +19,7 @@ fn main() {
         .label("loop")
         .inx()
         .adc(Abs(val(org + 2))) // LDX #$10 operand
+        .and(ZX(0x00))
         .nop()
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)));

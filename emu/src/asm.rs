@@ -79,6 +79,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Adc, op)
     }
 
+    pub fn and(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::And, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }

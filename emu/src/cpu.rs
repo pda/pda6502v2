@@ -170,6 +170,24 @@ mod test {
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
     }
 
+    #[test]
+    fn test_and() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.a = 0b10011001; // starting value
+
+        use crate::asm::Operand::Imm;
+        let mut asm = Assembler::new();
+        cpu.bus.load(
+            cpu.pc,
+            asm.and(Imm(0b11110000)).print_listing().assemble().unwrap(),
+        );
+
+        cpu.step(); // ADC #$A0
+        println!("{:?}", cpu);
+        assert_eq!(cpu.a, 0b10010000, "{:#04X} != {:#04X}", cpu.a, 0b10010000);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    }
+
     fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
         OpcodeByMnemonicAndAddressMode::build().get(m, am).unwrap()
     }
@@ -229,7 +247,14 @@ impl Cpu {
                 self.set_sr_bit(StatusMask::Carry, sum < a);
                 self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
             }
-            // M::And => {}
+            M::And => {
+                self.a &= match self.read_operand(opcode.mode) {
+                    OpValue::U8(val) => val,
+                    OpValue::U16(addr) => self.bus.read(addr),
+                    OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
+                };
+                self.update_sr_z_n(self.a);
+            }
             // M::Asl => {}
             // M::Bcc => {}
             // M::Bcs => {}
