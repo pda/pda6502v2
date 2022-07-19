@@ -23,78 +23,6 @@ mod test {
     use crate::isa::{AddressMode, Mnemonic, OpcodeByMnemonicAndAddressMode};
 
     #[test]
-    fn test_nop() {
-        let mut cpu = Cpu::new(bus::Bus::default());
-        cpu.execute(op(Mnemonic::Nop, AddressMode::Implied));
-        assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    }
-
-    #[test]
-    fn test_inx() {
-        let mut cpu = Cpu::new(bus::Bus::default());
-        cpu.x = 0xFF;
-        let op = op(Mnemonic::Inx, AddressMode::Implied);
-        cpu.execute(op);
-        assert_eq!(cpu.x, 0x00);
-        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
-        cpu.execute(op);
-        assert_eq!(cpu.x, 0x01);
-        assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    }
-
-    #[test]
-    fn test_ldx() {
-        let mut cpu = Cpu::new(bus::Bus::default());
-        cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
-        cpu.bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
-        cpu.bus.write(0x0201, 0x22); // for testing AddressMode::AbsoluteY
-
-        let mut asm = Assembler::new();
-        cpu.bus.load(
-            cpu.pc,
-            asm.ldx(Operand::Imm(0xAA))
-                .ldx(Operand::Imm(0x00))
-                .ldx(Operand::Z(0x04))
-                .ldx(Operand::ZY(0x04))
-                .ldx(Operand::Abs(val(0x01FF)))
-                .ldx(Operand::AbsY(val(0x01FF)))
-                .print_listing()
-                .assemble()
-                .unwrap(),
-        );
-
-        cpu.step(); // LDX #$AA
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xAA);
-        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-        cpu.step(); // LDX #$00
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0x00);
-        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
-
-        cpu.step(); // LDX $04
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xA6);
-        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-        cpu.step(); // LDX $04,Y
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6);
-        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-        cpu.step(); // LDX $01FF ; Y=2
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0x11, "{:#04X} != {:#04X}", cpu.x, 0x11);
-        assert_eq!(stat(&cpu.sr), "nv-bdizc");
-
-        cpu.step(); // LDX $01FF,Y ; Y=2
-        println!("{:?}", cpu);
-        assert_eq!(cpu.x, 0x22, "{:#04X} != {:#04X}", cpu.x, 0x22);
-        assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    }
-
-    #[test]
     fn test_adc() {
         let mut cpu = Cpu::new(bus::Bus::default());
         cpu.a = 0x10; // starting value
@@ -186,6 +114,78 @@ mod test {
         println!("{:?}", cpu);
         assert_eq!(cpu.a, 0b10010000, "{:#04X} != {:#04X}", cpu.a, 0b10010000);
         assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    }
+
+    #[test]
+    fn test_inx() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.x = 0xFF;
+        let op = op(Mnemonic::Inx, AddressMode::Implied);
+        cpu.execute(op);
+        assert_eq!(cpu.x, 0x00);
+        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+        cpu.execute(op);
+        assert_eq!(cpu.x, 0x01);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    }
+
+    #[test]
+    fn test_ldx() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
+        cpu.bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
+        cpu.bus.write(0x0201, 0x22); // for testing AddressMode::AbsoluteY
+
+        let mut asm = Assembler::new();
+        cpu.bus.load(
+            cpu.pc,
+            asm.ldx(Operand::Imm(0xAA))
+                .ldx(Operand::Imm(0x00))
+                .ldx(Operand::Z(0x04))
+                .ldx(Operand::ZY(0x04))
+                .ldx(Operand::Abs(val(0x01FF)))
+                .ldx(Operand::AbsY(val(0x01FF)))
+                .print_listing()
+                .assemble()
+                .unwrap(),
+        );
+
+        cpu.step(); // LDX #$AA
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xAA);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // LDX #$00
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x00);
+        assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+
+        cpu.step(); // LDX $04
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xA6);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // LDX $04,Y
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6);
+        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+        cpu.step(); // LDX $01FF ; Y=2
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x11, "{:#04X} != {:#04X}", cpu.x, 0x11);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+        cpu.step(); // LDX $01FF,Y ; Y=2
+        println!("{:?}", cpu);
+        assert_eq!(cpu.x, 0x22, "{:#04X} != {:#04X}", cpu.x, 0x22);
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    }
+
+    #[test]
+    fn test_nop() {
+        let mut cpu = Cpu::new(bus::Bus::default());
+        cpu.execute(op(Mnemonic::Nop, AddressMode::Implied));
+        assert_eq!(stat(&cpu.sr), "nv-bdizc");
     }
 
     fn op(m: Mnemonic, am: AddressMode) -> isa::Opcode {
