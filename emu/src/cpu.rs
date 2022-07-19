@@ -101,13 +101,13 @@ mod test {
         cpu.x = 0x21; // for testing X-indexed address modes
         cpu.y = 0x46; // for testing Y-indexed address modes
         cpu.bus.write(0x00F0, 0xEF); // for testing zero-page address mode
-        cpu.bus.write(0x00F1, 0x80); // for testing zp,X address mode
+        cpu.bus.write(0x00F1, 0x70); // for testing zp,X address mode
         cpu.bus.write(0x00F2, 0x37); // for testing X,ind address mode (ptr LO)
         cpu.bus.write(0x00F3, 0x12); // for testing X,ind address mode (ptr HI)
         cpu.bus.write(0x00F4, 0xF2); // for testing ind,Y address mode (ptr LO)
         cpu.bus.write(0x00F5, 0x11); // for testing ind,Y address mode (ptr HI)
-        cpu.bus.write(0x1234, 0x04); // for testing absolute address mode
-        cpu.bus.write(0x1235, 0x6B); // for testing abs,X address mode
+        cpu.bus.write(0x1234, 0x84); // for testing absolute address mode
+        cpu.bus.write(0x1235, 0xFA); // for testing abs,X address mode
         cpu.bus.write(0x1236, 0x00); // for testing abs,X address mode
         cpu.bus.write(0x1237, 0x42); // for testing X,ind address mode (val)
         cpu.bus.write(0x1238, 0xBC); // for testing ind,Y address mode (val)
@@ -118,9 +118,9 @@ mod test {
             cpu.pc,
             asm.adc(Imm(0x11)) //          C:0+A:$10+#$11                            =$21+C:0
                 .adc(Z(0xF0)) //           C:0+A:$21+[$F0→#$EF]                      =$10+C:1
-                .adc(ZX(0xD0)) //          C:1+A:$10+[$D0+X:$21→$F1→#$80]            =$91+C:0
-                .adc(Abs(val(0x1234))) //  C:0+A:$91+[$1234→#$04]                    =$95+C:0
-                .adc(AbsX(val(0x1214))) // C:0+A:$95+[$1214+X:$21→$1235→#$6B]        =$00+C:1
+                .adc(ZX(0xD0)) //          C:1+A:$10+[$D0+X:$21→$F1→#$70]            =$81+C:0(V)
+                .adc(Abs(val(0x1234))) //  C:0+A:$81+[$1234→#$84]                    =$05+C:1(V)
+                .adc(AbsX(val(0x1214))) // C:1+A:$05+[$1214+X:$21→$1235→#$FA]        =$00+C:1
                 .adc(AbsY(val(0x12F0))) // C:1+A:$00+[$12F0+Y:$46→$1236→#$00]        =$01+C:0
                 .adc(XInd(0xD1)) //        C:0+A:$01+[($D1+X:$21)→($F2)→$1237→#$42]  =$43+C:0
                 .adc(IndY(0xF4)) //        C:0+A:$43+[($F4)+Y→$11F2+Y:$46→$1238→#$BC]=$FF+C:0
@@ -141,13 +141,13 @@ mod test {
 
         cpu.step(); // ADC $D0,X
         println!("{:?}", cpu);
-        assert_eq!(cpu.a, 0x91, "{:#04X} != {:#04X}", cpu.a, 0x91);
-        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+        assert_eq!(cpu.a, 0x81, "{:#04X} != {:#04X}", cpu.a, 0x81);
+        assert_eq!(stat(&cpu.sr), "NV-bdizc");
 
         cpu.step(); // ADC $1234
         println!("{:?}", cpu);
-        assert_eq!(cpu.a, 0x95, "{:#04X} != {:#04X}", cpu.a, 0x95);
-        assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+        assert_eq!(cpu.a, 0x05, "{:#04X} != {:#04X}", cpu.a, 0x05);
+        assert_eq!(stat(&cpu.sr), "nV-bdizC");
 
         cpu.step(); // ADC $1214,X
         println!("{:?}", cpu);
@@ -216,15 +216,18 @@ impl Cpu {
         println!("{:?}", opcode);
         match opcode.mnemonic {
             M::Adc => {
-                let val = match self.read_operand(opcode.mode) {
+                let a = self.a;
+                let b = match self.read_operand(opcode.mode) {
                     OpValue::U8(val) => val,
                     OpValue::U16(addr) => self.bus.read(addr),
                     OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
                 };
-                let sum16: u16 = self.carry() as u16 + (self.a as u16) + (val as u16);
-                self.a = sum16 as u8;
+                let sum16 = (self.carry() as u16) + (a as u16) + (b as u16);
+                let sum = sum16 as u8;
+                self.a = sum;
                 self.update_sr_z_n(self.a);
-                self.set_sr_bit(StatusMask::Carry, self.a < val);
+                self.set_sr_bit(StatusMask::Carry, sum < a);
+                self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
             }
             // M::And => {}
             // M::Asl => {}
