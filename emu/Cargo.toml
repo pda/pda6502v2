@@ -1,5 +1,5 @@
 [package]
-name = "pda6502v2-emu"
+name = "pda6502v2emu"
 version = "0.1.0"
 edition = "2021"
 
