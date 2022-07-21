@@ -99,6 +99,45 @@ fn test_and() {
 }
 
 #[test]
+fn test_asl() {
+    let mut cpu = Cpu::new(Bus::default());
+    cpu.a = 0b01000000; // for testing Accumulator address mode
+    cpu.x = 0x01; // for testing zp,X address mode
+    cpu.bus.write(0xF1, 0b11011011); // for testing zp,X address mode
+
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.asl(Operand::A)
+            .asl(Operand::A)
+            .asl(Operand::ZX(0xF0))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    use pda6502v2emu::cpu::StatusMask;
+
+    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.step(); // ASL A
+    println!("{:?}", cpu);
+    assert_eq!(cpu.a, 0b10000000, "{:#04X} != {:#04X}", cpu.a, 0b10000000);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.step(); // ASL A
+    println!("{:?}", cpu);
+    assert_eq!(cpu.a, 0b00000000, "{:#04X} != {:#04X}", cpu.a, 0b00000000);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZC");
+
+    cpu.step(); // ASL $F0,X
+    println!("{:?}", cpu);
+    let val = cpu.bus.read(0xF1);
+    assert_eq!(val, 0b10110110, "{:#04X} != {:#04X}", val, 0b10110110);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

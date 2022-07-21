@@ -70,7 +70,26 @@ impl Cpu {
                 self.a &= self.read_operand_value(opcode);
                 self.update_sr_z_n(self.a);
             }
-            // M::Asl => {}
+            M::Asl => {
+                let result: u8;
+                let carry: u8;
+                match self.read_operand(opcode.mode) {
+                    OpValue::None => {
+                        result = self.a << 1;
+                        carry = self.a >> 7;
+                        self.a = result;
+                    }
+                    OpValue::U16(addr) => {
+                        let x = self.bus.read(addr);
+                        result = x << 1;
+                        carry = x >> 7;
+                        self.bus.write(addr, result);
+                    }
+                    _ => panic!("illegal AddressMode: {:?}", opcode),
+                }
+                self.update_sr_z_n(result);
+                self.set_sr_bit(StatusMask::Carry, carry == 1);
+            }
             // M::Bcc => {}
             // M::Bcs => {}
             // M::Beq => {}
@@ -222,7 +241,7 @@ impl Cpu {
         self.set_sr_bit(StatusMask::Negative, (val as i8) < 0);
     }
 
-    fn set_sr_bit(&mut self, mask: StatusMask, val: bool) {
+    pub fn set_sr_bit(&mut self, mask: StatusMask, val: bool) {
         let m = mask as u8;
         if val {
             self.sr |= m
@@ -273,8 +292,9 @@ pub fn build_opcode_table() -> [Option<isa::Opcode>; 256] {
     optab
 }
 
+// TODO: maybe StatusBit and StatusMask belong in isa.rs
 #[repr(u8)]
-enum StatusBit {
+pub enum StatusBit {
     Carry = 0,
     Zero = 1,
     Interrupt = 2,
@@ -287,7 +307,7 @@ enum StatusBit {
 
 #[allow(unused)]
 #[repr(u8)]
-enum StatusMask {
+pub enum StatusMask {
     Carry = 1 << StatusBit::Carry as u8,
     Zero = 1 << StatusBit::Zero as u8,
     Interrupt = 1 << StatusBit::Interrupt as u8,

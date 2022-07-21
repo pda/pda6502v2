@@ -19,6 +19,7 @@ fn main() {
         .label("loop")
         .inx()
         .adc(Abs(val(org + 2))) // LDX #$10 operand
+        .asl(A)
         .and(ZX(0x00))
         .nop()
         .jmp(Abs(label("loop")))
@@ -37,7 +38,7 @@ fn main() {
     cpu.reset();
 
     // run some instructions
-    for _ in 0..10 {
+    for _ in 0..20 {
         println!("{:?}", cpu);
         cpu.step();
     }
