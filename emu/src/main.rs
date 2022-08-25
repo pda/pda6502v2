@@ -21,6 +21,7 @@ fn main() {
         .adc(Abs(val(org + 2))) // LDX #$10 operand
         .asl(A)
         .and(ZX(0x00))
+        .bcc(Rel(0x01)) // skip NOP unless carry set
         .nop()
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)));

@@ -138,6 +138,38 @@ fn test_asl() {
 }
 
 #[test]
+fn test_bcc() {
+    let mut cpu = Cpu::new(Bus::default());
+    //cpu.a = 0b01000000; // for testing Accumulator address mode
+    //cpu.x = 0x01; // for testing zp,X address mode
+    //cpu.bus.write(0xF1, 0b11011011); // for testing zp,X address mode
+
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.bcc(Operand::Rel(0x10))
+            .bcc(Operand::Rel(0x20))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    use pda6502v2emu::cpu::StatusMask;
+
+    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.step(); // BCC 0x10 (don't branch)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq!(stat(&cpu.sr), "nv-bdizC");
+
+    cpu.set_sr_bit(StatusMask::Carry, false);
+    cpu.step(); // BCC 0x20 (do branch)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

@@ -87,6 +87,11 @@ impl Assembler {
         self.push_instruction(Mnemonic::Asl, op)
     }
 
+    pub fn bcc(&mut self, op: Operand) -> &mut Assembler {
+        // TODO: derive Operand::Rel from absolute address / label etc
+        self.push_instruction(Mnemonic::Bcc, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }

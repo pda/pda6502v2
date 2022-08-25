@@ -90,7 +90,16 @@ impl Cpu {
                 self.update_sr_z_n(result);
                 self.set_sr_bit(StatusMask::Carry, carry == 1);
             }
-            // M::Bcc => {}
+            M::Bcc => {
+                if self.sr & StatusMask::Carry as u8 == 0 {
+                    match self.read_operand(opcode.mode) {
+                        OpValue::U16(addr) => self.pc = addr,
+                        _ => panic!("illegal AddressMode: {:?}", opcode),
+                    }
+                } else {
+                    self.pc += 1; // skip operand
+                }
+            }
             // M::Bcs => {}
             // M::Beq => {}
             // M::Bit => {}
@@ -210,8 +219,8 @@ impl Cpu {
             Relative => {
                 // #![feature(mixed_integer_ops)]
                 // OV::U16(self.pc.wrapping_add_signed(self.read_pc_u8().into()))
+                let offset: i16 = (self.read_pc_u8() as i8).into();
                 let base = self.pc as i16;
-                let offset: i16 = (self.read_pc_u8() as i8).into(); // not sure if this is legit
                 OV::U16((base + offset) as u16)
             }
             XIndirect => {
