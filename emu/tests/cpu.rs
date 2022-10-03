@@ -1,3 +1,4 @@
+use pda6502v2emu::asm::BranchTarget;
 use pda6502v2emu::asm::{label, val};
 use pda6502v2emu::asm::{Assembler, Operand};
 use pda6502v2emu::bus::Bus;
@@ -147,8 +148,8 @@ fn test_bcc() {
     let mut asm = Assembler::new();
     cpu.bus.load(
         cpu.pc,
-        asm.bcc(Operand::Rel(0x10))
-            .bcc(Operand::Rel(0x20))
+        asm.bcc(Operand::Rel(BranchTarget::Offset(0x10)))
+            .bcc(Operand::Rel(BranchTarget::Offset(0x20)))
             .print_listing()
             .assemble()
             .unwrap(),

@@ -41,7 +41,45 @@ mod tests {
     #[should_panic(expected = "IllegalAddressMode(Jmp, Relative)")]
     fn it_errors_on_illegal_address_mode() {
         let mut asm = Assembler::new();
-        asm.jmp(Operand::Rel(0xFF)).assemble().unwrap();
+        asm.jmp(Operand::Rel(BranchTarget::Offset(0)))
+            .assemble()
+            .unwrap();
+    }
+
+    #[test]
+    fn it_branches_to_nearby_label() {
+        let mut asm = Assembler::new();
+        asm.org(0x1000)
+            .label("foo")
+            .bcc(Operand::Rel(branch("bar")))
+            .nop()
+            .label("bar")
+            .bcc(Operand::Rel(branch("foo")));
+        println!("{}", asm);
+        assert_eq!(asm.assemble().unwrap(), vec![0x90, 0x01, 0xEA, 0x90, 0xFB]);
+    }
+
+    #[test]
+    #[should_panic(expected = "RelativeAddressOutOfRange(-131)")]
+    fn it_cannot_branch_to_distant_label() {
+        let mut asm = Assembler::new();
+        asm.org(0x2000).label("start");
+        for _ in 0..43 {
+            asm.jmp(Operand::Abs(val(0x0000))); // 129 bytes of program
+        }
+        asm.bcc(Operand::Rel(branch("start")));
+        asm.assemble().unwrap();
+    }
+
+    #[test]
+    fn it_lists_with_out_of_range_label() {
+        let mut asm = Assembler::new();
+        asm.org(0x2000).label("start");
+        for _ in 0..43 {
+            asm.jmp(Operand::Abs(val(0x0000))); // 129 bytes of program
+        }
+        asm.bcc(Operand::Rel(branch("start")));
+        println!("{}", asm.listing().unwrap());
     }
 }
 
@@ -88,7 +126,6 @@ impl Assembler {
     }
 
     pub fn bcc(&mut self, op: Operand) -> &mut Assembler {
-        // TODO: derive Operand::Rel from absolute address / label etc
         self.push_instruction(Mnemonic::Bcc, op)
     }
 
@@ -115,9 +152,11 @@ impl Assembler {
 
         let labtab = self.build_label_table();
 
+        let mut addr = self.org;
         for line in self.lines.iter() {
+            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
             bin.push(line.instruction?.code);
-            match self.op_value(&line.operand, &labtab) {
+            match self.op_value(addr, &line.operand, &labtab)? {
                 OpValue::None => {}
                 OpValue::U8(x) => bin.push(x),
                 OpValue::U16(x) => {
@@ -138,17 +177,25 @@ impl Assembler {
         writeln!(f, "* = ${:04X}", self.org)?;
         let mut addr = self.org;
         for line in self.lines.iter() {
+            let base_addr = addr;
+            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
             let instruction = line.instruction?;
-            let opvalue = self.op_value(&line.operand, &labtab);
-            let ophex = match opvalue {
-                OpValue::None => String::new(),
-                OpValue::U8(x) => format!("${:02X}", x),
-                OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
+            let mut err: Option<Error> = None;
+            let ophex = match self.op_value(addr, &line.operand, &labtab) {
+                Ok(x) => match x {
+                    OpValue::None => String::new(),
+                    OpValue::U8(x) => format!("${:02X}", x),
+                    OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
+                },
+                Err(e) => {
+                    err = Some(e);
+                    format!(" ??  ??")
+                }
             };
             writeln!(
                 f,
-                "${:04X}  ${:02X} {:7}  {:16} {} {}{}",
-                addr,
+                "${:04X}  ${:02X} {:7}  {:16} {} {}{}{}",
+                base_addr,
                 instruction.code,
                 ophex,
                 if let Some(label) = &line.label {
@@ -163,8 +210,12 @@ impl Assembler {
                     ""
                 },
                 line.operand,
+                if let Some(e) = err {
+                    format!(" ; {e:?}")
+                } else {
+                    String::from("")
+                }
             )?;
-            addr += 1 + (line.operand.length() as u16);
         }
         Ok(f)
     }
@@ -183,15 +234,40 @@ impl Assembler {
         self
     }
 
-    fn op_value(&self, op: &Operand, labtab: &HashMap<&str, u16>) -> OpValue {
+    fn op_value(
+        &self,
+        addr: u16,
+        op: &Operand,
+        labtab: &HashMap<&str, u16>,
+    ) -> Result<OpValue, Error> {
         use Operand::*;
         match op {
-            A | Impl => OpValue::None,
+            A | Impl => Ok(OpValue::None),
             Abs(x) | AbsX(x) | AbsY(x) | Ind(x) => match x {
-                Addr::Literal(x) => OpValue::U16(*x),
-                Addr::Label(x) => OpValue::U16(*labtab.get(x.as_str()).unwrap()), // TODO: Result not unwrap
+                Addr::Literal(x) => Ok(OpValue::U16(*x)),
+                Addr::Label(x) => match labtab.get(x.as_str()) {
+                    Some(addr) => Ok(OpValue::U16(*addr)),
+                    None => Err(Error::LabelNotFound),
+                },
             },
-            Imm(x) | XInd(x) | IndY(x) | Rel(x) | Z(x) | ZX(x) | ZY(x) => OpValue::U8(*x),
+            Rel(x) => match x {
+                BranchTarget::Offset(x) => Ok(OpValue::U8(*x as u8)),
+                BranchTarget::Label(x) => {
+                    let target_addr = match labtab.get(x.as_str()) {
+                        Some(addr) => *addr,
+                        None => return Err(Error::LabelNotFound),
+                    };
+                    let rel16: i16 = target_addr.wrapping_sub(addr) as i16;
+                    let rel8: i8 = match rel16.try_into() {
+                        Ok(x) => x,
+                        Err(_) => {
+                            return Err(Error::RelativeAddressOutOfRange(rel16));
+                        }
+                    };
+                    Ok(OpValue::U8(rel8 as u8))
+                }
+            },
+            Imm(x) | XInd(x) | IndY(x) | Z(x) | ZX(x) | ZY(x) => Ok(OpValue::U8(*x)),
         }
     }
 
@@ -202,7 +278,7 @@ impl Assembler {
             if let Some(l) = &line.label {
                 labtab.insert(l, addr);
             }
-            addr += 1 + (line.operand.length() as u16);
+            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
         }
         labtab
     }
@@ -227,7 +303,8 @@ impl fmt::Display for Operand {
             Ind(x) => write!(f, "({})", x),
             XInd(x) => write!(f, "(${:02X},X)", x),
             IndY(x) => write!(f, "(${:02X}),Y", x),
-            Rel(x) | Operand::Z(x) => write!(f, "${:02X}", x),
+            Rel(x) => write!(f, "{}", x),
+            Z(x) => write!(f, "${:02X}", x),
             ZX(x) => write!(f, "${:02X},X", x),
             ZY(x) => write!(f, "${:02X},Y", x),
         }
@@ -239,6 +316,15 @@ impl fmt::Display for Addr {
         match self {
             Addr::Literal(a) => write!(f, "${:04X}", a),
             Addr::Label(l) => write!(f, "{}", l),
+        }
+    }
+}
+
+impl fmt::Display for BranchTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BranchTarget::Offset(x) => write!(f, "{}", x),
+            BranchTarget::Label(l) => write!(f, "{}", l),
         }
     }
 }
@@ -263,7 +349,7 @@ pub enum Operand {
     Ind(Addr),
     XInd(u8),
     IndY(u8),
-    Rel(u8),
+    Rel(BranchTarget),
     Z(u8),
     ZX(u8),
     ZY(u8),
@@ -293,26 +379,39 @@ impl Operand {
     }
 }
 
-#[allow(unused)]
 #[derive(Debug)]
 pub enum Addr {
     Literal(u16),
     Label(String),
 }
 
-// val is shorthand for a literal address, as opposed to a labelled address.
+// shorthand for a literal/numeric address, as opposed to a labelled address.
 pub fn val(v: u16) -> Addr {
     Addr::Literal(v)
 }
 
-// label is shorthand for a labelled address, as opposed to a literal address.
+// shorthand for a labelled address, as opposed to a literal (numeric) address.
 pub fn label(s: &str) -> Addr {
     Addr::Label(s.to_string())
+}
+
+#[derive(Debug)]
+#[allow(unused)]
+pub enum BranchTarget {
+    Offset(i8),
+    Label(String),
+}
+
+// shorthand for a nearby labelled branch target
+pub fn branch(s: &str) -> BranchTarget {
+    BranchTarget::Label(s.to_string())
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum Error {
     IllegalAddressMode(Mnemonic, AddressMode),
+    RelativeAddressOutOfRange(i16),
+    LabelNotFound, // TODO: include label string
 }
 
 impl From<Error> for fmt::Error {

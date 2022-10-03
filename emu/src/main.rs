@@ -5,7 +5,7 @@ mod isa;
 
 fn main() {
     // syntax brevity for Assembler args
-    use asm::{label, val, Operand::*};
+    use asm::{branch, label, val, Operand::*};
 
     // prepare an address bus
     let mut bus = bus::Bus::default();
@@ -21,8 +21,9 @@ fn main() {
         .adc(Abs(val(org + 2))) // LDX #$10 operand
         .asl(A)
         .and(ZX(0x00))
-        .bcc(Rel(0x01)) // skip NOP unless carry set
+        .bcc(Rel(branch("branch_to"))) // skip NOP unless carry set
         .nop()
+        .label("branch_to")
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)));
 
