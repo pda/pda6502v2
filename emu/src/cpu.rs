@@ -91,7 +91,7 @@ impl Cpu {
                 self.set_sr_bit(StatusMask::Carry, carry == 1);
             }
             M::Bcc => {
-                if self.sr & StatusMask::Carry as u8 == 0 {
+                if !self.get_sr_bit(StatusMask::Carry) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -101,7 +101,7 @@ impl Cpu {
                 }
             }
             M::Bcs => {
-                if self.sr & StatusMask::Carry as u8 == 1 {
+                if self.get_sr_bit(StatusMask::Carry) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -110,7 +110,16 @@ impl Cpu {
                     self.pc += 1; // skip operand
                 }
             }
-            // M::Beq => {}
+            M::Beq => {
+                if self.get_sr_bit(StatusMask::Zero) {
+                    match self.read_operand(opcode.mode) {
+                        OpValue::U16(addr) => self.pc = addr,
+                        _ => panic!("illegal AddressMode: {:?}", opcode),
+                    }
+                } else {
+                    self.pc += 1; // skip operand
+                }
+            }
             // M::Bit => {}
             // M::Bmi => {}
             // M::Bne => {}
@@ -266,6 +275,10 @@ impl Cpu {
         } else {
             self.sr &= !m
         }
+    }
+
+    pub fn get_sr_bit(&mut self, mask: StatusMask) -> bool {
+        self.sr & mask as u8 != 0
     }
 
     fn carry(&mut self) -> u8 {

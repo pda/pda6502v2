@@ -23,6 +23,7 @@ fn main() {
         .and(ZX(0x00))
         .bcc(Rel(branch("branch_to")))
         .bcs(Rel(branch("branch_to")))
+        .beq(Rel(branch("branch_to")))
         .nop()
         .label("branch_to")
         .jmp(Abs(label("loop")))
