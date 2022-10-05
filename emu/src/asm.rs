@@ -129,6 +129,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Bcc, op)
     }
 
+    pub fn bcs(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Bcs, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }
