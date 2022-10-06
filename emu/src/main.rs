@@ -21,6 +21,7 @@ fn main() {
         .adc(Abs(val(org + 2))) // LDX #$10 operand
         .asl(A)
         .and(ZX(0x00))
+        .bit(Z(0x00))
         .bcc(Rel(branch("branch_to")))
         .bcs(Rel(branch("branch_to")))
         .beq(Rel(branch("branch_to")))

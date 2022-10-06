@@ -224,6 +224,37 @@ fn test_beq() {
 }
 
 #[test]
+fn test_bit() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .label("data")
+            .data(vec![0xFF, 0x00])
+            .label("prog")
+            .bit(Operand::Z(cpu.pc.try_into().unwrap()))
+            .bit(Operand::Abs(val(cpu.pc)))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+    cpu.pc += 2; // skip the data
+
+    cpu.a = 0xFF;
+    cpu.step(); // BIT $00 (#$FF)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0004, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq!(stat(&cpu.sr), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
+
+    cpu.a = 0x00;
+    cpu.step(); // BIT $0001 (#$00)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0007, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

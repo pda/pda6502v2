@@ -120,7 +120,13 @@ impl Cpu {
                     self.pc += 1; // skip operand
                 }
             }
-            // M::Bit => {}
+            M::Bit => {
+                let operand = self.read_operand_value(opcode);
+                let r = self.a & operand;
+                self.set_sr_bit(StatusMask::Negative, r & StatusMask::Negative as u8 != 0);
+                self.set_sr_bit(StatusMask::Overflow, r & StatusMask::Overflow as u8 != 0);
+                self.set_sr_bit(StatusMask::Zero, r == 0);
+            }
             // M::Bmi => {}
             // M::Bne => {}
             // M::Bpl => {}
