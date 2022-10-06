@@ -27,7 +27,9 @@ fn main() {
         .nop()
         .label("branch_to")
         .jmp(Abs(label("loop")))
-        .jmp(Abs(val(0)));
+        .jmp(Abs(val(0)))
+        .label("message")
+        .data("Hello world!\nHow are you?\n".into());
 
     asm.print_listing();
 

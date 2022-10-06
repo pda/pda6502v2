@@ -110,6 +110,14 @@ impl Assembler {
         self
     }
 
+    pub fn data(&mut self, d: Vec<u8>) -> &mut Assembler {
+        self.lines.push(Line::Data(DataLine {
+            label: self.next_label.take(),
+            data: d,
+        }));
+        self
+    }
+
     // ----------------------------------------
     // Instructions
 
@@ -162,16 +170,21 @@ impl Assembler {
 
         let mut addr = self.org;
         for line in self.lines.iter() {
-            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
-            bin.push(line.instruction?.code);
-            match self.op_value(addr, &line.operand, &labtab)? {
-                OpValue::None => {}
-                OpValue::U8(x) => bin.push(x),
-                OpValue::U16(x) => {
-                    bin.push(x as u8);
-                    bin.push((x >> 8) as u8);
+            addr += line.size();
+            match line {
+                Line::Instruction(line) => {
+                    bin.push(line.instruction?.code);
+                    match self.op_value(addr, &line.operand, &labtab)? {
+                        OpValue::None => {}
+                        OpValue::U8(x) => bin.push(x),
+                        OpValue::U16(x) => {
+                            bin.push(x as u8);
+                            bin.push((x >> 8) as u8);
+                        }
+                    };
                 }
-            };
+                Line::Data(line) => bin.extend(&line.data),
+            }
         }
         Ok(bin)
     }
@@ -186,44 +199,77 @@ impl Assembler {
         let mut addr = self.org;
         for line in self.lines.iter() {
             let base_addr = addr;
-            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
-            let instruction = line.instruction?;
-            let mut err: Option<Error> = None;
-            let ophex = match self.op_value(addr, &line.operand, &labtab) {
-                Ok(x) => match x {
-                    OpValue::None => String::new(),
-                    OpValue::U8(x) => format!("${:02X}", x),
-                    OpValue::U16(x) => format!("${:02X} ${:02X}", x & 0xFF, (x >> 8)),
-                },
-                Err(e) => {
-                    err = Some(e);
-                    format!(" ??  ??")
+            addr += line.size();
+            match line {
+                Line::Instruction(line) => {
+                    let instruction = line.instruction?;
+                    let mut err: Option<Error> = None;
+                    let ophex = match self.op_value(addr, &line.operand, &labtab) {
+                        Ok(x) => match x {
+                            OpValue::None => String::new(),
+                            OpValue::U8(x) => format!("{:02X}", x),
+                            OpValue::U16(x) => format!("{:02X} {:02X}", x & 0xFF, (x >> 8)),
+                        },
+                        Err(e) => {
+                            err = Some(e);
+                            format!("?? ??")
+                        }
+                    };
+                    let label = match &line.label {
+                        Some(label) => format!("{}:", label),
+                        None => String::from(""),
+                    };
+                    let op_prefix = match instruction.mode {
+                        AddressMode::Immediate => "#",
+                        _ => "",
+                    };
+                    let err_string = match err {
+                        Some(e) => format!(" ; {e:?}"),
+                        None => String::from(""),
+                    };
+                    writeln!(
+                        f,
+                        "{:04X} | {:02X} {:5} | {:16} {} {}{}{}",
+                        base_addr,
+                        instruction.code,
+                        ophex,
+                        label,
+                        instruction.mnemonic,
+                        op_prefix,
+                        line.operand,
+                        err_string,
+                    )?;
                 }
-            };
-            writeln!(
-                f,
-                "${:04X}  ${:02X} {:7}  {:16} {} {}{}{}",
-                base_addr,
-                instruction.code,
-                ophex,
-                if let Some(label) = &line.label {
-                    format!("{}:", label)
-                } else {
-                    String::from("")
-                },
-                instruction.mnemonic,
-                if let AddressMode::Immediate = instruction.mode {
-                    "#"
-                } else {
-                    ""
-                },
-                line.operand,
-                if let Some(e) = err {
-                    format!(" ; {e:?}")
-                } else {
-                    String::from("")
+                Line::Data(line) => {
+                    let label = match &line.label {
+                        Some(label) => format!("{}:", label),
+                        None => String::from(""),
+                    };
+                    writeln!(f, "                  {:16}", label)?;
+                    let mut addr = base_addr;
+                    for linechunk in line.data.chunks(16) {
+                        let hex = linechunk
+                            .chunks(8)
+                            .map(|half| {
+                                half.iter()
+                                    .map(|x| format!("{:02X}", x))
+                                    .collect::<Vec<String>>()
+                                    .join(" ")
+                            })
+                            .collect::<Vec<String>>()
+                            .join("  ");
+
+                        let ascii: String = linechunk
+                            .iter()
+                            .map(|&x| if x >= 32 && x <= 126 { x as char } else { '.' })
+                            .collect();
+
+                        writeln!(f, "{:04X}  {:49} |{}|", addr, hex, ascii)?;
+
+                        addr += linechunk.len() as u16;
+                    }
                 }
-            )?;
+            }
         }
         Ok(f)
     }
@@ -234,11 +280,11 @@ impl Assembler {
     }
 
     fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
-        self.lines.push(Line {
+        self.lines.push(Line::Instruction(InstructionLine {
             label: self.next_label.take(),
             instruction: self.opcode_map.get(mnemonic, op.mode()).map_err(Into::into),
             operand: op,
-        });
+        }));
         self
     }
 
@@ -283,10 +329,10 @@ impl Assembler {
         let mut labtab: HashMap<&str, u16> = HashMap::new();
         let mut addr = self.org;
         for line in self.lines.iter() {
-            if let Some(l) = &line.label {
+            if let Some(l) = &line.label() {
                 labtab.insert(l, addr);
             }
-            addr += 1 + (line.operand.length() as u16); // TODO: line.size()
+            addr += line.size();
         }
         labtab
     }
@@ -338,10 +384,38 @@ impl fmt::Display for BranchTarget {
 }
 
 #[derive(Debug)]
-struct Line {
+enum Line {
+    Instruction(InstructionLine),
+    Data(DataLine),
+}
+
+#[derive(Debug)]
+struct InstructionLine {
     label: Option<String>,
     instruction: Result<Opcode, Error>,
     operand: Operand,
+}
+
+#[derive(Debug)]
+struct DataLine {
+    label: Option<String>,
+    data: Vec<u8>,
+}
+
+impl Line {
+    fn label(&self) -> &Option<String> {
+        match self {
+            Line::Instruction(line) => &line.label,
+            Line::Data(line) => &line.label,
+        }
+    }
+
+    fn size(&self) -> u16 {
+        match self {
+            Line::Instruction(line) => line.operand.length() as u16 + 1,
+            Line::Data(line) => line.data.len().try_into().unwrap(),
+        }
+    }
 }
 
 // Opcode Operands
