@@ -344,6 +344,35 @@ fn test_bpl() {
 }
 
 #[test]
+fn test_bvc() {
+    let mut cpu = Cpu::new(Bus::default());
+
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.bvc(Operand::Rel(BranchTarget::Offset(0x10)))
+            .bvc(Operand::Rel(BranchTarget::Offset(0x20)))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    use pda6502v2emu::cpu::StatusMask;
+
+    cpu.set_sr_bit(StatusMask::Overflow, true);
+    cpu.step(); // BVC 0x10 (don't branch)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+
+    cpu.set_sr_bit(StatusMask::Overflow, false);
+    cpu.step(); // BVC 0x20 (do branch)
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;
