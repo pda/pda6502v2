@@ -25,6 +25,7 @@ fn main() {
         .bcc(Rel(branch("branch_to")))
         .bcs(Rel(branch("branch_to")))
         .beq(Rel(branch("branch_to")))
+        .bmi(Rel(branch("branch_to")))
         .nop()
         .label("branch_to")
         .jmp(Abs(label("loop")))

@@ -244,14 +244,44 @@ fn test_bit() {
     cpu.a = 0xFF;
     cpu.step(); // BIT $00 (#$FF)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0004, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq!(cpu.pc, 0x0004, "{:#04X} != {:#04X}", cpu.pc, 0x0004);
     assert_eq!(stat(&cpu.sr), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
 
     cpu.a = 0x00;
     cpu.step(); // BIT $0001 (#$00)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0007, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq!(cpu.pc, 0x0007, "{:#04X} != {:#04X}", cpu.pc, 0x0007);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
+}
+
+#[test]
+fn test_bmi() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.ldx(Operand::Imm(0xFF)) // SR N=1
+            .label("a")
+            .bmi(Operand::Rel(BranchTarget::Label("b".to_string())))
+            .nop()
+            .label("b")
+            .ldx(Operand::Imm(0x10)) // SR N=0
+            .bmi(Operand::Rel(BranchTarget::Label("a".to_string())))
+            .nop()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // LDX #$FF
+    println!("{cpu:?}");
+    cpu.step(); // BMI b
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+    cpu.step(); // LDX #$10
+    cpu.step(); // BMI a
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
 }
 
 #[test]

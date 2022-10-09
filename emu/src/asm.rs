@@ -149,6 +149,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Bit, op)
     }
 
+    pub fn bmi(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Bmi, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }
