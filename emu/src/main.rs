@@ -29,6 +29,7 @@ fn main() {
         .bne(Rel(branch("branch_to")))
         .bpl(Rel(branch("branch_to")))
         .bvc(Rel(branch("branch_to")))
+        .bvs(Rel(branch("branch_to")))
         .nop()
         .label("branch_to")
         .jmp(Abs(label("loop")))
