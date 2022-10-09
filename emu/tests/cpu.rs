@@ -305,12 +305,41 @@ fn test_bne() {
 
     cpu.step(); // LDX #$01
     cpu.step(); // BNE b
-    println!("{:?}", cpu);
+    println!("{cpu:?}");
     assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
 
     cpu.step(); // LDX #$00
     cpu.step(); // BNE a
-    println!("{:?}", cpu);
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
+}
+
+#[test]
+fn test_bpl() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.label("a")
+            .ldx(Operand::Imm(0x10)) // SR N=0
+            .bpl(Operand::Rel(BranchTarget::Label("b".to_string())))
+            .nop()
+            .label("b")
+            .ldx(Operand::Imm(0xF0)) // SR N=1
+            .bpl(Operand::Rel(BranchTarget::Label("a".to_string())))
+            .nop()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // LDX #$10
+    cpu.step(); // BPL b
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+    cpu.step(); // LDX #$F0
+    cpu.step(); // BPL a
+    println!("{cpu:?}");
     assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
 }
 
