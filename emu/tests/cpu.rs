@@ -285,6 +285,36 @@ fn test_bmi() {
 }
 
 #[test]
+fn test_bne() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.label("a")
+            .ldx(Operand::Imm(0x01))
+            .bne(Operand::Rel(BranchTarget::Label("b".to_string())))
+            .nop()
+            .label("b")
+            .ldx(Operand::Imm(0x00))
+            .bne(Operand::Rel(BranchTarget::Label("a".to_string())))
+            .nop()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // LDX #$01
+    cpu.step(); // BNE b
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+
+    cpu.step(); // LDX #$00
+    cpu.step(); // BNE a
+    println!("{:?}", cpu);
+    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

@@ -137,7 +137,16 @@ impl Cpu {
                     self.pc += 1; // skip operand
                 }
             }
-            // M::Bne => {}
+            M::Bne => {
+                if !self.get_sr_bit(StatusMask::Zero) {
+                    match self.read_operand(opcode.mode) {
+                        OpValue::U16(addr) => self.pc = addr,
+                        _ => panic!("illegal AddressMode: {:?}", opcode),
+                    }
+                } else {
+                    self.pc += 1; // skip operand
+                }
+            }
             // M::Bpl => {}
             // M::Brk => {}
             // M::Bvc => {}
