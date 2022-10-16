@@ -169,8 +169,24 @@ impl Assembler {
         self.push_instruction(Mnemonic::Bvs, op)
     }
 
-    pub fn nop(&mut self) -> &mut Assembler {
-        self.push_instruction(Mnemonic::Nop, Operand::Impl)
+    pub fn clc(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Clc, Operand::Impl)
+    }
+
+    pub fn cld(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Cld, Operand::Impl)
+    }
+
+    pub fn cli(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Cli, Operand::Impl)
+    }
+
+    pub fn clv(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Clv, Operand::Impl)
+    }
+
+    pub fn inx(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
 
     pub fn jmp(&mut self, op: Operand) -> &mut Self {
@@ -181,8 +197,20 @@ impl Assembler {
         self.push_instruction(Mnemonic::Ldx, op)
     }
 
-    pub fn inx(&mut self) -> &mut Self {
-        self.push_instruction(Mnemonic::Inx, Operand::Impl)
+    pub fn nop(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Nop, Operand::Impl)
+    }
+
+    pub fn sec(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Sec, Operand::Impl)
+    }
+
+    pub fn sed(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Sed, Operand::Impl)
+    }
+
+    pub fn sei(&mut self) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Sei, Operand::Impl)
     }
 
     // ----------------------------------------

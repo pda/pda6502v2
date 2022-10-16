@@ -178,10 +178,22 @@ impl Cpu {
                     self.pc += 1; // skip operand
                 }
             }
-            // M::Clc => {}
-            // M::Cld => {}
-            // M::Cli => {}
-            // M::Clv => {}
+            M::Clc => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Carry, false),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Cld => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Decimal, false),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Cli => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Interrupt, false),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Clv => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Overflow, false),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
             // M::Cmp => {}
             // M::Cpx => {}
             // M::Cpy => {}
@@ -221,9 +233,18 @@ impl Cpu {
             // M::Rti => {}
             // M::Rts => {}
             // M::Sbc => {}
-            // M::Sec => {}
-            // M::Sed => {}
-            // M::Sei => {}
+            M::Sec => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Carry, true),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Sed => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Decimal, true),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Sei => match opcode.mode {
+                Implied => self.set_sr_bit(StatusMask::Interrupt, true),
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
             // M::Sta => {}
             // M::Stx => {}
             // M::Sty => {}

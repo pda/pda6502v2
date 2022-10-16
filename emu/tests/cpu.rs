@@ -507,3 +507,49 @@ fn test_nop() {
     cpu.step();
     assert_eq!(cpu.pc, 0x0001, "{:#06X} != {:#06X}", cpu.x, 0x0001);
 }
+
+#[test]
+fn test_set_and_clear_flags() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.sec()
+            .sed()
+            .sei()
+            .clc()
+            .cld()
+            .cli()
+            .clv()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    use pda6502v2emu::cpu::StatusMask;
+    cpu.set_sr_bit(StatusMask::Overflow, true);
+
+    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+
+    cpu.step(); // SEC
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bdizC");
+    cpu.step(); // SED
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bDizC");
+    cpu.step(); // SEI
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bDIzC");
+    cpu.step(); // CLC
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bDIzc");
+    cpu.step(); // CLD
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bdIzc");
+    cpu.step(); // CLI
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+    cpu.step(); // CLV
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+}
