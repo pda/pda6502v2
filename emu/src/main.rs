@@ -41,6 +41,7 @@ fn main() {
         .clv()
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
+        .brk()
         .label("message")
         .data("Hello world!\nHow are you?\n".into());
 

@@ -157,7 +157,27 @@ impl Cpu {
                     self.pc += 1; // skip operand
                 }
             }
-            // M::Brk => {}
+            M::Brk => match opcode.mode {
+                Implied => {
+                    let return_addr = self.pc.wrapping_add(1);
+                    let return_hi = (return_addr >> 8) as u8;
+                    let return_lo = return_addr as u8;
+                    let sr = self.sr | StatusMask::Break as u8;
+
+                    // TODO: refactor out stack_push() stack_pop()
+                    self.bus.write(0x0100 + self.sp as u16, return_hi);
+                    self.sp = self.sp.wrapping_sub(1);
+
+                    self.bus.write(0x0100 + self.sp as u16, return_lo);
+                    self.sp = self.sp.wrapping_sub(1);
+
+                    self.bus.write(0x0100 + self.sp as u16, sr);
+                    self.sp = self.sp.wrapping_sub(1);
+
+                    self.pc = self.read_u16(0xFFFE);
+                }
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             M::Bvc => {
                 if !self.get_sr_bit(StatusMask::Overflow) {
                     match self.read_operand(opcode.mode) {

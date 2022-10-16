@@ -344,6 +344,29 @@ fn test_bpl() {
 }
 
 #[test]
+fn test_brk() {
+    let mut cpu = Cpu::new(Bus::default());
+    cpu.bus.write(0xFFFE, 0x68); // IRQ vector (lo)
+    cpu.bus.write(0xFFFF, 0x24); // IRQ vector (hi)
+    cpu.pc = 0x0400;
+    cpu.sp = 0xFF;
+
+    let mut asm = Assembler::new();
+    cpu.bus
+        .load(cpu.pc, asm.brk().print_listing().assemble().unwrap());
+
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    cpu.step(); // BRK
+    println!("{cpu:?}");
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(cpu.pc, 0x2468, "PC {:#04X} != {:#04X}", cpu.pc, 0x2468);
+    assert_eq!(cpu.sp, 0xFC, "SP {:#02X} != {:#02X}", cpu.sp, 0xFC);
+    assert_eq!(cpu.bus.read(0x01FF), 0x04);
+    assert_eq!(cpu.bus.read(0x01FE), 0x02);
+    assert_eq!(stat(&cpu.bus.read(0x01FD)), "nv-Bdizc");
+}
+
+#[test]
 fn test_bvc() {
     let mut cpu = Cpu::new(Bus::default());
 
