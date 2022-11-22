@@ -214,7 +214,11 @@ impl Cpu {
                 Implied => self.set_sr_bit(StatusMask::Overflow, false),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            // M::Cmp => {}
+            M::Cmp => {
+                let result = self.a.wrapping_sub(self.read_operand_value(opcode));
+                self.update_sr_z_n(result);
+                self.set_sr_bit(StatusMask::Carry, result > self.a);
+            }
             // M::Cpx => {}
             // M::Cpy => {}
             // M::Dec => {}

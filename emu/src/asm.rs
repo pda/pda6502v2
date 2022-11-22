@@ -189,6 +189,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Clv, Operand::Impl)
     }
 
+    pub fn cmp(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Cmp, op)
+    }
+
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }

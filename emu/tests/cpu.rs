@@ -425,6 +425,36 @@ fn test_bvs() {
 }
 
 #[test]
+fn test_cmp() {
+    let mut cpu = Cpu::new(Bus::default());
+    cpu.pc = 0x0200;
+    cpu.a = 0xC0;
+    cpu.x = 0x03;
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .label("prog")
+            .cmp(Operand::Abs(label("data")))
+            .cmp(Operand::AbsX(label("data")))
+            .label("data")
+            .data(vec![0xAA, 0xBB, 0xCC, 0xDD])
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // CMP data
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0203, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    cpu.step(); // CMP data,X
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0206, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

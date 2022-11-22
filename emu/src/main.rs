@@ -39,6 +39,7 @@ fn main() {
         .cld()
         .cli()
         .clv()
+        .cmp(AbsX(label("message")))
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
