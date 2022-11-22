@@ -245,7 +245,7 @@ impl Assembler {
         Ok(bin)
     }
 
-    pub fn listing(&self) -> Result<String, fmt::Error> {
+    pub fn listing(&self) -> Result<String, Error> {
         use std::fmt::Write;
         let mut f = String::new();
 
@@ -396,7 +396,7 @@ impl Assembler {
 
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.listing()?)
+        write!(f, "{}", self.listing().unwrap())
     }
 }
 
@@ -550,11 +550,12 @@ pub enum Error {
     IllegalAddressMode(Mnemonic, AddressMode),
     RelativeAddressOutOfRange(i16),
     LabelNotFound, // TODO: include label string
+    Fmt(fmt::Error),
 }
 
-impl From<Error> for fmt::Error {
-    fn from(_: Error) -> Self {
-        Self
+impl From<fmt::Error> for Error {
+    fn from(err: fmt::Error) -> Self {
+        Error::Fmt(err)
     }
 }
 
