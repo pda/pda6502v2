@@ -32,7 +32,7 @@ impl Cpu {
 
     // Reset internal CPU state, as if the reset line had been asserted.
     pub fn reset(&mut self) {
-        self.pc = self.read_u16(0xFFFC);
+        self.pc = self.read_u16(VEC_RES);
         self.sp = 0x00;
         self.a = 0x00;
         self.x = 0x00;
@@ -159,22 +159,9 @@ impl Cpu {
             }
             M::Brk => match opcode.mode {
                 Implied => {
-                    let return_addr = self.pc.wrapping_add(1);
-                    let return_hi = (return_addr >> 8) as u8;
-                    let return_lo = return_addr as u8;
-                    let sr = self.sr | StatusMask::Break as u8;
-
-                    // TODO: refactor out stack_push() stack_pop()
-                    self.bus.write(0x0100 + self.sp as u16, return_hi);
-                    self.sp = self.sp.wrapping_sub(1);
-
-                    self.bus.write(0x0100 + self.sp as u16, return_lo);
-                    self.sp = self.sp.wrapping_sub(1);
-
-                    self.bus.write(0x0100 + self.sp as u16, sr);
-                    self.sp = self.sp.wrapping_sub(1);
-
-                    self.pc = self.read_u16(0xFFFE);
+                    self.push_addr(self.pc.wrapping_add(1));
+                    self.push(self.sr | StatusMask::Break as u8);
+                    self.pc = self.read_u16(VEC_IRQ);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
@@ -382,6 +369,16 @@ impl Cpu {
         let mask = StatusMask::Carry as u8;
         (self.sr & mask) >> bit
     }
+
+    fn push_addr(&mut self, addr: u16) {
+        self.push((addr >> 8) as u8); // hi
+        self.push(addr as u8); // lo
+    }
+
+    fn push(&mut self, val: u8) {
+        self.bus.write(0x0100 + self.sp as u16, val);
+        self.sp = self.sp.wrapping_sub(1);
+    }
 }
 
 impl fmt::Debug for Cpu {
@@ -443,3 +440,8 @@ pub enum StatusMask {
     Overflow = 1 << StatusBit::Overflow as u8,
     Negative = 1 << StatusBit::Negative as u8,
 }
+
+#[allow(unused)]
+const VEC_NMI: u16 = 0xFFFA;
+const VEC_RES: u16 = 0xFFFC;
+const VEC_IRQ: u16 = 0xFFFE;
