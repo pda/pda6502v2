@@ -206,8 +206,16 @@ impl Cpu {
                 self.update_sr_z_n(result);
                 self.set_sr_bit(StatusMask::Carry, result > self.a);
             }
-            // M::Cpx => {}
-            // M::Cpy => {}
+            M::Cpx => {
+                let result = self.x.wrapping_sub(self.read_operand_value(opcode));
+                self.update_sr_z_n(result);
+                self.set_sr_bit(StatusMask::Carry, result > self.x);
+            }
+            M::Cpy => {
+                let result = self.y.wrapping_sub(self.read_operand_value(opcode));
+                self.update_sr_z_n(result);
+                self.set_sr_bit(StatusMask::Carry, result > self.y);
+            }
             // M::Dec => {}
             // M::Dex => {}
             // M::Dey => {}

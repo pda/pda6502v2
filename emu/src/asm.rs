@@ -193,6 +193,14 @@ impl Assembler {
         self.push_instruction(Mnemonic::Cmp, op)
     }
 
+    pub fn cpx(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Cpx, op)
+    }
+
+    pub fn cpy(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Cpy, op)
+    }
+
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }

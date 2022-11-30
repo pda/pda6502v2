@@ -446,11 +446,39 @@ fn test_cmp() {
 
     cpu.step(); // CMP data
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0203, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq!(cpu.pc, 0x0203, "{:#04X} != {:#04X}", cpu.pc, 0x0203);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
     cpu.step(); // CMP data,X
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0206, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq!(cpu.pc, 0x0206, "{:#04X} != {:#04X}", cpu.pc, 0x0206);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+}
+
+#[test]
+fn test_cpx_and_cpy() {
+    let mut cpu = Cpu::new(Bus::default());
+    cpu.pc = 0x0200;
+    cpu.x = 0x04;
+    cpu.y = 0x04;
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .label("prog")
+            .cpx(Operand::Imm(0x04))
+            .cpy(Operand::Imm(0x08))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // CPX #$04
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0202, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    cpu.step(); // CPY #$08
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x0204, "{:#04X} != {:#04X}", cpu.pc, 0x0204);
     assert_eq!(stat(&cpu.sr), "Nv-bdizC");
 }
 

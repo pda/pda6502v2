@@ -40,6 +40,8 @@ fn main() {
         .cli()
         .clv()
         .cmp(AbsX(label("message")))
+        .cpx(Imm(0x12))
+        .cpy(Imm(0x34))
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
