@@ -5,6 +5,18 @@ use pda6502v2emu::bus::Bus;
 use pda6502v2emu::cpu::stat;
 use pda6502v2emu::cpu::Cpu;
 
+macro_rules! assert_eq_hex {
+    ($a:expr, $b:expr) => {
+        assert_eq!($a, $b, "{}:{:#04X} != {:#04X}", stringify!($a), $a, $b);
+    };
+}
+
+macro_rules! assert_eq_hex16 {
+    ($a:expr, $b:expr) => {
+        assert_eq!($a, $b, "{}:{:#06X} != {:#06X}", stringify!($a), $a, $b);
+    };
+}
+
 #[test]
 fn test_adc() {
     let mut cpu = Cpu::new(Bus::default());
@@ -42,42 +54,42 @@ fn test_adc() {
 
     cpu.step(); // ADC #$11
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x21, "{:#04X} != {:#04X}", cpu.a, 0x21);
+    assert_eq_hex!(cpu.a, 0x21);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.step(); // ADC $F0
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x10, "{:#04X} != {:#04X}", cpu.a, 0x10);
+    assert_eq_hex!(cpu.a, 0x10);
     assert_eq!(stat(&cpu.sr), "nv-bdizC");
 
     cpu.step(); // ADC $D0,X
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x81, "{:#04X} != {:#04X}", cpu.a, 0x81);
+    assert_eq_hex!(cpu.a, 0x81);
     assert_eq!(stat(&cpu.sr), "NV-bdizc");
 
     cpu.step(); // ADC $1234
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x05, "{:#04X} != {:#04X}", cpu.a, 0x05);
+    assert_eq_hex!(cpu.a, 0x05);
     assert_eq!(stat(&cpu.sr), "nV-bdizC");
 
     cpu.step(); // ADC $1214,X
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x00, "{:#04X} != {:#04X}", cpu.a, 0x00);
+    assert_eq_hex!(cpu.a, 0x00);
     assert_eq!(stat(&cpu.sr), "nv-bdiZC");
 
     cpu.step(); // ADC $12F0,Y
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x01, "{:#04X} != {:#04X}", cpu.a, 0x01);
+    assert_eq_hex!(cpu.a, 0x01);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.step(); // ADC ($D1,X)
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0x43, "{:#04X} != {:#04X}", cpu.a, 0x43);
+    assert_eq_hex!(cpu.a, 0x43);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.step(); // ADC ($F4),Y
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0xFF, "{:#04X} != {:#04X}", cpu.a, 0xFF);
+    assert_eq_hex!(cpu.a, 0xFF);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 }
 
@@ -95,7 +107,7 @@ fn test_and() {
 
     cpu.step(); // ADC #$A0
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0b10010000, "{:#04X} != {:#04X}", cpu.a, 0b10010000);
+    assert_eq_hex!(cpu.a, 0b10010000);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 }
 
@@ -122,19 +134,19 @@ fn test_asl() {
     cpu.set_sr_bit(StatusMask::Carry, true);
     cpu.step(); // ASL A
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0b10000000, "{:#04X} != {:#04X}", cpu.a, 0b10000000);
+    assert_eq_hex!(cpu.a, 0b10000000);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 
     cpu.set_sr_bit(StatusMask::Carry, true);
     cpu.step(); // ASL A
     println!("{:?}", cpu);
-    assert_eq!(cpu.a, 0b00000000, "{:#04X} != {:#04X}", cpu.a, 0b00000000);
+    assert_eq_hex!(cpu.a, 0b00000000);
     assert_eq!(stat(&cpu.sr), "nv-bdiZC");
 
     cpu.step(); // ASL $F0,X
     println!("{:?}", cpu);
     let val = cpu.bus.read(0xF1);
-    assert_eq!(val, 0b10110110, "{:#04X} != {:#04X}", val, 0b10110110);
+    assert_eq_hex!(val, 0b10110110);
     assert_eq!(stat(&cpu.sr), "Nv-bdizC");
 }
 
@@ -157,13 +169,13 @@ fn test_bcc() {
     cpu.set_sr_bit(StatusMask::Carry, true);
     cpu.step(); // BCC 0x10 (don't branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.sr), "nv-bdizC");
 
     cpu.set_sr_bit(StatusMask::Carry, false);
     cpu.step(); // BCC 0x20 (do branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 }
 
@@ -185,13 +197,13 @@ fn test_bcs() {
     cpu.set_sr_bit(StatusMask::Carry, false);
     cpu.step(); // BCS 0x10 (don't branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.set_sr_bit(StatusMask::Carry, true);
     cpu.step(); // BCS 0x20 (do branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.sr), "nv-bdizC");
 }
 
@@ -213,13 +225,13 @@ fn test_beq() {
     cpu.set_sr_bit(StatusMask::Zero, false);
     cpu.step(); // BEQ 0x10 (don't branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.set_sr_bit(StatusMask::Zero, true);
     cpu.step(); // BEQ 0x20 (do branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
 }
 
@@ -244,13 +256,13 @@ fn test_bit() {
     cpu.a = 0xFF;
     cpu.step(); // BIT $00 (#$FF)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0004, "{:#04X} != {:#04X}", cpu.pc, 0x0004);
+    assert_eq_hex16!(cpu.pc, 0x0004);
     assert_eq!(stat(&cpu.sr), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
 
     cpu.a = 0x00;
     cpu.step(); // BIT $0001 (#$00)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0007, "{:#04X} != {:#04X}", cpu.pc, 0x0007);
+    assert_eq_hex16!(cpu.pc, 0x0007);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
 }
 
@@ -277,11 +289,11 @@ fn test_bmi() {
     println!("{cpu:?}");
     cpu.step(); // BMI b
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+    assert_eq_hex16!(cpu.pc, 0x0005);
     cpu.step(); // LDX #$10
     cpu.step(); // BMI a
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
+    assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
@@ -306,12 +318,12 @@ fn test_bne() {
     cpu.step(); // LDX #$01
     cpu.step(); // BNE b
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+    assert_eq_hex16!(cpu.pc, 0x0005);
 
     cpu.step(); // LDX #$00
     cpu.step(); // BNE a
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
+    assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
@@ -336,11 +348,11 @@ fn test_bpl() {
     cpu.step(); // LDX #$10
     cpu.step(); // BPL b
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0005, "{:#04X} != {:#04X}", cpu.pc, 0x0005);
+    assert_eq_hex16!(cpu.pc, 0x0005);
     cpu.step(); // LDX #$F0
     cpu.step(); // BPL a
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0009, "{:#04X} != {:#04X}", cpu.pc, 0x0009);
+    assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
@@ -359,8 +371,8 @@ fn test_brk() {
     cpu.step(); // BRK
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    assert_eq!(cpu.pc, 0x2468, "PC {:#04X} != {:#04X}", cpu.pc, 0x2468);
-    assert_eq!(cpu.sp, 0xFC, "SP {:#02X} != {:#02X}", cpu.sp, 0xFC);
+    assert_eq_hex16!(cpu.pc, 0x2468);
+    assert_eq_hex!(cpu.sp, 0xFC);
     assert_eq!(cpu.bus.read(0x01FF), 0x04);
     assert_eq!(cpu.bus.read(0x01FE), 0x02);
     assert_eq!(stat(&cpu.bus.read(0x01FD)), "nv-Bdizc");
@@ -385,13 +397,13 @@ fn test_bvc() {
     cpu.set_sr_bit(StatusMask::Overflow, true);
     cpu.step(); // BVC 0x10 (don't branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.sr), "nV-bdizc");
 
     cpu.set_sr_bit(StatusMask::Overflow, false);
     cpu.step(); // BVC 0x20 (do branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 }
 
@@ -414,13 +426,13 @@ fn test_bvs() {
     cpu.set_sr_bit(StatusMask::Overflow, false);
     cpu.step(); // BVS 0x10 (don't branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0002, "{:#04X} != {:#04X}", cpu.pc, 0x0002);
+    assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.set_sr_bit(StatusMask::Overflow, true);
     cpu.step(); // BVS 0x20 (do branch)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x0024, "{:#04X} != {:#04X}", cpu.pc, 0x0024);
+    assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.sr), "nV-bdizc");
 }
 
@@ -446,11 +458,11 @@ fn test_cmp() {
 
     cpu.step(); // CMP data
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0203, "{:#04X} != {:#04X}", cpu.pc, 0x0203);
+    assert_eq_hex16!(cpu.pc, 0x0203);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
     cpu.step(); // CMP data,X
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0206, "{:#04X} != {:#04X}", cpu.pc, 0x0206);
+    assert_eq_hex16!(cpu.pc, 0x0206);
     assert_eq!(stat(&cpu.sr), "Nv-bdizC");
 }
 
@@ -474,11 +486,11 @@ fn test_cpx_and_cpy() {
 
     cpu.step(); // CPX #$04
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0202, "{:#04X} != {:#04X}", cpu.pc, 0x0202);
+    assert_eq_hex16!(cpu.pc, 0x0202);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
     cpu.step(); // CPY #$08
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x0204, "{:#04X} != {:#04X}", cpu.pc, 0x0204);
+    assert_eq_hex16!(cpu.pc, 0x0204);
     assert_eq!(stat(&cpu.sr), "Nv-bdizC");
 }
 
@@ -506,25 +518,25 @@ fn test_dec() {
 
     cpu.step(); // DEC 0x10
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x1002, "{:#04X} != {:#04X}", cpu.pc, 0x1002);
+    assert_eq_hex16!(cpu.pc, 0x1002);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
     assert_eq!(cpu.bus.read(0x0010), 99);
 
     cpu.step(); // DEC 0x10,X where X=10
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x1004, "{:#04X} != {:#04X}", cpu.pc, 0x1004);
+    assert_eq_hex16!(cpu.pc, 0x1004);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
     assert_eq!(cpu.bus.read(0x0020), 199);
 
     cpu.step(); // DEC 0x2000
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x1007, "{:#04X} != {:#04X}", cpu.pc, 0x1007);
+    assert_eq_hex16!(cpu.pc, 0x1007);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
     assert_eq!(cpu.bus.read(0x2000), 0);
 
     cpu.step(); // DEC 0x2000,X where X=10
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x100A, "{:#04X} != {:#04X}", cpu.pc, 0x100A);
+    assert_eq_hex16!(cpu.pc, 0x100A);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
     assert_eq!(cpu.bus.read(0x2010), 199);
 }
@@ -549,25 +561,25 @@ fn test_dex_and_dey() {
 
     cpu.step(); // DEX
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x2001, "{:#04X} != {:#04X}", cpu.pc, 0x2001);
+    assert_eq_hex16!(cpu.pc, 0x2001);
     assert_eq!(cpu.x, 0x00);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
 
     cpu.step(); // DEX
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x2002, "{:#04X} != {:#04X}", cpu.pc, 0x2002);
+    assert_eq_hex16!(cpu.pc, 0x2002);
     assert_eq!(cpu.x, 0xFF);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 
     cpu.step(); // DEY
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x2003, "{:#04X} != {:#04X}", cpu.pc, 0x2003);
+    assert_eq_hex16!(cpu.pc, 0x2003);
     assert_eq!(cpu.y, 0x00);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
 
     cpu.step(); // DEY
     println!("{cpu:?}");
-    assert_eq!(cpu.pc, 0x2004, "{:#04X} != {:#04X}", cpu.pc, 0x2004);
+    assert_eq_hex16!(cpu.pc, 0x2004);
     assert_eq!(cpu.y, 0xFF);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 }
@@ -628,13 +640,13 @@ fn test_jmp() {
 
     cpu.step(); // JMP testlabel
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x8004, "{:#06X} != {:#06X}", cpu.pc, 0x8004);
+    assert_eq_hex16!(cpu.pc, 0x8004);
     assert_eq!(stat(&cpu.sr), "nv-BdIzc"); // unchanged
 
     cpu.sr = !cpu.sr;
     cpu.step(); // JMP ($FFFC)
     println!("{:?}", cpu);
-    assert_eq!(cpu.pc, 0x8000, "{:#06X} != {:#06X}", cpu.pc, 0x8000);
+    assert_eq_hex16!(cpu.pc, 0x8000);
     assert_eq!(stat(&cpu.sr), "NV-bDiZC"); // unchanged
 }
 
@@ -676,17 +688,17 @@ fn test_ldx() {
 
     cpu.step(); // LDX $04,Y
     println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0xB6, "{:#04X} != {:#04X}", cpu.x, 0xB6);
+    assert_eq_hex!(cpu.x, 0xB6);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
 
     cpu.step(); // LDX $01FF ; Y=2
     println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0x11, "{:#04X} != {:#04X}", cpu.x, 0x11);
+    assert_eq_hex!(cpu.x, 0x11);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
     cpu.step(); // LDX $01FF,Y ; Y=2
     println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0x22, "{:#04X} != {:#04X}", cpu.x, 0x22);
+    assert_eq_hex!(cpu.x, 0x22);
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 }
 
@@ -696,7 +708,7 @@ fn test_nop() {
     let mut asm = Assembler::new();
     cpu.bus.load(cpu.pc, asm.nop().assemble().unwrap());
     cpu.step();
-    assert_eq!(cpu.pc, 0x0001, "{:#06X} != {:#06X}", cpu.x, 0x0001);
+    assert_eq_hex16!(cpu.pc, 0x0001);
 }
 
 #[test]
