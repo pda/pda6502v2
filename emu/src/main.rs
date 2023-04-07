@@ -18,6 +18,7 @@ fn main() {
         .ldx(Imm(0x10))
         .label("loop")
         .inx()
+        .iny()
         .adc(Abs(val(org + 2))) // LDX #$10 operand
         .asl(A)
         .and(ZX(0x00))

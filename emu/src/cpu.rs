@@ -240,14 +240,20 @@ impl Cpu {
             },
             // M::Eor => {}
             // M::Inc => {}
-            M::Inx => {
-                match opcode.mode {
-                    Implied => self.x = self.x.wrapping_add(1),
-                    _ => panic!("illegal AddressMode: {:?}", opcode),
+            M::Inx => match opcode.mode {
+                Implied => {
+                    self.x = self.x.wrapping_add(1);
+                    self.update_sr_z_n(self.x);
                 }
-                self.update_sr_z_n(self.x);
-            }
-            // M::Iny => {}
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Iny => match opcode.mode {
+                Implied => {
+                    self.y = self.y.wrapping_add(1);
+                    self.update_sr_z_n(self.y);
+                }
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
             M::Jmp => match self.read_operand(opcode.mode) {
                 OpValue::U16(addr) => self.pc = addr,
                 _ => panic!("illegal AddressMode: {:?}", opcode),

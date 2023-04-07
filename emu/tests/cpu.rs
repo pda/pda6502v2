@@ -573,16 +573,36 @@ fn test_dex_and_dey() {
 }
 
 #[test]
-fn test_inx() {
+fn test_inx_and_iny() {
     let mut cpu = Cpu::new(Bus::default());
-    cpu.x = 0xFE;
     let mut asm = Assembler::new();
-    cpu.bus.load(cpu.pc, asm.inx().inx().assemble().unwrap());
-    cpu.step();
-    assert_eq!(cpu.x, 0xFF, "{:#04X} != {:#04X}", cpu.x, 0xFF);
+    cpu.x = 0xFE;
+    cpu.y = 0xFE;
+    cpu.bus.load(
+        cpu.pc,
+        asm.inx()
+            .inx()
+            .iny()
+            .iny()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // INX
+    assert_eq!(cpu.x, 0xFF);
     assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-    cpu.step();
-    assert_eq!(cpu.x, 0x00, "{:#04X} != {:#04X}", cpu.x, 0x00);
+
+    cpu.step(); // INX
+    assert_eq!(cpu.x, 0x00);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+
+    cpu.step(); // INY
+    assert_eq!(cpu.y, 0xFF);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // INY
+    assert_eq!(cpu.y, 0x00);
     assert_eq!(stat(&cpu.sr), "nv-bdiZc");
 }
 

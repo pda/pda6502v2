@@ -217,6 +217,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
 
+    pub fn iny(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Iny, Operand::Impl)
+    }
+
     pub fn jmp(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Jmp, op)
     }
