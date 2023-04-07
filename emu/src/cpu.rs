@@ -224,8 +224,20 @@ impl Cpu {
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            // M::Dex => {}
-            // M::Dey => {}
+            M::Dex => match opcode.mode {
+                Implied => {
+                    self.x = self.x.wrapping_sub(1);
+                    self.update_sr_z_n(self.x);
+                }
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
+            M::Dey => match opcode.mode {
+                Implied => {
+                    self.y = self.y.wrapping_sub(1);
+                    self.update_sr_z_n(self.y);
+                }
+                _ => panic!("illegal AddressMode: {:?}", opcode),
+            },
             // M::Eor => {}
             // M::Inc => {}
             M::Inx => {

@@ -43,6 +43,8 @@ fn main() {
         .cpx(Imm(0x12))
         .cpy(Imm(0x34))
         .dec(Z(0x00))
+        .dex()
+        .dey()
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
