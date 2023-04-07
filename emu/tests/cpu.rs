@@ -483,6 +483,53 @@ fn test_cpx_and_cpy() {
 }
 
 #[test]
+fn test_dec() {
+    let mut cpu = Cpu::new(Bus::default());
+    cpu.pc = 0x1000;
+    cpu.x = 0x10;
+    cpu.bus.write(0x0010, 100);
+    cpu.bus.write(0x0020, 200);
+    cpu.bus.write(0x2000, 1);
+    cpu.bus.write(0x2010, 200);
+    let mut asm = Assembler::new();
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .dec(Operand::Z(0x10))
+            .dec(Operand::ZX(0x10))
+            .dec(Operand::Abs(val(0x2000)))
+            .dec(Operand::AbsX(val(0x2000)))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // DEC 0x10
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x1002, "{:#04X} != {:#04X}", cpu.pc, 0x1002);
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(cpu.bus.read(0x0010), 99);
+
+    cpu.step(); // DEC 0x10,X where X=10
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x1004, "{:#04X} != {:#04X}", cpu.pc, 0x1004);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(cpu.bus.read(0x0020), 199);
+
+    cpu.step(); // DEC 0x2000
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x1007, "{:#04X} != {:#04X}", cpu.pc, 0x1007);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(cpu.bus.read(0x2000), 0);
+
+    cpu.step(); // DEC 0x2000,X where X=10
+    println!("{cpu:?}");
+    assert_eq!(cpu.pc, 0x100A, "{:#04X} != {:#04X}", cpu.pc, 0x100A);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(cpu.bus.read(0x2010), 199);
+}
+
+#[test]
 fn test_inx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.x = 0xFE;

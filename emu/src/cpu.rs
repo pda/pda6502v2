@@ -216,7 +216,14 @@ impl Cpu {
                 self.update_sr_z_n(result);
                 self.set_sr_bit(StatusMask::Carry, result > self.y);
             }
-            // M::Dec => {}
+            M::Dec => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => {
+                    let result = self.bus.read(addr).wrapping_sub(1);
+                    self.bus.write(addr, result);
+                    self.update_sr_z_n(result);
+                }
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             // M::Dex => {}
             // M::Dey => {}
             // M::Eor => {}

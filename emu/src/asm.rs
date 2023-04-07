@@ -201,6 +201,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Cpy, op)
     }
 
+    pub fn dec(&mut self, op: Operand) -> &mut Assembler {
+        self.push_instruction(Mnemonic::Dec, op)
+    }
+
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
