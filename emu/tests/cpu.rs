@@ -585,6 +585,101 @@ fn test_dex_and_dey() {
 }
 
 #[test]
+fn test_eor() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+
+    //     00000000      [0]
+    // EOR 00000001      [1]
+    //   = 00000001      [1a]
+    // EOR 11111111      [2]
+    //   = 11111110 (N)  [2a]
+    // EOR 10101010      [3]
+    //   = 01010100      [3a]
+    // EOR 01010100      [4]
+    //   = 00000000 (Z)  [4a]
+    // EOR 11110000      [5]
+    //   = 11110000 (N)  [5a]
+    // EOR 00001111      [6]
+    //   = 11111111 (N)  [6a]
+    // EOR 00111100      [7]
+    //   = 11000011 (N)  [7a]
+    // EOR 11000011      [8]
+    //   = 00000000 (Z)  [8a]
+
+    cpu.a = 0b00000000; // [0]
+    cpu.x = 0x02; // [3, 5, 7]
+    cpu.y = 0x04; // [6, 8]
+    cpu.bus.write(0x0010, 0b11111111); // [2]
+    cpu.bus.write(0x12, 0b10101010); // [3]
+    cpu.bus.write(0x22, 0x80); // [7] ptr LL
+    cpu.bus.write(0x23, 0x20); // [7] ptr HH
+    cpu.bus.write(0x2080, 0b00111100); // [7]
+    cpu.bus.write(0x20, 0x81); // [8] ptr LL
+    cpu.bus.write(0x21, 0x20); // [8] ptr HH
+    cpu.bus.write(0x2085, 0b11000011); // [8]
+
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .eor(Operand::Imm(0x01)) // [1]
+            .eor(Operand::Z(0x10)) // [2]
+            .eor(Operand::ZX(0x10)) // [3]
+            .eor(Operand::Abs(label("data"))) // [4]
+            .eor(Operand::AbsX(label("data"))) // [5]
+            .eor(Operand::AbsY(label("data"))) // [6]
+            .eor(Operand::XInd(0x20)) // [7]
+            .eor(Operand::IndY(0x20)) // [8]
+            .label("data")
+            .data(vec![0b01010100, 0, 0b11110000, 0, 0b00001111]) // [4], [5], [6]
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // EOR immediate
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b00000001); // [1a]
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+    cpu.step(); // EOR zeropage
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b11111110); // [2a]
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // EOR zeropage,X
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b01010100); // [3a]
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+    cpu.step(); // EOR absolute
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b00000000); // [4a]
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+
+    cpu.step(); // EOR absolute,X
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b11110000); // [5a]
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // EOR absolute,Y
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b11111111); // [6a]
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // EOR (indirect,X)
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b11000011); // [7a]
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // EOR (indirect),Y
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.a, 0b00000000); // [8a]
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+}
+
+#[test]
 fn test_inx_and_iny() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

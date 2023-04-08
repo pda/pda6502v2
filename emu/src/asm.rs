@@ -213,6 +213,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Dey, Operand::Impl)
     }
 
+    pub fn eor(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Eor, op)
+    }
+
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }

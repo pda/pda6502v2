@@ -46,6 +46,7 @@ fn main() {
         .dec(Z(0x00))
         .dex()
         .dey()
+        .eor(AbsY(val(0x8000)))
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
