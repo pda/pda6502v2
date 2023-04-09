@@ -680,6 +680,47 @@ fn test_eor() {
 }
 
 #[test]
+fn test_inc() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.x = 0x10;
+    cpu.bus.write(0x0040, 0x00);
+    cpu.bus.write(0x0050, 0xFF);
+    cpu.bus.write(0x8000, 0x7F);
+    cpu.bus.write(0x8010, 0x80);
+    cpu.bus.load(
+        cpu.pc,
+        asm.inc(Operand::Z(0x40))
+            .inc(Operand::ZX(0x40))
+            .inc(Operand::Abs(val(0x8000)))
+            .inc(Operand::AbsX(val(0x8000)))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.step(); // INC zeropage
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.bus.read(0x0040), 0x01);
+    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+
+    cpu.step(); // INC zeropage,X
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.bus.read(0x0050), 0x00);
+    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+
+    cpu.step(); // INC absolute
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.bus.read(0x8000), 0x80);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+
+    cpu.step(); // INC absolute,X
+    println!("{cpu:?}");
+    assert_eq_hex!(cpu.bus.read(0x8010), 0x81);
+    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+}
+
+#[test]
 fn test_inx_and_iny() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

@@ -242,7 +242,14 @@ impl Cpu {
                 self.a ^= self.read_operand_value(opcode);
                 self.update_sr_z_n(self.a);
             }
-            // M::Inc => {}
+            M::Inc => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => {
+                    let result = self.bus.read(addr).wrapping_add(1);
+                    self.bus.write(addr, result);
+                    self.update_sr_z_n(result);
+                }
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             M::Inx => match opcode.mode {
                 Implied => {
                     self.x = self.x.wrapping_add(1);
@@ -465,7 +472,6 @@ pub enum StatusBit {
     Negative = 7,
 }
 
-#[allow(unused)]
 #[repr(u8)]
 pub enum StatusMask {
     Carry = 1 << StatusBit::Carry as u8,

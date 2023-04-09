@@ -217,6 +217,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Eor, op)
     }
 
+    pub fn inc(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Inc, op)
+    }
+
     pub fn inx(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Inx, Operand::Impl)
     }
