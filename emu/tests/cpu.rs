@@ -756,6 +756,50 @@ fn test_jmp() {
 }
 
 #[test]
+fn test_jsr_and_rts() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x4000;
+    cpu.sp = 0xFF;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .jsr(Operand::Abs(label("first")))
+            .data("something in the way".into())
+            .label("first")
+            .jsr(Operand::Abs(label("second")))
+            .rts()
+            .label("second")
+            .rts()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    println!("{cpu:?}");
+    cpu.step(); // JSR first
+    println!("{cpu:?}");
+    assert_eq_hex16!(cpu.pc, 0x4017);
+    assert_eq_hex!(cpu.sp, 0xFD);
+    assert_eq_hex!(cpu.bus.read(0x01FF), 0x40); // HH
+    assert_eq_hex!(cpu.bus.read(0x01FE), 0x03); // LL
+    cpu.step(); // JSR second
+    println!("{cpu:?}");
+    assert_eq_hex16!(cpu.pc, 0x401B);
+    assert_eq_hex!(cpu.sp, 0xFB);
+    assert_eq_hex!(cpu.bus.read(0x01FD), 0x40); // HH
+    assert_eq_hex!(cpu.bus.read(0x01FC), 0x1A); // LL (TODO: wrong?)
+    cpu.step(); // RTS (from second)
+    println!("{cpu:?}");
+    assert_eq_hex16!(cpu.pc, 0x401A);
+    assert_eq_hex!(cpu.sp, 0xFD);
+    cpu.step(); // RTS (from first)
+    println!("{cpu:?}");
+    assert_eq_hex16!(cpu.pc, 0x4003);
+    assert_eq_hex!(cpu.sp, 0xFF);
+}
+
+#[test]
 fn test_ldx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY

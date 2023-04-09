@@ -268,7 +268,13 @@ impl Cpu {
                 OpValue::U16(addr) => self.pc = addr,
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            // M::Jsr => {}
+            M::Jsr => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => {
+                    self.push_addr(self.pc);
+                    self.pc = addr;
+                }
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             // M::Lda => {}
             M::Ldx => {
                 self.x = self.read_operand_value(opcode);
@@ -285,7 +291,10 @@ impl Cpu {
             // M::Rol => {}
             // M::Ror => {}
             // M::Rti => {}
-            // M::Rts => {}
+            M::Rts => match opcode.mode {
+                Implied => self.pc = self.pop_addr(),
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             // M::Sbc => {}
             M::Sec => match opcode.mode {
                 Implied => self.set_sr_bit(StatusMask::Carry, true),
@@ -419,8 +428,19 @@ impl Cpu {
     }
 
     fn push(&mut self, val: u8) {
-        self.bus.write(0x0100 + self.sp as u16, val);
+        self.bus.write(0x0100 | self.sp as u16, val);
         self.sp = self.sp.wrapping_sub(1);
+    }
+
+    fn pop_addr(&mut self) -> u16 {
+        let lo = self.pop() as u16;
+        let hi = self.pop() as u16;
+        hi << 8 | lo
+    }
+
+    fn pop(&mut self) -> u8 {
+        self.sp = self.sp.wrapping_add(1);
+        self.bus.read(0x0100 | self.sp as u16)
     }
 }
 

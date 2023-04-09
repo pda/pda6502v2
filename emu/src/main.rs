@@ -48,9 +48,12 @@ fn main() {
         .dey()
         .eor(AbsY(val(0x8000)))
         .inc(ZX(0x80))
+        .jsr(Abs(label("subroutine")))
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
+        .label("subroutine")
+        .rts()
         .label("message")
         .data("Hello world!\nHow are you?\n".into());
 

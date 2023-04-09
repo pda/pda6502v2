@@ -233,12 +233,20 @@ impl Assembler {
         self.push_instruction(Mnemonic::Jmp, op)
     }
 
+    pub fn jsr(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Jsr, op)
+    }
+
     pub fn ldx(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Ldx, op)
     }
 
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
+    }
+
+    pub fn rts(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Rts, Operand::Impl)
     }
 
     pub fn sec(&mut self) -> &mut Assembler {
