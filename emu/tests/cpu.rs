@@ -17,6 +17,15 @@ macro_rules! assert_eq_hex16 {
     };
 }
 
+macro_rules! step_and_assert {
+    ($cpu:expr, $reg:ident, $val:expr, $stat:literal) => {
+        $cpu.step();
+        println!("{:?}", $cpu);
+        assert_eq_hex!($cpu.$reg, $val);
+        assert_eq!(stat(&$cpu.sr), $stat);
+    };
+}
+
 #[test]
 fn test_adc() {
     let mut cpu = Cpu::new(Bus::default());
@@ -52,45 +61,14 @@ fn test_adc() {
             .unwrap(),
     );
 
-    cpu.step(); // ADC #$11
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x21);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
-
-    cpu.step(); // ADC $F0
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x10);
-    assert_eq!(stat(&cpu.sr), "nv-bdizC");
-
-    cpu.step(); // ADC $D0,X
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x81);
-    assert_eq!(stat(&cpu.sr), "NV-bdizc");
-
-    cpu.step(); // ADC $1234
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x05);
-    assert_eq!(stat(&cpu.sr), "nV-bdizC");
-
-    cpu.step(); // ADC $1214,X
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZC");
-
-    cpu.step(); // ADC $12F0,Y
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x01);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
-
-    cpu.step(); // ADC ($D1,X)
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0x43);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
-
-    cpu.step(); // ADC ($F4),Y
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0xFF);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    step_and_assert!(cpu, a, 0x21, "nv-bdizc"); // ADC #$11
+    step_and_assert!(cpu, a, 0x10, "nv-bdizC"); // ADC $F0
+    step_and_assert!(cpu, a, 0x81, "NV-bdizc"); // ADC $D0,X
+    step_and_assert!(cpu, a, 0x05, "nV-bdizC"); // ADC $1234
+    step_and_assert!(cpu, a, 0x00, "nv-bdiZC"); // ADC $1214,X
+    step_and_assert!(cpu, a, 0x01, "nv-bdizc"); // ADC $12F0,Y
+    step_and_assert!(cpu, a, 0x43, "nv-bdizc"); // ADC ($D1,X)
+    step_and_assert!(cpu, a, 0xFF, "Nv-bdizc"); // ADC ($F4),Y
 }
 
 #[test]
@@ -105,10 +83,7 @@ fn test_and() {
         asm.and(Imm(0b11110000)).print_listing().assemble().unwrap(),
     );
 
-    cpu.step(); // ADC #$A0
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0b10010000);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    step_and_assert!(cpu, a, 0b10010000, "Nv-bdizc"); // ADC #$A0
 }
 
 #[test]
@@ -132,16 +107,10 @@ fn test_asl() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_sr_bit(StatusMask::Carry, true);
-    cpu.step(); // ASL A
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0b10000000);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    step_and_assert!(cpu, a, 0b10000000, "Nv-bdizc"); // ASL A
 
     cpu.set_sr_bit(StatusMask::Carry, true);
-    cpu.step(); // ASL A
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.a, 0b00000000);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZC");
+    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ASL A
 
     cpu.step(); // ASL $F0,X
     println!("{:?}", cpu);
@@ -807,35 +776,12 @@ fn test_ldx() {
             .unwrap(),
     );
 
-    cpu.step(); // LDX #$AA
-    println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0xAA);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-    cpu.step(); // LDX #$00
-    println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
-
-    cpu.step(); // LDX $04
-    println!("{:?}", cpu);
-    assert_eq!(cpu.x, 0xA6);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-    cpu.step(); // LDX $04,Y
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.x, 0xB6);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
-
-    cpu.step(); // LDX $01FF ; Y=2
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.x, 0x11);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
-
-    cpu.step(); // LDX $01FF,Y ; Y=2
-    println!("{:?}", cpu);
-    assert_eq_hex!(cpu.x, 0x22);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    step_and_assert!(cpu, x, 0xAA, "Nv-bdizc"); // LDX #$AA
+    step_and_assert!(cpu, x, 0x00, "nv-bdiZc"); // LDX #$00
+    step_and_assert!(cpu, x, 0xA6, "Nv-bdizc"); // LDX $04
+    step_and_assert!(cpu, x, 0xB6, "Nv-bdizc"); // LDX $04,Y
+    step_and_assert!(cpu, x, 0x11, "nv-bdizc"); // LDX $01FF ; Y=2
+    step_and_assert!(cpu, x, 0x22, "nv-bdizc"); // LDX $01FF,Y ; Y=2
 }
 
 #[test]
