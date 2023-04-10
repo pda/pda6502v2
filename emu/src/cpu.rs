@@ -275,7 +275,10 @@ impl Cpu {
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            // M::Lda => {}
+            M::Lda => {
+                self.a = self.read_operand_value(opcode);
+                self.update_sr_z_n(self.a);
+            }
             M::Ldx => {
                 self.x = self.read_operand_value(opcode);
                 self.update_sr_z_n(self.x);

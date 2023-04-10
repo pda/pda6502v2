@@ -237,6 +237,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Jsr, op)
     }
 
+    pub fn lda(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Lda, op)
+    }
+
     pub fn ldx(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Ldx, op)
     }

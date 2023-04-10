@@ -15,6 +15,7 @@ fn main() {
     let mut asm = asm::Assembler::new();
     asm.org(org)
         .nop()
+        .lda(Imm(0xAA))
         .ldx(Imm(0x10))
         .label("loop")
         .inx()

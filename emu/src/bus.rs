@@ -21,6 +21,7 @@ impl Bus {
     // load is a convenience method to bulk-write data to RAM
     pub fn load(&mut self, addr: u16, data: Vec<u8>) {
         for (i, byte) in data.iter().enumerate() {
+            //println!("load: {:#06X} ← {:#04X}", addr + (i as u16), *byte);
             self.write(addr + (i as u16), *byte);
         }
     }

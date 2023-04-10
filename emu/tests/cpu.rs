@@ -800,6 +800,54 @@ fn test_jsr_and_rts() {
 }
 
 #[test]
+fn test_lda() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .lda(Operand::Imm(0x00)) // 0x00
+            .lda(Operand::Z(0xB0)) // 0x22
+            .lda(Operand::ZX(0xB0)) // 0x44
+            .lda(Operand::Abs(label("data"))) // 0x66
+            .lda(Operand::AbsX(label("data"))) // 0x88
+            .lda(Operand::AbsY(label("data"))) // 0xAA
+            .lda(Operand::XInd(0xC0)) // 0xCC
+            .lda(Operand::IndY(0xC0)) // 0xEE
+            .label("data")
+            .data(vec![0x66, 0, 0, 0, 0x88, 0xAA])
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.x = 0x04;
+    cpu.y = 0x05;
+    cpu.bus.write(0x00B0, 0x22);
+    cpu.bus.write(0x00B4, 0x44);
+
+    // (indirect,X): operand 0xC0 + x=0x04 = (0xC4) -> 0x00C6 = 0xCC
+    cpu.bus.write(0x00C4, 0xC6); // LL
+    cpu.bus.write(0x00C5, 0x00); // HH
+    cpu.bus.write(0x00C6, 0xCC);
+
+    // (indirect),Y: operand 0xC0 -> 0x00BD + y=0x05 = 0x00C2 = 0xEE
+    cpu.bus.write(0x00C0, 0xBD); // LL
+    cpu.bus.write(0x00C1, 0x00); // HH
+    cpu.bus.write(0x00C2, 0xEE);
+
+    step_and_assert!(cpu, a, 0x00, "nv-bdiZc");
+    step_and_assert!(cpu, a, 0x22, "nv-bdizc");
+    step_and_assert!(cpu, a, 0x44, "nv-bdizc");
+    step_and_assert!(cpu, a, 0x66, "nv-bdizc");
+    step_and_assert!(cpu, a, 0x88, "Nv-bdizc");
+    step_and_assert!(cpu, a, 0xAA, "Nv-bdizc");
+    step_and_assert!(cpu, a, 0xCC, "Nv-bdizc");
+    step_and_assert!(cpu, a, 0xEE, "Nv-bdizc");
+}
+
+#[test]
 fn test_ldx() {
     let mut cpu = Cpu::new(Bus::default());
     cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
