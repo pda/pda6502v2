@@ -283,7 +283,10 @@ impl Cpu {
                 self.x = self.read_operand_value(opcode);
                 self.update_sr_z_n(self.x);
             }
-            // M::Ldy => {}
+            M::Ldy => {
+                self.y = self.read_operand_value(opcode);
+                self.update_sr_z_n(self.y);
+            }
             // M::Lsr => {}
             M::Nop => {}
             // M::Ora => {}

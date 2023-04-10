@@ -877,6 +877,37 @@ fn test_ldx() {
 }
 
 #[test]
+fn test_ldy() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .ldy(Operand::Imm(0x00)) // 0x00
+            .ldy(Operand::Z(0xB0)) // 0x22
+            .ldy(Operand::ZX(0xB0)) // 0x44
+            .ldy(Operand::Abs(label("data"))) // 0x66
+            .ldy(Operand::AbsX(label("data"))) // 0x88
+            .label("data")
+            .data(vec![0x66, 0, 0, 0, 0x88])
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.x = 0x04;
+    cpu.bus.write(0x00B0, 0x22);
+    cpu.bus.write(0x00B4, 0x44);
+
+    step_and_assert!(cpu, y, 0x00, "nv-bdiZc");
+    step_and_assert!(cpu, y, 0x22, "nv-bdizc");
+    step_and_assert!(cpu, y, 0x44, "nv-bdizc");
+    step_and_assert!(cpu, y, 0x66, "nv-bdizc");
+    step_and_assert!(cpu, y, 0x88, "Nv-bdizc");
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();
