@@ -304,7 +304,10 @@ impl Cpu {
                 },
             },
             M::Nop => {}
-            // M::Ora => {}
+            M::Ora => {
+                self.a |= self.read_operand_value(opcode);
+                self.update_sr_z_n(self.a);
+            }
             // M::Pha => {}
             // M::Php => {}
             // M::Pla => {}

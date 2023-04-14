@@ -100,6 +100,7 @@ impl Assembler {
         }
     }
 
+    // TODO: consistently use -> &mut Self everywhere
     pub fn org(&mut self, addr: u16) -> &mut Assembler {
         self.org = addr;
         self
@@ -255,6 +256,10 @@ impl Assembler {
 
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
+    }
+
+    pub fn ora(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Ora, op)
     }
 
     pub fn rts(&mut self) -> &mut Self {

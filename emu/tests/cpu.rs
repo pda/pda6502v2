@@ -962,6 +962,55 @@ fn test_lsr() {
 }
 
 #[test]
+fn test_ora() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .ora(Operand::Imm(0x00))
+            .ora(Operand::Z(0xA0))
+            .ora(Operand::ZX(0xA0))
+            .ora(Operand::Abs(label("data")))
+            .ora(Operand::AbsX(label("data")))
+            .ora(Operand::AbsY(label("data")))
+            .ora(Operand::XInd(0x00))
+            .ora(Operand::IndY(0x00))
+            .label("data")
+            .data(vec![0b00010000, 0, 0b00111100, 0, 0b10000000])
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0b00000000;
+    cpu.x = 0x02;
+    cpu.y = 0x04;
+    cpu.bus.write(0x00A0, 0b00000001);
+    cpu.bus.write(0x00A2, 0b00000100);
+
+    // XInd(0x00+x:0x02)
+    cpu.bus.write(0x0002, 0x10); // LL
+    cpu.bus.write(0x0003, 0x32); // HH
+    cpu.bus.write(0x3210, 0b01000000);
+
+    // IndY(0x00)+y:0x04 = (0x3224)
+    cpu.bus.write(0x0000, 0x20); // LL
+    cpu.bus.write(0x0001, 0x32); // HH
+    cpu.bus.write(0x3224, 0b11111111);
+
+    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZc");
+    step_and_assert!(cpu, a, 0b00000001, "nv-bdizc");
+    step_and_assert!(cpu, a, 0b00000101, "nv-bdizc");
+    step_and_assert!(cpu, a, 0b00010101, "nv-bdizc");
+    step_and_assert!(cpu, a, 0b00111101, "nv-bdizc");
+    step_and_assert!(cpu, a, 0b10111101, "Nv-bdizc");
+    step_and_assert!(cpu, a, 0b11111101, "Nv-bdizc");
+    step_and_assert!(cpu, a, 0b11111111, "Nv-bdizc");
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();
