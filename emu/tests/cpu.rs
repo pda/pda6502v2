@@ -1011,6 +1011,25 @@ fn test_ora() {
 }
 
 #[test]
+fn test_pha_pla() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus
+        .load(0, asm.pha().pla().print_listing().assemble().unwrap());
+
+    cpu.sp = 0xA8;
+    cpu.a = 0xF0;
+
+    step_and_assert!(cpu, sp, 0xA7, "nv-bdizc"); // PHA
+    assert_eq_hex!(cpu.bus.read(0x01A8), 0xF0);
+
+    cpu.a = 0xAA;
+
+    step_and_assert!(cpu, sp, 0xA8, "Nv-bdizc"); // PLA
+    assert_eq_hex!(cpu.a, 0xF0);
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

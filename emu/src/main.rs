@@ -14,12 +14,16 @@ fn main() {
     let org: u16 = 0x1234;
     let mut asm = asm::Assembler::new();
     asm.org(org)
-        .nop()
+        .ldx(Imm(0xFF))
+        //.txs()
         .lda(Imm(0xAA))
         .ldx(Imm(0x10))
         .ldy(Imm(0xAA))
         .lsr(A)
         .ora(Imm(0x00))
+        .pha()
+        .lda(Imm(0xFF))
+        .pla()
         .label("loop")
         .inx()
         .iny()
@@ -72,6 +76,7 @@ fn main() {
 
     let mut cpu = cpu::Cpu::new(bus);
     cpu.reset();
+    cpu.sp = 0xFF; // TODO: use LDX, TXS in ASM
 
     // run some instructions
     for _ in 0..20 {

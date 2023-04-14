@@ -308,9 +308,12 @@ impl Cpu {
                 self.a |= self.read_operand_value(opcode);
                 self.update_sr_z_n(self.a);
             }
-            // M::Pha => {}
+            M::Pha => self.push(self.a),
             // M::Php => {}
-            // M::Pla => {}
+            M::Pla => {
+                self.a = self.pop();
+                self.update_sr_z_n(self.a);
+            }
             // M::Plp => {}
             // M::Rol => {}
             // M::Ror => {}
