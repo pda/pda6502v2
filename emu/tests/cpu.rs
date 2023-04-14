@@ -1030,6 +1030,25 @@ fn test_pha_pla() {
 }
 
 #[test]
+fn test_php_plp() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.bus
+        .load(0, asm.php().plp().print_listing().assemble().unwrap());
+
+    cpu.sr = 0b00000100;
+    cpu.sp = 0xA8;
+
+    step_and_assert!(cpu, sp, 0xA7, "nv-bdIzc"); // PHP
+    assert_eq_hex!(cpu.bus.read(0x01A8), 0b00110100);
+
+    cpu.sr = 0b11111111;
+    assert_eq!(stat(&cpu.sr), "NV-BDIZC");
+
+    step_and_assert!(cpu, sp, 0xA8, "nv-bdIzc"); // PLP
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

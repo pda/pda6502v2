@@ -266,8 +266,16 @@ impl Assembler {
         self.push_instruction(Mnemonic::Pha, Operand::Impl)
     }
 
+    pub fn php(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Php, Operand::Impl)
+    }
+
     pub fn pla(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Pla, Operand::Impl)
+    }
+
+    pub fn plp(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Plp, Operand::Impl)
     }
 
     pub fn rts(&mut self) -> &mut Self {

@@ -309,12 +309,12 @@ impl Cpu {
                 self.update_sr_z_n(self.a);
             }
             M::Pha => self.push(self.a),
-            // M::Php => {}
+            M::Php => self.push(self.sr | 0b00110000),
             M::Pla => {
                 self.a = self.pop();
                 self.update_sr_z_n(self.a);
             }
-            // M::Plp => {}
+            M::Plp => self.sr = self.pop() & !0b00110000,
             // M::Rol => {}
             // M::Ror => {}
             // M::Rti => {}
