@@ -249,6 +249,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Ldy, op)
     }
 
+    pub fn lsr(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Lsr, op)
+    }
+
     pub fn nop(&mut self) -> &mut Assembler {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }

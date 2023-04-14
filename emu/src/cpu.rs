@@ -287,7 +287,22 @@ impl Cpu {
                 self.y = self.read_operand_value(opcode);
                 self.update_sr_z_n(self.y);
             }
-            // M::Lsr => {}
+            M::Lsr => match opcode.mode {
+                Accumulator => {
+                    self.a >>= 1;
+                    self.update_sr_z_n(self.a);
+                }
+                _ => match self.read_operand(opcode.mode) {
+                    OpValue::U16(addr) => {
+                        let before = self.bus.read(addr);
+                        let after = before >> 1;
+                        self.bus.write(addr, after);
+                        self.update_sr_z_n(after);
+                        self.set_sr_bit(StatusMask::Carry, before & 1 == 1);
+                    }
+                    _ => panic!("illegal AddressMode: {opcode:?}"),
+                },
+            },
             M::Nop => {}
             // M::Ora => {}
             // M::Pha => {}

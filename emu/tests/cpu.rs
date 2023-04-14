@@ -7,7 +7,18 @@ use pda6502v2emu::cpu::Cpu;
 
 macro_rules! assert_eq_hex {
     ($a:expr, $b:expr) => {
-        assert_eq!($a, $b, "{}:{:#04X} != {:#04X}", stringify!($a), $a, $b);
+        assert_eq!(
+            $a,
+            $b,
+            "{}:{}:{:#04X}:{:#010b} != {}:{:#04X}:{:#010b}",
+            stringify!($a),
+            $a,
+            $a,
+            $a,
+            $b,
+            $b,
+            $b
+        );
     };
 }
 
@@ -22,6 +33,15 @@ macro_rules! step_and_assert {
         $cpu.step();
         println!("{:?}", $cpu);
         assert_eq_hex!($cpu.$reg, $val);
+        assert_eq!(stat(&$cpu.sr), $stat);
+    };
+}
+
+macro_rules! step_and_assert_mem {
+    ($cpu:expr, $addr:expr, $val:expr, $stat:literal) => {
+        $cpu.step();
+        println!("{:?}", $cpu);
+        assert_eq_hex!($cpu.bus.read($addr), $val);
         assert_eq!(stat(&$cpu.sr), $stat);
     };
 }
@@ -905,6 +925,40 @@ fn test_ldy() {
     step_and_assert!(cpu, y, 0x44, "nv-bdizc");
     step_and_assert!(cpu, y, 0x66, "nv-bdizc");
     step_and_assert!(cpu, y, 0x88, "Nv-bdizc");
+}
+
+#[test]
+fn test_lsr() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .lsr(Operand::A)
+            .lsr(Operand::Z(0x00))
+            .lsr(Operand::ZX(0x00))
+            .lsr(Operand::Abs(val(0x2000)))
+            .lsr(Operand::AbsX(val(0x2000)))
+            .label("data")
+            .data(vec![0b10101010, 0, 0, 0, 0b01010101])
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0b11110000;
+    cpu.x = 0xAA;
+    cpu.bus.write(0x0000, 0b11111111);
+    cpu.bus.write(0x00AA, 0b00000000);
+    cpu.bus.write(0x2000, 0b10101010);
+    cpu.bus.write(0x20AA, 0b01010101);
+
+    step_and_assert!(cpu, a, 0b01111000, "nv-bdizc");
+    step_and_assert_mem!(cpu, 0x0000, 0b01111111, "nv-bdizC");
+    step_and_assert_mem!(cpu, 0x00AA, 0b00000000, "nv-bdiZc");
+    step_and_assert_mem!(cpu, 0x2000, 0b01010101, "nv-bdizc");
+    step_and_assert_mem!(cpu, 0x20AA, 0b00101010, "nv-bdizC");
 }
 
 #[test]

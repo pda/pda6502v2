@@ -18,6 +18,7 @@ fn main() {
         .lda(Imm(0xAA))
         .ldx(Imm(0x10))
         .ldy(Imm(0xAA))
+        .lsr(A)
         .label("loop")
         .inx()
         .iny()
