@@ -101,17 +101,17 @@ impl Assembler {
     }
 
     // TODO: consistently use -> &mut Self everywhere
-    pub fn org(&mut self, addr: u16) -> &mut Assembler {
+    pub fn org(&mut self, addr: u16) -> &mut Self {
         self.org = addr;
         self
     }
 
-    pub fn label(&mut self, l: &str) -> &mut Assembler {
+    pub fn label(&mut self, l: &str) -> &mut Self {
         self.next_label = Some(l.to_string());
         self
     }
 
-    pub fn data(&mut self, d: Vec<u8>) -> &mut Assembler {
+    pub fn data(&mut self, d: Vec<u8>) -> &mut Self {
         self.lines.push(Line::Data(DataLine {
             label: self.next_label.take(),
             data: d,
@@ -122,87 +122,87 @@ impl Assembler {
     // ----------------------------------------
     // Instructions
 
-    pub fn adc(&mut self, op: Operand) -> &mut Assembler {
+    pub fn adc(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Adc, op)
     }
 
-    pub fn and(&mut self, op: Operand) -> &mut Assembler {
+    pub fn and(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::And, op)
     }
 
-    pub fn asl(&mut self, op: Operand) -> &mut Assembler {
+    pub fn asl(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Asl, op)
     }
 
-    pub fn bcc(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bcc(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bcc, op)
     }
 
-    pub fn bcs(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bcs(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bcs, op)
     }
 
-    pub fn beq(&mut self, op: Operand) -> &mut Assembler {
+    pub fn beq(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Beq, op)
     }
 
-    pub fn bit(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bit(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bit, op)
     }
 
-    pub fn bmi(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bmi(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bmi, op)
     }
 
-    pub fn bne(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bne(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bne, op)
     }
 
-    pub fn bpl(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bpl(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bpl, op)
     }
 
-    pub fn brk(&mut self) -> &mut Assembler {
+    pub fn brk(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Brk, Operand::Impl)
     }
 
-    pub fn bvc(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bvc(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bvc, op)
     }
 
-    pub fn bvs(&mut self, op: Operand) -> &mut Assembler {
+    pub fn bvs(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Bvs, op)
     }
 
-    pub fn clc(&mut self) -> &mut Assembler {
+    pub fn clc(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Clc, Operand::Impl)
     }
 
-    pub fn cld(&mut self) -> &mut Assembler {
+    pub fn cld(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Cld, Operand::Impl)
     }
 
-    pub fn cli(&mut self) -> &mut Assembler {
+    pub fn cli(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Cli, Operand::Impl)
     }
 
-    pub fn clv(&mut self) -> &mut Assembler {
+    pub fn clv(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Clv, Operand::Impl)
     }
 
-    pub fn cmp(&mut self, op: Operand) -> &mut Assembler {
+    pub fn cmp(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Cmp, op)
     }
 
-    pub fn cpx(&mut self, op: Operand) -> &mut Assembler {
+    pub fn cpx(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Cpx, op)
     }
 
-    pub fn cpy(&mut self, op: Operand) -> &mut Assembler {
+    pub fn cpy(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Cpy, op)
     }
 
-    pub fn dec(&mut self, op: Operand) -> &mut Assembler {
+    pub fn dec(&mut self, op: Operand) -> &mut Self {
         self.push_instruction(Mnemonic::Dec, op)
     }
 
@@ -254,7 +254,7 @@ impl Assembler {
         self.push_instruction(Mnemonic::Lsr, op)
     }
 
-    pub fn nop(&mut self) -> &mut Assembler {
+    pub fn nop(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Nop, Operand::Impl)
     }
 
@@ -266,15 +266,15 @@ impl Assembler {
         self.push_instruction(Mnemonic::Rts, Operand::Impl)
     }
 
-    pub fn sec(&mut self) -> &mut Assembler {
+    pub fn sec(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Sec, Operand::Impl)
     }
 
-    pub fn sed(&mut self) -> &mut Assembler {
+    pub fn sed(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Sed, Operand::Impl)
     }
 
-    pub fn sei(&mut self) -> &mut Assembler {
+    pub fn sei(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Sei, Operand::Impl)
     }
 
@@ -396,7 +396,7 @@ impl Assembler {
         self
     }
 
-    fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Assembler {
+    fn push_instruction(&mut self, mnemonic: Mnemonic, op: Operand) -> &mut Self {
         self.lines.push(Line::Instruction(InstructionLine {
             label: self.next_label.take(),
             instruction: self.opcode_map.get(mnemonic, op.mode()).map_err(Into::into),
