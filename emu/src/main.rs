@@ -10,7 +10,7 @@ fn main() {
     // prepare an address bus
     let mut bus = bus::Bus::default();
 
-    // assemble a trivial demo program
+    // assemble a nonsense demo program using diverse instructions
     let org: u16 = 0x1234;
     let mut asm = asm::Assembler::new();
     asm.org(org)

@@ -289,8 +289,11 @@ impl Cpu {
             }
             M::Lsr => match opcode.mode {
                 Accumulator => {
-                    self.a >>= 1;
-                    self.update_sr_z_n(self.a);
+                    let before = self.a;
+                    let after = before >> 1;
+                    self.a = after;
+                    self.update_sr_z_n(after);
+                    self.set_sr_bit(StatusMask::Carry, before & 1 == 1);
                 }
                 _ => match self.read_operand(opcode.mode) {
                     OpValue::U16(addr) => {

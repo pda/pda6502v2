@@ -947,14 +947,14 @@ fn test_lsr() {
             .unwrap(),
     );
 
-    cpu.a = 0b11110000;
+    cpu.a = 0b11110001;
     cpu.x = 0xAA;
     cpu.bus.write(0x0000, 0b11111111);
     cpu.bus.write(0x00AA, 0b00000000);
     cpu.bus.write(0x2000, 0b10101010);
     cpu.bus.write(0x20AA, 0b01010101);
 
-    step_and_assert!(cpu, a, 0b01111000, "nv-bdizc");
+    step_and_assert!(cpu, a, 0b01111000, "nv-bdizC");
     step_and_assert_mem!(cpu, 0x0000, 0b01111111, "nv-bdizC");
     step_and_assert_mem!(cpu, 0x00AA, 0b00000000, "nv-bdiZc");
     step_and_assert_mem!(cpu, 0x2000, 0b01010101, "nv-bdizc");
