@@ -286,6 +286,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Ror, op)
     }
 
+    pub fn rti(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Rti, Operand::Impl)
+    }
+
     pub fn rts(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Rts, Operand::Impl)
     }

@@ -345,26 +345,51 @@ fn test_bpl() {
 }
 
 #[test]
-fn test_brk() {
+fn test_brk_rti() {
     let mut cpu = Cpu::new(Bus::default());
-    cpu.bus.write(0xFFFE, 0x68); // IRQ vector (lo)
-    cpu.bus.write(0xFFFF, 0x24); // IRQ vector (hi)
-    cpu.pc = 0x0400;
-    cpu.sp = 0xFF;
-
     let mut asm = Assembler::new();
-    cpu.bus
-        .load(cpu.pc, asm.brk().print_listing().assemble().unwrap());
+    let mut asmirq = Assembler::new();
+
+    cpu.pc = 0x1000;
+
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .brk()
+            .nop()
+            .label("data")
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    // set the interrupt vector to 0x2000 which is the "irq" label
+    cpu.bus.write(0xFFFE, 0x00); // IRQ vector (lo)
+    cpu.bus.write(0xFFFF, 0x20); // IRQ vector (hi)
+
+    cpu.bus.load(
+        0x2000,
+        asmirq
+            .org(0x2000)
+            .label("irq")
+            .rti()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.sp = 0xF8;
 
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    cpu.step(); // BRK
-    println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
-    assert_eq_hex16!(cpu.pc, 0x2468);
-    assert_eq_hex!(cpu.sp, 0xFC);
-    assert_eq!(cpu.bus.read(0x01FF), 0x04);
-    assert_eq!(cpu.bus.read(0x01FE), 0x02);
-    assert_eq!(stat(&cpu.bus.read(0x01FD)), "nv-Bdizc");
+
+    step_and_assert!(cpu, sp, 0xF5, "nv-bdizc"); // BRK
+    assert_eq_hex16!(cpu.pc, 0x2000);
+    assert_eq!(cpu.bus.read(0x01F8), 0x10); // SP hi
+    assert_eq!(cpu.bus.read(0x01F7), 0x01); // SP lo
+    assert_eq!(stat(&cpu.bus.read(0x01F6)), "nv-Bdizc");
+
+    step_and_assert!(cpu, sp, 0xF8, "nv-bdizc"); // RTI
+    assert_eq_hex16!(cpu.pc, 0x1001);
 }
 
 #[test]

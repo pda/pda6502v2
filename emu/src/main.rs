@@ -65,10 +65,12 @@ fn main() {
         .jmp(Abs(label("loop")))
         .jmp(Abs(val(0)))
         .brk()
+        .label("message")
+        .data("Hello world!\nHow are you?\n".into())
         .label("subroutine")
         .rts()
-        .label("message")
-        .data("Hello world!\nHow are you?\n".into());
+        .label("interrupt")
+        .rti();
 
     asm.print_listing();
 
