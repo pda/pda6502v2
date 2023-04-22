@@ -1049,6 +1049,50 @@ fn test_php_plp() {
 }
 
 #[test]
+fn test_rol_ror() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.rol(Operand::A)
+            .rol(Operand::A)
+            .rol(Operand::Z(0x80))
+            .rol(Operand::ZX(0x80))
+            .rol(Operand::Abs(val(0x2000)))
+            .rol(Operand::AbsX(val(0x2000)))
+            .ror(Operand::AbsX(val(0x2000)))
+            .ror(Operand::Abs(val(0x2000)))
+            .ror(Operand::ZX(0x80))
+            .ror(Operand::Z(0x80))
+            .ror(Operand::A)
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0b10000000;
+    cpu.x = 0x42;
+    cpu.bus.write(0x0080, 0b11110000);
+    cpu.bus.write(0x00C2, 0b01010101);
+    cpu.bus.write(0x2000, 0b11001100);
+    cpu.bus.write(0x2042, 0b10101010);
+
+    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ROL A
+    step_and_assert!(cpu, a, 0b00000001, "nv-bdizc"); // ROL A
+    step_and_assert_mem!(cpu, 0x0080, 0b11100000, "Nv-bdizC"); // ROL $80
+    step_and_assert_mem!(cpu, 0x00C2, 0b10101011, "Nv-bdizc"); // ROL $80,X
+    step_and_assert_mem!(cpu, 0x2000, 0b10011000, "Nv-bdizC"); // ROL $2000
+    step_and_assert_mem!(cpu, 0x2042, 0b01010101, "nv-bdizC"); // ROL $2000,X
+
+    step_and_assert_mem!(cpu, 0x2042, 0b10101010, "Nv-bdizC"); // ROR $2000,X
+    step_and_assert_mem!(cpu, 0x2000, 0b11001100, "Nv-bdizc"); // ROR $2000
+    step_and_assert_mem!(cpu, 0x00C2, 0b01010101, "nv-bdizC"); // ROR $80,X
+    step_and_assert_mem!(cpu, 0x0080, 0b11110000, "Nv-bdizc"); // ROR $80
+    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ROR A
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

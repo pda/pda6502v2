@@ -27,6 +27,8 @@ fn main() {
         .php()
         .sec()
         .plp()
+        .rol(A)
+        .ror(A)
         .label("loop")
         .inx()
         .iny()

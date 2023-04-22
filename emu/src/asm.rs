@@ -278,6 +278,14 @@ impl Assembler {
         self.push_instruction(Mnemonic::Plp, Operand::Impl)
     }
 
+    pub fn rol(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Rol, op)
+    }
+
+    pub fn ror(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Ror, op)
+    }
+
     pub fn rts(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Rts, Operand::Impl)
     }

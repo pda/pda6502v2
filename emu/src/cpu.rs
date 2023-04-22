@@ -318,8 +318,44 @@ impl Cpu {
                 self.update_sr_z_n(self.a);
             }
             M::Plp => self.sr = self.pop() & !0b00110000,
-            // M::Rol => {}
-            // M::Ror => {}
+            M::Rol => match opcode.mode {
+                Accumulator => {
+                    let before = self.a;
+                    let after = before << 1 | self.get_sr_bit(StatusMask::Carry) as u8;
+                    self.a = after;
+                    self.update_sr_z_n(after);
+                    self.set_sr_bit(StatusMask::Carry, before & 0b10000000 != 0);
+                }
+                _ => match self.read_operand(opcode.mode) {
+                    OpValue::U16(addr) => {
+                        let before = self.bus.read(addr);
+                        let after = before << 1 | self.get_sr_bit(StatusMask::Carry) as u8;
+                        self.bus.write(addr, after);
+                        self.update_sr_z_n(after);
+                        self.set_sr_bit(StatusMask::Carry, before & 0b10000000 != 0);
+                    }
+                    _ => panic!("illegal AddressMode: {opcode:?}"),
+                },
+            },
+            M::Ror => match opcode.mode {
+                Accumulator => {
+                    let before = self.a;
+                    let after = before >> 1 | (self.get_sr_bit(StatusMask::Carry) as u8) << 7;
+                    self.a = after;
+                    self.update_sr_z_n(after);
+                    self.set_sr_bit(StatusMask::Carry, before & 0b00000001 != 0);
+                }
+                _ => match self.read_operand(opcode.mode) {
+                    OpValue::U16(addr) => {
+                        let before = self.bus.read(addr);
+                        let after = before >> 1 | (self.get_sr_bit(StatusMask::Carry) as u8) << 7;
+                        self.bus.write(addr, after);
+                        self.update_sr_z_n(after);
+                        self.set_sr_bit(StatusMask::Carry, before & 0b00000001 != 0);
+                    }
+                    _ => panic!("illegal AddressMode: {opcode:?}"),
+                },
+            },
             // M::Rti => {}
             M::Rts => match opcode.mode {
                 Implied => self.pc = self.pop_addr(),
