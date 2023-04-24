@@ -1118,6 +1118,59 @@ fn test_rol_ror() {
 }
 
 #[test]
+fn test_sbc() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x1000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .sec()
+            .sbc(Operand::Imm(0x10))
+            .sbc(Operand::Z(0x00))
+            .sbc(Operand::ZX(0x00))
+            .sbc(Operand::Abs(val(0x2000)))
+            .sbc(Operand::AbsX(val(0x2000)))
+            .sbc(Operand::AbsY(val(0x2000)))
+            .sbc(Operand::XInd(0x10))
+            .sbc(Operand::IndY(0x20))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0x00;
+    cpu.x = 0x02;
+    cpu.y = 0x04;
+
+    cpu.bus.write(0x0000, 0x32);
+    cpu.bus.write(0x0002, 0x20);
+    cpu.bus.write(0x2000, 0xFF);
+    cpu.bus.write(0x2002, 0x1D);
+    cpu.bus.write(0x2004, 0x01);
+
+    // X=2; ($10,X) -> ($12) -> $3210 -> #$40
+    cpu.bus.write(0x0012, 0x10); // LL
+    cpu.bus.write(0x0013, 0x32); // HH
+    cpu.bus.write(0x3210, 0x40);
+
+    // Y=4; ($20),Y -> $4321,Y -> $4325 -> #$3F
+    cpu.bus.write(0x0020, 0x21); // LL
+    cpu.bus.write(0x0021, 0x43); // HH
+    cpu.bus.write(0x4325, 0x3F);
+
+    step_and_assert!(cpu, a, 0x00, "nv-bdizC"); // SEC
+    step_and_assert!(cpu, a, 0xF0, "Nv-bdizc"); // SBC #$10     ; 0x00 - 0x10     = 0xF0 (c)
+    step_and_assert!(cpu, a, 0xBD, "Nv-bdizC"); // SBC $00      ; 0xF0 - 0x32 - 1 = 0xBD
+    step_and_assert!(cpu, a, 0x9D, "Nv-bdizC"); // SBC $00,X    ; 0xBD - 0x20     = 0x9D
+    step_and_assert!(cpu, a, 0x9E, "Nv-bdizc"); // SBC $2000    ; 0x9D - 0xFF     = 0x9E (c)
+    step_and_assert!(cpu, a, 0x80, "Nv-bdizC"); // SBC $2000,X  ; 0x9E - 0x1D - 1 = 0x80
+    step_and_assert!(cpu, a, 0x7F, "nV-bdizC"); // SBC $2000,Y  ; 0x80 - 0x01     = 0x7F
+    step_and_assert!(cpu, a, 0x3F, "nv-bdizC"); // SBC ($10,X)  ; 0x7F - 0x40     = 0x3F
+    step_and_assert!(cpu, a, 0x00, "nv-bdiZC"); // SBC ($20),Y  ; 0x3F - 0x3F     = 0x00
+}
+
+#[test]
 fn test_nop() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();

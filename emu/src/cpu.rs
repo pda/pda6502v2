@@ -62,9 +62,23 @@ impl Cpu {
                 let sum16 = (self.carry() as u16) + (a as u16) + (b as u16);
                 let sum = sum16 as u8;
                 self.a = sum;
+                self.update_sr_z_n(sum);
                 self.set_sr_bit(StatusMask::Carry, sum < a);
+
+                // Whether the sign of `a` and `sum` differs AND the sign of `b` and `sum` differs.
+                // This implies that `a` and `b` are same-sign, but `sum` is other-sign: overflow.
+                //
+                // a b s | a^s b^s | & | !=0 | Overflow?
+                // -------------------------------------
+                // 0 0 0 |  0   0  | 0 |  0  | no
+                // 0 0 1 |  1   1  | 1 |  1  | yes
+                // 0 1 0 |  0   1  | 0 |  0  | no
+                // 0 1 1 |  1   0  | 0 |  0  | no
+                // 1 0 0 |  1   0  | 0 |  0  | no
+                // 1 0 1 |  0   1  | 0 |  0  | no
+                // 1 1 0 |  1   1  | 1 |  1  | yes
+                // 1 1 1 |  0   0  | 0 |  0  | no
                 self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
-                self.update_sr_z_n(self.a);
             }
             M::And => {
                 self.a &= self.read_operand_value(opcode);
@@ -367,7 +381,32 @@ impl Cpu {
                 Implied => self.pc = self.pop_addr(),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            // M::Sbc => {}
+            M::Sbc => {
+                let a = self.a;
+                let b = self.read_operand_value(opcode);
+                let sum16 = (a as i16) - (b as i16) - (!self.get_sr_bit(StatusMask::Carry) as i16);
+                let sum = sum16 as u8;
+                self.a = sum;
+                self.update_sr_z_n(sum);
+                self.set_sr_bit(StatusMask::Carry, sum < a);
+
+                // Whether the sign of `a` and `sum` differs AND the sign of `-b` and `sum` differs.
+                // This implies that `a` and `-b` are same-sign, but `sum` is other-sign: overflow.
+                // Note `(a - b) == (a + -b)` hence using `-b` (or bitwise !b).
+                //
+                // Truth table for sign bit:
+                // a b !b s | a^s !b^s | & | !=0 | Overflow?
+                // ----------------------------------------
+                // 0 0  1 0 |  0    1  | 0 |  0  | no
+                // 0 0  1 1 |  1    0  | 0 |  0  | no
+                // 0 1  0 0 |  0    0  | 0 |  0  | no
+                // 0 1  0 1 |  1    1  | 1 |  1  | yes
+                // 1 0  1 0 |  1    1  | 1 |  1  | yes
+                // 1 0  1 1 |  0    0  | 0 |  0  | no
+                // 1 1  0 0 |  1    0  | 0 |  0  | no
+                // 1 1  0 1 |  0    1  | 0 |  0  | no
+                self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (!b ^ sum)) >> 7 != 0);
+            }
             M::Sec => match opcode.mode {
                 Implied => self.set_sr_bit(StatusMask::Carry, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),

@@ -294,6 +294,10 @@ impl Assembler {
         self.push_instruction(Mnemonic::Rts, Operand::Impl)
     }
 
+    pub fn sbc(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Sbc, op)
+    }
+
     pub fn sec(&mut self) -> &mut Self {
         self.push_instruction(Mnemonic::Sec, Operand::Impl)
     }

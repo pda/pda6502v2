@@ -32,7 +32,8 @@ fn main() {
         .label("loop")
         .inx()
         .iny()
-        .adc(Abs(val(org + 2))) // LDX #$10 operand
+        .adc(Abs(val(org + 2)))
+        .sbc(Imm(0x44))
         .asl(A)
         .and(ZX(0x00))
         .bit(Z(0x00))
