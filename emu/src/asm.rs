@@ -310,6 +310,18 @@ impl Assembler {
         self.push_instruction(Mnemonic::Sei, Operand::Impl)
     }
 
+    pub fn sta(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Sta, op)
+    }
+
+    pub fn stx(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Stx, op)
+    }
+
+    pub fn sty(&mut self, op: Operand) -> &mut Self {
+        self.push_instruction(Mnemonic::Sty, op)
+    }
+
     // ----------------------------------------
 
     pub fn assemble(&self) -> Result<Vec<u8>, Error> {

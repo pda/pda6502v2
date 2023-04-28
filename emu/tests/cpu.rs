@@ -1224,3 +1224,57 @@ fn test_set_and_clear_flags() {
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 }
+
+#[test]
+fn test_sta_stx_sty() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x4000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.sta(Operand::Z(0x00))
+            .sta(Operand::ZX(0x00))
+            .sta(Operand::Abs(val(0x2000)))
+            .sta(Operand::AbsX(val(0x2000)))
+            .sta(Operand::AbsY(val(0x2000)))
+            .sta(Operand::XInd(0x10))
+            .sta(Operand::IndY(0x20))
+            .stx(Operand::Z(0x30))
+            .stx(Operand::ZY(0x30))
+            .stx(Operand::Abs(val(0x3000)))
+            .sty(Operand::Z(0x40))
+            .sty(Operand::ZX(0x40))
+            .sty(Operand::Abs(val(0x5000)))
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0xAA;
+    cpu.x = 0x02;
+    cpu.y = 0x04;
+
+    // ($10,X) -> $1234
+    cpu.bus.write(0x0012, 0x34);
+    cpu.bus.write(0x0013, 0x12);
+
+    // ($20),Y -> $5678
+    cpu.bus.write(0x0020, 0x74);
+    cpu.bus.write(0x0021, 0x56);
+
+    step_and_assert_mem!(cpu, 0x0000, 0xAA, "nv-bdizc"); // STA $00
+    step_and_assert_mem!(cpu, 0x0002, 0xAA, "nv-bdizc"); // STA $00,X
+    step_and_assert_mem!(cpu, 0x2000, 0xAA, "nv-bdizc"); // STA $2000
+    step_and_assert_mem!(cpu, 0x2002, 0xAA, "nv-bdizc"); // STA $2000,X
+    step_and_assert_mem!(cpu, 0x2004, 0xAA, "nv-bdizc"); // STA $2000,Y
+    step_and_assert_mem!(cpu, 0x1234, 0xAA, "nv-bdizc"); // STA ($10,X)
+    step_and_assert_mem!(cpu, 0x5678, 0xAA, "nv-bdizc"); // STA ($20),Y
+
+    step_and_assert_mem!(cpu, 0x0030, 0x02, "nv-bdizc"); // STX $30
+    step_and_assert_mem!(cpu, 0x0034, 0x02, "nv-bdizc"); // STX $30,Y
+    step_and_assert_mem!(cpu, 0x3000, 0x02, "nv-bdizc"); // STX $3000
+                                                         //
+    step_and_assert_mem!(cpu, 0x0040, 0x04, "nv-bdizc"); // STY $40
+    step_and_assert_mem!(cpu, 0x0042, 0x04, "nv-bdizc"); // STY $40,X
+    step_and_assert_mem!(cpu, 0x5000, 0x04, "nv-bdizc"); // STY $5000
+}

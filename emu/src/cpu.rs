@@ -419,9 +419,18 @@ impl Cpu {
                 Implied => self.set_sr_bit(StatusMask::Interrupt, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            // M::Sta => {}
-            // M::Stx => {}
-            // M::Sty => {}
+            M::Sta => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => self.bus.write(addr, self.a),
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
+            M::Stx => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => self.bus.write(addr, self.x),
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
+            M::Sty => match self.read_operand(opcode.mode) {
+                OpValue::U16(addr) => self.bus.write(addr, self.y),
+                _ => panic!("illegal AddressMode: {opcode:?}"),
+            },
             // M::Tax => {}
             // M::Tay => {}
             // M::Tsx => {}
