@@ -322,6 +322,30 @@ impl Assembler {
         self.push_instruction(Mnemonic::Sty, op)
     }
 
+    pub fn tax(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Tax, Operand::Impl)
+    }
+
+    pub fn tay(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Tay, Operand::Impl)
+    }
+
+    pub fn tsx(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Tsx, Operand::Impl)
+    }
+
+    pub fn txa(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Txa, Operand::Impl)
+    }
+
+    pub fn txs(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Txs, Operand::Impl)
+    }
+
+    pub fn tya(&mut self) -> &mut Self {
+        self.push_instruction(Mnemonic::Tya, Operand::Impl)
+    }
+
     // ----------------------------------------
 
     pub fn assemble(&self) -> Result<Vec<u8>, Error> {

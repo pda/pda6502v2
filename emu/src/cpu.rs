@@ -431,13 +431,30 @@ impl Cpu {
                 OpValue::U16(addr) => self.bus.write(addr, self.y),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            // M::Tax => {}
-            // M::Tay => {}
-            // M::Tsx => {}
-            // M::Txa => {}
-            // M::Txs => {}
-            // M::Tya => {}
-            other => todo!("{:?}", other),
+            M::Tax => {
+                self.x = self.a;
+                self.update_sr_z_n(self.x);
+            }
+            M::Tay => {
+                self.y = self.a;
+                self.update_sr_z_n(self.y);
+            }
+            M::Tsx => {
+                self.x = self.sp;
+                self.update_sr_z_n(self.x);
+            }
+            M::Txa => {
+                self.a = self.x;
+                self.update_sr_z_n(self.a);
+            }
+            M::Txs => {
+                self.sp = self.x;
+                self.update_sr_z_n(self.sp);
+            }
+            M::Tya => {
+                self.a = self.y;
+                self.update_sr_z_n(self.a);
+            }
         }
     }
 

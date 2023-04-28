@@ -1278,3 +1278,37 @@ fn test_sta_stx_sty() {
     step_and_assert_mem!(cpu, 0x0042, 0x04, "nv-bdizc"); // STY $40,X
     step_and_assert_mem!(cpu, 0x5000, 0x04, "nv-bdizc"); // STY $5000
 }
+
+#[test]
+fn test_tax_tay_tsx_txa_txs_tya() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x4000;
+    cpu.bus.load(
+        cpu.pc,
+        asm.tax()
+            .tay()
+            .tsx()
+            .txa()
+            .txs()
+            .tya()
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.a = 0x00;
+    cpu.x = 0x7F;
+    cpu.y = 0xBF;
+    cpu.sp = 0xFF;
+    step_and_assert!(cpu, x, 0x00, "nv-bdiZc"); // TAX
+    step_and_assert!(cpu, y, 0x00, "nv-bdiZc"); // TAY
+    step_and_assert!(cpu, x, 0xFF, "Nv-bdizc"); // TSX
+    cpu.a = 0x00;
+    cpu.x = 0x7F;
+    cpu.y = 0xBF;
+    cpu.sp = 0xFF;
+    step_and_assert!(cpu, a, 0x7F, "nv-bdizc"); // TXA
+    step_and_assert!(cpu, sp, 0x7F, "nv-bdizc"); // TXS
+    step_and_assert!(cpu, a, 0xBF, "Nv-bdizc"); // TYA
+}
