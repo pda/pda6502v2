@@ -173,8 +173,9 @@ impl Cpu {
             }
             M::Brk => match opcode.mode {
                 Implied => {
-                    self.push_addr(self.pc);
+                    self.push_addr(self.pc + 1);
                     self.push(self.sr | StatusMask::Break as u8);
+                    self.sr |= StatusMask::Interrupt as u8;
                     self.pc = self.read_u16(VEC_IRQ);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
@@ -372,7 +373,7 @@ impl Cpu {
             },
             M::Rti => match opcode.mode {
                 Implied => {
-                    self.sr = self.pop() & !(StatusMask::Break as u8);
+                    self.sr = self.pop() & !(StatusMask::Break as u8) | 1 << 5;
                     self.pc = self.pop_addr();
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),

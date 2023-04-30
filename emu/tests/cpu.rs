@@ -356,6 +356,7 @@ fn test_brk_rti() {
         cpu.pc,
         asm.org(cpu.pc)
             .brk()
+            .data(vec![0xAA]) // “break mark: identify reason for break”
             .nop()
             .label("data")
             .print_listing()
@@ -382,14 +383,14 @@ fn test_brk_rti() {
 
     assert_eq!(stat(&cpu.sr), "nv-bdizc");
 
-    step_and_assert!(cpu, sp, 0xF5, "nv-bdizc"); // BRK
+    step_and_assert!(cpu, sp, 0xF5, "nv-bdIzc"); // BRK
     assert_eq_hex16!(cpu.pc, 0x2000);
-    assert_eq!(cpu.bus.read(0x01F8), 0x10); // SP hi
-    assert_eq!(cpu.bus.read(0x01F7), 0x01); // SP lo
+    assert_eq_hex!(cpu.bus.read(0x01F8), 0x10); // SP hi
+    assert_eq_hex!(cpu.bus.read(0x01F7), 0x02); // SP lo
     assert_eq!(stat(&cpu.bus.read(0x01F6)), "nv-Bdizc");
 
     step_and_assert!(cpu, sp, 0xF8, "nv-bdizc"); // RTI
-    assert_eq_hex16!(cpu.pc, 0x1001);
+    assert_eq_hex16!(cpu.pc, 0x1002);
 }
 
 #[test]
