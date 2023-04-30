@@ -459,11 +459,18 @@ impl Cpu {
         }
     }
 
-    /// Read a u16 in little-endian order from the bus
+    /// Read a u16 in little-endian order from the bus, crossing page boundaries.
     fn read_u16(&self, addr: u16) -> u16 {
-        let lo = self.bus.read(addr as u16);
-        let hi = self.bus.read(addr.wrapping_add(1) as u16);
-        ((hi as u16) << 8) | (lo as u16)
+        let lo = self.bus.read(addr) as u16;
+        let hi = self.bus.read(addr.wrapping_add(1)) as u16;
+        hi << 8 | lo
+    }
+
+    /// Read a u16 in little-endian order from the bus, wrapping within a page.
+    fn read_u16_zp(&self, addr: u8) -> u16 {
+        let lo = self.bus.read(addr as u16) as u16;
+        let hi = self.bus.read(addr.wrapping_add(1) as u16) as u16;
+        hi << 8 | lo
     }
 
     /// Read u8 from address pointed to by PC, incrementing PC
@@ -480,19 +487,13 @@ impl Cpu {
         val
     }
 
-    /// Read an index-offset zero-page address pointed to by PC, returning as u16 address after
-    /// incrementing PC by one
-    fn read_pc_zp(&mut self, index: u8) -> u16 {
-        self.read_pc_u8().wrapping_add(index) as u16
-    }
-
     /// Reads the operand from self.bus, following indirection/indexing where necessary, returning
     /// an address or immediate value, and incrementing PC.
     fn read_operand(&mut self, mode: isa::AddressMode) -> isa::OpValue {
         use isa::AddressMode::*;
         use isa::OpValue as OV;
 
-        let addr = match mode {
+        match mode {
             Absolute => OV::U16(self.read_pc_u16()),
             AbsoluteX => OV::U16(self.read_pc_u16().wrapping_add(self.x as u16)),
             AbsoluteY => OV::U16(self.read_pc_u16().wrapping_add(self.y as u16)),
@@ -504,8 +505,9 @@ impl Cpu {
                 OV::U16(self.read_u16(ptr))
             }
             IndirectY => {
-                let ptr = self.read_pc_zp(0);
-                OV::U16(self.read_u16(ptr).wrapping_add(self.y as u16))
+                let ptr = self.read_pc_u8();
+                let addr = self.read_u16_zp(ptr).wrapping_add(self.y as u16);
+                OV::U16(addr)
             }
             Relative => {
                 // #![feature(mixed_integer_ops)]
@@ -515,15 +517,13 @@ impl Cpu {
                 OV::U16((base + offset) as u16)
             }
             XIndirect => {
-                let ptr = self.read_pc_zp(self.x);
-                OV::U16(self.read_u16(ptr))
+                let ptr = self.read_pc_u8().wrapping_add(self.x);
+                OV::U16(self.read_u16_zp(ptr))
             }
-            Zeropage => OV::U16(self.read_pc_zp(0)),
-            ZeropageX => OV::U16(self.read_pc_zp(self.x)),
-            ZeropageY => OV::U16(self.read_pc_zp(self.y)),
-        };
-
-        addr
+            Zeropage => OV::U16(self.read_pc_u8() as u16),
+            ZeropageX => OV::U16(self.read_pc_u8().wrapping_add(self.x) as u16),
+            ZeropageY => OV::U16(self.read_pc_u8().wrapping_add(self.y) as u16),
+        }
     }
 
     fn read_operand_value(&mut self, opcode: isa::Opcode) -> u8 {

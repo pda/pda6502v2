@@ -1313,3 +1313,77 @@ fn test_tax_tay_tsx_txa_txs_tya() {
     step_and_assert!(cpu, sp, 0x7F, "nv-bdizc"); // TXS
     step_and_assert!(cpu, a, 0xBF, "Nv-bdizc"); // TYA
 }
+
+#[test]
+fn test_address_modes_at_page_boundaries() {
+    let mut cpu = Cpu::new(Bus::default());
+    let mut asm = Assembler::new();
+    cpu.pc = 0x10FE; // opcode @ $10FE, LL @ 0x10FF, operand:HH @ 0x1100 (next page)
+    cpu.bus.load(
+        cpu.pc,
+        asm.org(cpu.pc)
+            .lda(Operand::Abs(val(0x2000))) // absolute operand crosses page
+            .lda(Operand::AbsX(val(0x20FF))) // increment by X crosses page
+            .lda(Operand::AbsY(val(0x20FF))) // increment by Y crosses page
+            .jmp(Operand::Ind(val(0x30FF))) // indirect pointer crosses page
+            .lda(Operand::XInd(0xFD)) // indirect wraps after indexing ZP by X
+            .lda(Operand::XInd(0xFF)) // indirect wraps before indexing ZP by X
+            .lda(Operand::IndY(0xFF)) // indirect wraps before indexing ptr by Y
+            .lda(Operand::ZX(0xFF)) // ZP wraps incrementing by X
+            .ldx(Operand::ZY(0xFF)) // ZP wraps incrementing by Y
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+
+    cpu.x = 0x02;
+    cpu.y = 0x04;
+
+    cpu.bus.write(0x2000, 0x11);
+    step_and_assert!(cpu, a, 0x11, "nv-bdizc"); // LDA $2000
+
+    cpu.bus.write(0x2101, 0x22); // $20FF + X
+    step_and_assert!(cpu, a, 0x22, "nv-bdizc"); // LDA $20FF,X
+                                                //
+    cpu.bus.write(0x2103, 0x33); // $20FF + Y
+    step_and_assert!(cpu, a, 0x33, "nv-bdizc"); // LDA $20FF,Y
+
+    // JMP is the only (non-indexed) indirect addressing instruction,
+    // so use that to test a page-crossing indirect pointer.
+    cpu.bus.write(0x30FF, 0x01); // indirect:LL
+    cpu.bus.write(0x3100, 0x31); // indirect:HH
+    cpu.bus.load(
+        0x3101,
+        Assembler::new()
+            .org(0x3101)
+            .jmp(Operand::Abs(val(0x110A))) // after the JMP that took us here
+            .print_listing()
+            .assemble()
+            .unwrap(),
+    );
+    step_and_assert!(cpu, pc, 0x3101, "nv-bdizc"); // JMP ($30FF)
+    step_and_assert!(cpu, pc, 0x110A, "nv-bdizc"); // JMP $110A (back to where we were)
+
+    // ($FD,X) where X=0x02
+    cpu.bus.write(0x00FF, 0x21); // LL
+    cpu.bus.write(0x0000, 0x43); // HH
+    cpu.bus.write(0x4321, 0x44);
+    step_and_assert!(cpu, a, 0x44, "nv-bdizc"); // LDA ($FF,X)
+
+    // ($FF,X) where X=0x02
+    cpu.bus.write(0x0001, 0x21); // LL
+    cpu.bus.write(0x0002, 0x43); // HH
+    cpu.bus.write(0x4321, 0x55);
+    step_and_assert!(cpu, a, 0x55, "nv-bdizc"); // LDA ($FF,X)
+
+    cpu.bus.write(0x00FF, 0x32); // LL
+    cpu.bus.write(0x0000, 0x54); // HH
+    cpu.bus.write(0x5436, 0x66); // 0x5432 + Y:4
+    step_and_assert!(cpu, a, 0x66, "nv-bdizc"); // LDA ($FF),Y
+
+    cpu.bus.write(0x0001, 0x77);
+    step_and_assert!(cpu, a, 0x77, "nv-bdizc"); // LDA $FF,X
+
+    cpu.bus.write(0x0003, 0x88);
+    step_and_assert!(cpu, x, 0x88, "Nv-bdizc"); // LDX $FF,Y
+}
