@@ -7,7 +7,7 @@ use crate::isa;
 pub struct Cpu {
     pub bus: bus::Bus,
     pub pc: u16, // program counter
-    pub sp: u8,  // stack pointer
+    pub s: u8,   // stack pointer
     pub a: u8,   // accumulator
     pub x: u8,   // X register
     pub y: u8,   // Y register
@@ -21,7 +21,7 @@ impl Cpu {
         Cpu {
             bus,
             pc: 0,
-            sp: 0,
+            s: 0,
             a: 0,
             x: 0,
             y: 0,
@@ -33,7 +33,7 @@ impl Cpu {
     // Reset internal CPU state, as if the reset line had been asserted.
     pub fn reset(&mut self) {
         self.pc = self.read_u16(VEC_RES);
-        self.sp = 0x00;
+        self.s = 0x00;
         self.a = 0x00;
         self.x = 0x00;
         self.y = 0x00;
@@ -441,7 +441,7 @@ impl Cpu {
                 self.update_p_z_n(self.y);
             }
             M::Tsx => {
-                self.x = self.sp;
+                self.x = self.s;
                 self.update_p_z_n(self.x);
             }
             M::Txa => {
@@ -449,8 +449,8 @@ impl Cpu {
                 self.update_p_z_n(self.a);
             }
             M::Txs => {
-                self.sp = self.x;
-                self.update_p_z_n(self.sp);
+                self.s = self.x;
+                self.update_p_z_n(self.s);
             }
             M::Tya => {
                 self.a = self.y;
@@ -566,8 +566,8 @@ impl Cpu {
     }
 
     fn push(&mut self, val: u8) {
-        self.bus.write(0x0100 | self.sp as u16, val);
-        self.sp = self.sp.wrapping_sub(1);
+        self.bus.write(0x0100 | self.s as u16, val);
+        self.s = self.s.wrapping_sub(1);
     }
 
     fn pop_addr(&mut self) -> u16 {
@@ -577,8 +577,8 @@ impl Cpu {
     }
 
     fn pop(&mut self) -> u8 {
-        self.sp = self.sp.wrapping_add(1);
-        self.bus.read(0x0100 | self.sp as u16)
+        self.s = self.s.wrapping_add(1);
+        self.bus.read(0x0100 | self.s as u16)
     }
 }
 
@@ -586,8 +586,8 @@ impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         let stat = stat(&self.p);
         f.write_fmt(format_args!(
-            "Cpu {{ P: {} PC: ${:04X} SP: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
-            stat, self.pc, self.sp, self.a, self.x, self.y,
+            "Cpu {{ P: {} PC: ${:04X} S: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
+            stat, self.pc, self.s, self.a, self.x, self.y,
         ))
     }
 }

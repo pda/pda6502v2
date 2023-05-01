@@ -93,7 +93,7 @@ fn main() {
 
     let mut cpu = cpu::Cpu::new(bus);
     cpu.reset();
-    cpu.sp = 0xFF; // TODO: use LDX, TXS in ASM
+    cpu.s = 0xFF; // TODO: use LDX, TXS in ASM
 
     // run some instructions
     for _ in 0..20 {

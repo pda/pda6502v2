@@ -379,17 +379,17 @@ fn test_brk_rti() {
             .unwrap(),
     );
 
-    cpu.sp = 0xF8;
+    cpu.s = 0xF8;
 
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    step_and_assert!(cpu, sp, 0xF5, "nv-bdIzc"); // BRK
+    step_and_assert!(cpu, s, 0xF5, "nv-bdIzc"); // BRK
     assert_eq_hex16!(cpu.pc, 0x2000);
-    assert_eq_hex!(cpu.bus.read(0x01F8), 0x10); // SP hi
-    assert_eq_hex!(cpu.bus.read(0x01F7), 0x02); // SP lo
+    assert_eq_hex!(cpu.bus.read(0x01F8), 0x10); // S hi
+    assert_eq_hex!(cpu.bus.read(0x01F7), 0x02); // S lo
     assert_eq!(stat(&cpu.bus.read(0x01F6)), "nv-Bdizc");
 
-    step_and_assert!(cpu, sp, 0xF8, "nv-bdizc"); // RTI
+    step_and_assert!(cpu, s, 0xF8, "nv-bdizc"); // RTI
     assert_eq_hex16!(cpu.pc, 0x1002);
 }
 
@@ -806,7 +806,7 @@ fn test_jsr_and_rts() {
     let mut cpu = Cpu::new(Bus::default());
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
-    cpu.sp = 0xFF;
+    cpu.s = 0xFF;
     cpu.bus.load(
         cpu.pc,
         asm.org(cpu.pc)
@@ -826,23 +826,23 @@ fn test_jsr_and_rts() {
     cpu.step(); // JP first
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x4017);
-    assert_eq_hex!(cpu.sp, 0xFD);
+    assert_eq_hex!(cpu.s, 0xFD);
     assert_eq_hex!(cpu.bus.read(0x01FF), 0x40); // HH
     assert_eq_hex!(cpu.bus.read(0x01FE), 0x03); // LL
     cpu.step(); // JP second
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x401B);
-    assert_eq_hex!(cpu.sp, 0xFB);
+    assert_eq_hex!(cpu.s, 0xFB);
     assert_eq_hex!(cpu.bus.read(0x01FD), 0x40); // HH
     assert_eq_hex!(cpu.bus.read(0x01FC), 0x1A); // LL (TODO: wrong?)
     cpu.step(); // RTS (from second)
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x401A);
-    assert_eq_hex!(cpu.sp, 0xFD);
+    assert_eq_hex!(cpu.s, 0xFD);
     cpu.step(); // RTS (from first)
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x4003);
-    assert_eq_hex!(cpu.sp, 0xFF);
+    assert_eq_hex!(cpu.s, 0xFF);
 }
 
 #[test]
@@ -1043,15 +1043,15 @@ fn test_pha_pla() {
     cpu.bus
         .load(0, asm.pha().pla().print_listing().assemble().unwrap());
 
-    cpu.sp = 0xA8;
+    cpu.s = 0xA8;
     cpu.a = 0xF0;
 
-    step_and_assert!(cpu, sp, 0xA7, "nv-bdizc"); // PHA
+    step_and_assert!(cpu, s, 0xA7, "nv-bdizc"); // PHA
     assert_eq_hex!(cpu.bus.read(0x01A8), 0xF0);
 
     cpu.a = 0xAA;
 
-    step_and_assert!(cpu, sp, 0xA8, "Nv-bdizc"); // PLA
+    step_and_assert!(cpu, s, 0xA8, "Nv-bdizc"); // PLA
     assert_eq_hex!(cpu.a, 0xF0);
 }
 
@@ -1063,15 +1063,15 @@ fn test_php_plp() {
         .load(0, asm.php().plp().print_listing().assemble().unwrap());
 
     cpu.p = 0b00000100;
-    cpu.sp = 0xA8;
+    cpu.s = 0xA8;
 
-    step_and_assert!(cpu, sp, 0xA7, "nv-bdIzc"); // PHP
+    step_and_assert!(cpu, s, 0xA7, "nv-bdIzc"); // PHP
     assert_eq_hex!(cpu.bus.read(0x01A8), 0b00110100);
 
     cpu.p = 0b11111111;
     assert_eq!(stat(&cpu.p), "NV-BDIZC");
 
-    step_and_assert!(cpu, sp, 0xA8, "nv-bdIzc"); // PLP
+    step_and_assert!(cpu, s, 0xA8, "nv-bdIzc"); // PLP
 }
 
 #[test]
@@ -1301,16 +1301,16 @@ fn test_tax_tay_tsx_txa_txs_tya() {
     cpu.a = 0x00;
     cpu.x = 0x7F;
     cpu.y = 0xBF;
-    cpu.sp = 0xFF;
+    cpu.s = 0xFF;
     step_and_assert!(cpu, x, 0x00, "nv-bdiZc"); // TAX
     step_and_assert!(cpu, y, 0x00, "nv-bdiZc"); // TAY
     step_and_assert!(cpu, x, 0xFF, "Nv-bdizc"); // TSX
     cpu.a = 0x00;
     cpu.x = 0x7F;
     cpu.y = 0xBF;
-    cpu.sp = 0xFF;
+    cpu.s = 0xFF;
     step_and_assert!(cpu, a, 0x7F, "nv-bdizc"); // TXA
-    step_and_assert!(cpu, sp, 0x7F, "nv-bdizc"); // TXS
+    step_and_assert!(cpu, s, 0x7F, "nv-bdizc"); // TXS
     step_and_assert!(cpu, a, 0xBF, "Nv-bdizc"); // TYA
 }
 
