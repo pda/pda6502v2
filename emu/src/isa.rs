@@ -67,9 +67,9 @@ pub enum Mnemonic {
     Nop, // no operation
     Ora, // or with accumulator
     Pha, // push accumulator
-    Php, // push processor status (SR)
+    Php, // push processor status (P)
     Pla, // pull accumulator
-    Plp, // pull processor status (SR)
+    Plp, // pull processor status (P)
     Rol, // rotate left
     Ror, // rotate right
     Rti, // return from interrupt

@@ -33,7 +33,7 @@ macro_rules! step_and_assert {
         $cpu.step();
         println!("{:?}", $cpu);
         assert_eq_hex!($cpu.$reg, $val);
-        assert_eq!(stat(&$cpu.sr), $stat);
+        assert_eq!(stat(&$cpu.p), $stat);
     };
 }
 
@@ -42,7 +42,7 @@ macro_rules! step_and_assert_mem {
         $cpu.step();
         println!("{:?}", $cpu);
         assert_eq_hex!($cpu.bus.read($addr), $val);
-        assert_eq!(stat(&$cpu.sr), $stat);
+        assert_eq!(stat(&$cpu.p), $stat);
     };
 }
 
@@ -126,17 +126,17 @@ fn test_asl() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.set_p_bit(StatusMask::Carry, true);
     step_and_assert!(cpu, a, 0b10000000, "Nv-bdizc"); // ASL A
 
-    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.set_p_bit(StatusMask::Carry, true);
     step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ASL A
 
     cpu.step(); // ASL $F0,X
     println!("{:?}", cpu);
     let val = cpu.bus.read(0xF1);
     assert_eq_hex!(val, 0b10110110);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+    assert_eq!(stat(&cpu.p), "Nv-bdizC");
 }
 
 #[test]
@@ -155,17 +155,17 @@ fn test_bcc() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.set_p_bit(StatusMask::Carry, true);
     cpu.step(); // BCC 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
-    assert_eq!(stat(&cpu.sr), "nv-bdizC");
+    assert_eq!(stat(&cpu.p), "nv-bdizC");
 
-    cpu.set_sr_bit(StatusMask::Carry, false);
+    cpu.set_p_bit(StatusMask::Carry, false);
     cpu.step(); // BCC 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 }
 
 #[test]
@@ -183,17 +183,17 @@ fn test_bcs() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Carry, false);
+    cpu.set_p_bit(StatusMask::Carry, false);
     cpu.step(); // BCS 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.set_sr_bit(StatusMask::Carry, true);
+    cpu.set_p_bit(StatusMask::Carry, true);
     cpu.step(); // BCS 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
-    assert_eq!(stat(&cpu.sr), "nv-bdizC");
+    assert_eq!(stat(&cpu.p), "nv-bdizC");
 }
 
 #[test]
@@ -211,17 +211,17 @@ fn test_beq() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Zero, false);
+    cpu.set_p_bit(StatusMask::Zero, false);
     cpu.step(); // BEQ 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.set_sr_bit(StatusMask::Zero, true);
+    cpu.set_p_bit(StatusMask::Zero, true);
     cpu.step(); // BEQ 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 }
 
 #[test]
@@ -246,13 +246,13 @@ fn test_bit() {
     cpu.step(); // BIT $00 (#$FF)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0004);
-    assert_eq!(stat(&cpu.sr), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
+    assert_eq!(stat(&cpu.p), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
 
     cpu.a = 0x00;
     cpu.step(); // BIT $0001 (#$00)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0007);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
+    assert_eq!(stat(&cpu.p), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
 }
 
 #[test]
@@ -261,12 +261,12 @@ fn test_bmi() {
     let mut asm = Assembler::new();
     cpu.bus.load(
         cpu.pc,
-        asm.ldx(Operand::Imm(0xFF)) // SR N=1
+        asm.ldx(Operand::Imm(0xFF)) // P N=1
             .label("a")
             .bmi(Operand::Rel(BranchTarget::Label("b".to_string())))
             .nop()
             .label("b")
-            .ldx(Operand::Imm(0x10)) // SR N=0
+            .ldx(Operand::Imm(0x10)) // P N=0
             .bmi(Operand::Rel(BranchTarget::Label("a".to_string())))
             .nop()
             .print_listing()
@@ -322,11 +322,11 @@ fn test_bpl() {
     cpu.bus.load(
         cpu.pc,
         asm.label("a")
-            .ldx(Operand::Imm(0x10)) // SR N=0
+            .ldx(Operand::Imm(0x10)) // P N=0
             .bpl(Operand::Rel(BranchTarget::Label("b".to_string())))
             .nop()
             .label("b")
-            .ldx(Operand::Imm(0xF0)) // SR N=1
+            .ldx(Operand::Imm(0xF0)) // P N=1
             .bpl(Operand::Rel(BranchTarget::Label("a".to_string())))
             .nop()
             .print_listing()
@@ -381,7 +381,7 @@ fn test_brk_rti() {
 
     cpu.sp = 0xF8;
 
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     step_and_assert!(cpu, sp, 0xF5, "nv-bdIzc"); // BRK
     assert_eq_hex16!(cpu.pc, 0x2000);
@@ -409,17 +409,17 @@ fn test_bvc() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Overflow, true);
+    cpu.set_p_bit(StatusMask::Overflow, true);
     cpu.step(); // BVC 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
-    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+    assert_eq!(stat(&cpu.p), "nV-bdizc");
 
-    cpu.set_sr_bit(StatusMask::Overflow, false);
+    cpu.set_p_bit(StatusMask::Overflow, false);
     cpu.step(); // BVC 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 }
 
 #[test]
@@ -438,17 +438,17 @@ fn test_bvs() {
 
     use pda6502v2emu::cpu::StatusMask;
 
-    cpu.set_sr_bit(StatusMask::Overflow, false);
+    cpu.set_p_bit(StatusMask::Overflow, false);
     cpu.step(); // BVS 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.set_sr_bit(StatusMask::Overflow, true);
+    cpu.set_p_bit(StatusMask::Overflow, true);
     cpu.step(); // BVS 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
-    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+    assert_eq!(stat(&cpu.p), "nV-bdizc");
 }
 
 #[test]
@@ -474,11 +474,11 @@ fn test_cmp() {
     cpu.step(); // CMP data
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0203);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
     cpu.step(); // CMP data,X
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0206);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+    assert_eq!(stat(&cpu.p), "Nv-bdizC");
 }
 
 #[test]
@@ -502,11 +502,11 @@ fn test_cpx_and_cpy() {
     cpu.step(); // CPX #$04
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0202);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
     cpu.step(); // CPY #$08
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0204);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizC");
+    assert_eq!(stat(&cpu.p), "Nv-bdizC");
 }
 
 #[test]
@@ -534,25 +534,25 @@ fn test_dec() {
     cpu.step(); // DEC 0x10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1002);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
     assert_eq!(cpu.bus.read(0x0010), 99);
 
     cpu.step(); // DEC 0x10,X where X=10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1004);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
     assert_eq!(cpu.bus.read(0x0020), 199);
 
     cpu.step(); // DEC 0x2000
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1007);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
     assert_eq!(cpu.bus.read(0x2000), 0);
 
     cpu.step(); // DEC 0x2000,X where X=10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x100A);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
     assert_eq!(cpu.bus.read(0x2010), 199);
 }
 
@@ -578,25 +578,25 @@ fn test_dex_and_dey() {
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2001);
     assert_eq!(cpu.x, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
     cpu.step(); // DEX
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2002);
     assert_eq!(cpu.x, 0xFF);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // DEY
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2003);
     assert_eq!(cpu.y, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
     cpu.step(); // DEY
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2004);
     assert_eq!(cpu.y, 0xFF);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 }
 
 #[test]
@@ -656,42 +656,42 @@ fn test_eor() {
     cpu.step(); // EOR immediate
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000001); // [1a]
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.step(); // EOR zeropage
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11111110); // [2a]
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // EOR zeropage,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b01010100); // [3a]
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.step(); // EOR absolute
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000000); // [4a]
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
     cpu.step(); // EOR absolute,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11110000); // [5a]
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // EOR absolute,Y
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11111111); // [6a]
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // EOR (indirect,X)
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11000011); // [7a]
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // EOR (indirect),Y
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000000); // [8a]
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 }
 
 #[test]
@@ -717,22 +717,22 @@ fn test_inc() {
     cpu.step(); // INC zeropage
     println!("{cpu:?}");
     assert_eq_hex!(cpu.bus.read(0x0040), 0x01);
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.step(); // INC zeropage,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.bus.read(0x0050), 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
     cpu.step(); // INC absolute
     println!("{cpu:?}");
     assert_eq_hex!(cpu.bus.read(0x8000), 0x80);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // INC absolute,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.bus.read(0x8010), 0x81);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 }
 
 #[test]
@@ -754,19 +754,19 @@ fn test_inx_and_iny() {
 
     cpu.step(); // INX
     assert_eq!(cpu.x, 0xFF);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // INX
     assert_eq!(cpu.x, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
     cpu.step(); // INY
     assert_eq!(cpu.y, 0xFF);
-    assert_eq!(stat(&cpu.sr), "Nv-bdizc");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
     cpu.step(); // INY
     assert_eq!(cpu.y, 0x00);
-    assert_eq!(stat(&cpu.sr), "nv-bdiZc");
+    assert_eq!(stat(&cpu.p), "nv-bdiZc");
 }
 
 #[test]
@@ -792,13 +792,13 @@ fn test_jmp() {
     cpu.step(); // JMP testlabel
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x8004);
-    assert_eq!(stat(&cpu.sr), "nv-BdIzc"); // unchanged
+    assert_eq!(stat(&cpu.p), "nv-BdIzc"); // unchanged
 
-    cpu.sr = !cpu.sr;
+    cpu.p = !cpu.p;
     cpu.step(); // JMP ($FFFC)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x8000);
-    assert_eq!(stat(&cpu.sr), "NV-bDiZC"); // unchanged
+    assert_eq!(stat(&cpu.p), "NV-bDiZC"); // unchanged
 }
 
 #[test]
@@ -823,13 +823,13 @@ fn test_jsr_and_rts() {
     );
 
     println!("{cpu:?}");
-    cpu.step(); // JSR first
+    cpu.step(); // JP first
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x4017);
     assert_eq_hex!(cpu.sp, 0xFD);
     assert_eq_hex!(cpu.bus.read(0x01FF), 0x40); // HH
     assert_eq_hex!(cpu.bus.read(0x01FE), 0x03); // LL
-    cpu.step(); // JSR second
+    cpu.step(); // JP second
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x401B);
     assert_eq_hex!(cpu.sp, 0xFB);
@@ -1062,14 +1062,14 @@ fn test_php_plp() {
     cpu.bus
         .load(0, asm.php().plp().print_listing().assemble().unwrap());
 
-    cpu.sr = 0b00000100;
+    cpu.p = 0b00000100;
     cpu.sp = 0xA8;
 
     step_and_assert!(cpu, sp, 0xA7, "nv-bdIzc"); // PHP
     assert_eq_hex!(cpu.bus.read(0x01A8), 0b00110100);
 
-    cpu.sr = 0b11111111;
-    assert_eq!(stat(&cpu.sr), "NV-BDIZC");
+    cpu.p = 0b11111111;
+    assert_eq!(stat(&cpu.p), "NV-BDIZC");
 
     step_and_assert!(cpu, sp, 0xA8, "nv-bdIzc"); // PLP
 }
@@ -1199,31 +1199,31 @@ fn test_set_and_clear_flags() {
     );
 
     use pda6502v2emu::cpu::StatusMask;
-    cpu.set_sr_bit(StatusMask::Overflow, true);
+    cpu.set_p_bit(StatusMask::Overflow, true);
 
-    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+    assert_eq!(stat(&cpu.p), "nV-bdizc");
 
     cpu.step(); // SEC
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bdizC");
+    assert_eq!(stat(&cpu.p), "nV-bdizC");
     cpu.step(); // SED
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bDizC");
+    assert_eq!(stat(&cpu.p), "nV-bDizC");
     cpu.step(); // SEI
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bDIzC");
+    assert_eq!(stat(&cpu.p), "nV-bDIzC");
     cpu.step(); // CLC
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bDIzc");
+    assert_eq!(stat(&cpu.p), "nV-bDIzc");
     cpu.step(); // CLD
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bdIzc");
+    assert_eq!(stat(&cpu.p), "nV-bdIzc");
     cpu.step(); // CLI
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nV-bdizc");
+    assert_eq!(stat(&cpu.p), "nV-bdizc");
     cpu.step(); // CLV
     println!("{cpu:?}");
-    assert_eq!(stat(&cpu.sr), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizc");
 }
 
 #[test]

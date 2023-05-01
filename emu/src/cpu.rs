@@ -11,7 +11,7 @@ pub struct Cpu {
     pub a: u8,   // accumulator
     pub x: u8,   // X register
     pub y: u8,   // Y register
-    pub sr: u8,  // status register
+    pub p: u8,   // processor status
 
     optab: [Option<isa::Opcode>; 256],
 }
@@ -25,7 +25,7 @@ impl Cpu {
             a: 0,
             x: 0,
             y: 0,
-            sr: 0,
+            p: 0,
             optab: build_opcode_table(),
         }
     }
@@ -37,7 +37,7 @@ impl Cpu {
         self.a = 0x00;
         self.x = 0x00;
         self.y = 0x00;
-        self.sr = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
+        self.p = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
     }
 
     // Load and execute a single instruction.
@@ -62,8 +62,8 @@ impl Cpu {
                 let sum16 = (self.carry() as u16) + (a as u16) + (b as u16);
                 let sum = sum16 as u8;
                 self.a = sum;
-                self.update_sr_z_n(sum);
-                self.set_sr_bit(StatusMask::Carry, sum < a);
+                self.update_p_z_n(sum);
+                self.set_p_bit(StatusMask::Carry, sum < a);
 
                 // Whether the sign of `a` and `sum` differs AND the sign of `b` and `sum` differs.
                 // This implies that `a` and `b` are same-sign, but `sum` is other-sign: overflow.
@@ -78,11 +78,11 @@ impl Cpu {
                 // 1 0 1 |  0   1  | 0 |  0  | no
                 // 1 1 0 |  1   1  | 1 |  1  | yes
                 // 1 1 1 |  0   0  | 0 |  0  | no
-                self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
+                self.set_p_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
             }
             M::And => {
                 self.a &= self.read_operand_value(opcode);
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
             M::Asl => {
                 let result: u8;
@@ -101,11 +101,11 @@ impl Cpu {
                     }
                     _ => panic!("illegal AddressMode: {:?}", opcode),
                 }
-                self.update_sr_z_n(result);
-                self.set_sr_bit(StatusMask::Carry, carry == 1);
+                self.update_p_z_n(result);
+                self.set_p_bit(StatusMask::Carry, carry == 1);
             }
             M::Bcc => {
-                if !self.get_sr_bit(StatusMask::Carry) {
+                if !self.get_p_bit(StatusMask::Carry) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -115,7 +115,7 @@ impl Cpu {
                 }
             }
             M::Bcs => {
-                if self.get_sr_bit(StatusMask::Carry) {
+                if self.get_p_bit(StatusMask::Carry) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -125,7 +125,7 @@ impl Cpu {
                 }
             }
             M::Beq => {
-                if self.get_sr_bit(StatusMask::Zero) {
+                if self.get_p_bit(StatusMask::Zero) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -137,12 +137,12 @@ impl Cpu {
             M::Bit => {
                 let operand = self.read_operand_value(opcode);
                 let r = self.a & operand;
-                self.set_sr_bit(StatusMask::Negative, r & StatusMask::Negative as u8 != 0);
-                self.set_sr_bit(StatusMask::Overflow, r & StatusMask::Overflow as u8 != 0);
-                self.set_sr_bit(StatusMask::Zero, r == 0);
+                self.set_p_bit(StatusMask::Negative, r & StatusMask::Negative as u8 != 0);
+                self.set_p_bit(StatusMask::Overflow, r & StatusMask::Overflow as u8 != 0);
+                self.set_p_bit(StatusMask::Zero, r == 0);
             }
             M::Bmi => {
-                if self.get_sr_bit(StatusMask::Negative) {
+                if self.get_p_bit(StatusMask::Negative) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -152,7 +152,7 @@ impl Cpu {
                 }
             }
             M::Bne => {
-                if !self.get_sr_bit(StatusMask::Zero) {
+                if !self.get_p_bit(StatusMask::Zero) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -162,7 +162,7 @@ impl Cpu {
                 }
             }
             M::Bpl => {
-                if !self.get_sr_bit(StatusMask::Negative) {
+                if !self.get_p_bit(StatusMask::Negative) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -174,14 +174,14 @@ impl Cpu {
             M::Brk => match opcode.mode {
                 Implied => {
                     self.push_addr(self.pc + 1);
-                    self.push(self.sr | StatusMask::Break as u8);
-                    self.sr |= StatusMask::Interrupt as u8;
+                    self.push(self.p | StatusMask::Break as u8);
+                    self.p |= StatusMask::Interrupt as u8;
                     self.pc = self.read_u16(VEC_IRQ);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Bvc => {
-                if !self.get_sr_bit(StatusMask::Overflow) {
+                if !self.get_p_bit(StatusMask::Overflow) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -191,7 +191,7 @@ impl Cpu {
                 }
             }
             M::Bvs => {
-                if self.get_sr_bit(StatusMask::Overflow) {
+                if self.get_p_bit(StatusMask::Overflow) {
                     match self.read_operand(opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
@@ -201,81 +201,81 @@ impl Cpu {
                 }
             }
             M::Clc => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Carry, false),
+                Implied => self.set_p_bit(StatusMask::Carry, false),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Cld => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Decimal, false),
+                Implied => self.set_p_bit(StatusMask::Decimal, false),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Cli => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Interrupt, false),
+                Implied => self.set_p_bit(StatusMask::Interrupt, false),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Clv => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Overflow, false),
+                Implied => self.set_p_bit(StatusMask::Overflow, false),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Cmp => {
                 let result = self.a.wrapping_sub(self.read_operand_value(opcode));
-                self.update_sr_z_n(result);
-                self.set_sr_bit(StatusMask::Carry, result > self.a);
+                self.update_p_z_n(result);
+                self.set_p_bit(StatusMask::Carry, result > self.a);
             }
             M::Cpx => {
                 let result = self.x.wrapping_sub(self.read_operand_value(opcode));
-                self.update_sr_z_n(result);
-                self.set_sr_bit(StatusMask::Carry, result > self.x);
+                self.update_p_z_n(result);
+                self.set_p_bit(StatusMask::Carry, result > self.x);
             }
             M::Cpy => {
                 let result = self.y.wrapping_sub(self.read_operand_value(opcode));
-                self.update_sr_z_n(result);
-                self.set_sr_bit(StatusMask::Carry, result > self.y);
+                self.update_p_z_n(result);
+                self.set_p_bit(StatusMask::Carry, result > self.y);
             }
             M::Dec => match self.read_operand(opcode.mode) {
                 OpValue::U16(addr) => {
                     let result = self.bus.read(addr).wrapping_sub(1);
                     self.bus.write(addr, result);
-                    self.update_sr_z_n(result);
+                    self.update_p_z_n(result);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Dex => match opcode.mode {
                 Implied => {
                     self.x = self.x.wrapping_sub(1);
-                    self.update_sr_z_n(self.x);
+                    self.update_p_z_n(self.x);
                 }
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Dey => match opcode.mode {
                 Implied => {
                     self.y = self.y.wrapping_sub(1);
-                    self.update_sr_z_n(self.y);
+                    self.update_p_z_n(self.y);
                 }
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Eor => {
                 self.a ^= self.read_operand_value(opcode);
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
             M::Inc => match self.read_operand(opcode.mode) {
                 OpValue::U16(addr) => {
                     let result = self.bus.read(addr).wrapping_add(1);
                     self.bus.write(addr, result);
-                    self.update_sr_z_n(result);
+                    self.update_p_z_n(result);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Inx => match opcode.mode {
                 Implied => {
                     self.x = self.x.wrapping_add(1);
-                    self.update_sr_z_n(self.x);
+                    self.update_p_z_n(self.x);
                 }
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Iny => match opcode.mode {
                 Implied => {
                     self.y = self.y.wrapping_add(1);
-                    self.update_sr_z_n(self.y);
+                    self.update_p_z_n(self.y);
                 }
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
@@ -292,31 +292,31 @@ impl Cpu {
             },
             M::Lda => {
                 self.a = self.read_operand_value(opcode);
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
             M::Ldx => {
                 self.x = self.read_operand_value(opcode);
-                self.update_sr_z_n(self.x);
+                self.update_p_z_n(self.x);
             }
             M::Ldy => {
                 self.y = self.read_operand_value(opcode);
-                self.update_sr_z_n(self.y);
+                self.update_p_z_n(self.y);
             }
             M::Lsr => match opcode.mode {
                 Accumulator => {
                     let before = self.a;
                     let after = before >> 1;
                     self.a = after;
-                    self.update_sr_z_n(after);
-                    self.set_sr_bit(StatusMask::Carry, before & 1 == 1);
+                    self.update_p_z_n(after);
+                    self.set_p_bit(StatusMask::Carry, before & 1 == 1);
                 }
                 _ => match self.read_operand(opcode.mode) {
                     OpValue::U16(addr) => {
                         let before = self.bus.read(addr);
                         let after = before >> 1;
                         self.bus.write(addr, after);
-                        self.update_sr_z_n(after);
-                        self.set_sr_bit(StatusMask::Carry, before & 1 == 1);
+                        self.update_p_z_n(after);
+                        self.set_p_bit(StatusMask::Carry, before & 1 == 1);
                     }
                     _ => panic!("illegal AddressMode: {opcode:?}"),
                 },
@@ -324,30 +324,30 @@ impl Cpu {
             M::Nop => {}
             M::Ora => {
                 self.a |= self.read_operand_value(opcode);
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
             M::Pha => self.push(self.a),
-            M::Php => self.push(self.sr | 0b00110000),
+            M::Php => self.push(self.p | 0b00110000),
             M::Pla => {
                 self.a = self.pop();
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
-            M::Plp => self.sr = self.pop() & !0b00110000,
+            M::Plp => self.p = self.pop() & !0b00110000,
             M::Rol => match opcode.mode {
                 Accumulator => {
                     let before = self.a;
-                    let after = before << 1 | self.get_sr_bit(StatusMask::Carry) as u8;
+                    let after = before << 1 | self.get_p_bit(StatusMask::Carry) as u8;
                     self.a = after;
-                    self.update_sr_z_n(after);
-                    self.set_sr_bit(StatusMask::Carry, before & 0b10000000 != 0);
+                    self.update_p_z_n(after);
+                    self.set_p_bit(StatusMask::Carry, before & 0b10000000 != 0);
                 }
                 _ => match self.read_operand(opcode.mode) {
                     OpValue::U16(addr) => {
                         let before = self.bus.read(addr);
-                        let after = before << 1 | self.get_sr_bit(StatusMask::Carry) as u8;
+                        let after = before << 1 | self.get_p_bit(StatusMask::Carry) as u8;
                         self.bus.write(addr, after);
-                        self.update_sr_z_n(after);
-                        self.set_sr_bit(StatusMask::Carry, before & 0b10000000 != 0);
+                        self.update_p_z_n(after);
+                        self.set_p_bit(StatusMask::Carry, before & 0b10000000 != 0);
                     }
                     _ => panic!("illegal AddressMode: {opcode:?}"),
                 },
@@ -355,25 +355,25 @@ impl Cpu {
             M::Ror => match opcode.mode {
                 Accumulator => {
                     let before = self.a;
-                    let after = before >> 1 | (self.get_sr_bit(StatusMask::Carry) as u8) << 7;
+                    let after = before >> 1 | (self.get_p_bit(StatusMask::Carry) as u8) << 7;
                     self.a = after;
-                    self.update_sr_z_n(after);
-                    self.set_sr_bit(StatusMask::Carry, before & 0b00000001 != 0);
+                    self.update_p_z_n(after);
+                    self.set_p_bit(StatusMask::Carry, before & 0b00000001 != 0);
                 }
                 _ => match self.read_operand(opcode.mode) {
                     OpValue::U16(addr) => {
                         let before = self.bus.read(addr);
-                        let after = before >> 1 | (self.get_sr_bit(StatusMask::Carry) as u8) << 7;
+                        let after = before >> 1 | (self.get_p_bit(StatusMask::Carry) as u8) << 7;
                         self.bus.write(addr, after);
-                        self.update_sr_z_n(after);
-                        self.set_sr_bit(StatusMask::Carry, before & 0b00000001 != 0);
+                        self.update_p_z_n(after);
+                        self.set_p_bit(StatusMask::Carry, before & 0b00000001 != 0);
                     }
                     _ => panic!("illegal AddressMode: {opcode:?}"),
                 },
             },
             M::Rti => match opcode.mode {
                 Implied => {
-                    self.sr = self.pop() & !(StatusMask::Break as u8) | 1 << 5;
+                    self.p = self.pop() & !(StatusMask::Break as u8) | 1 << 5;
                     self.pc = self.pop_addr();
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
@@ -385,11 +385,11 @@ impl Cpu {
             M::Sbc => {
                 let a = self.a;
                 let b = self.read_operand_value(opcode);
-                let sum16 = (a as i16) - (b as i16) - (!self.get_sr_bit(StatusMask::Carry) as i16);
+                let sum16 = (a as i16) - (b as i16) - (!self.get_p_bit(StatusMask::Carry) as i16);
                 let sum = sum16 as u8;
                 self.a = sum;
-                self.update_sr_z_n(sum);
-                self.set_sr_bit(StatusMask::Carry, sum < a);
+                self.update_p_z_n(sum);
+                self.set_p_bit(StatusMask::Carry, sum < a);
 
                 // Whether the sign of `a` and `sum` differs AND the sign of `-b` and `sum` differs.
                 // This implies that `a` and `-b` are same-sign, but `sum` is other-sign: overflow.
@@ -406,18 +406,18 @@ impl Cpu {
                 // 1 0  1 1 |  0    0  | 0 |  0  | no
                 // 1 1  0 0 |  1    0  | 0 |  0  | no
                 // 1 1  0 1 |  0    1  | 0 |  0  | no
-                self.set_sr_bit(StatusMask::Overflow, ((a ^ sum) & (!b ^ sum)) >> 7 != 0);
+                self.set_p_bit(StatusMask::Overflow, ((a ^ sum) & (!b ^ sum)) >> 7 != 0);
             }
             M::Sec => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Carry, true),
+                Implied => self.set_p_bit(StatusMask::Carry, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Sed => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Decimal, true),
+                Implied => self.set_p_bit(StatusMask::Decimal, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Sei => match opcode.mode {
-                Implied => self.set_sr_bit(StatusMask::Interrupt, true),
+                Implied => self.set_p_bit(StatusMask::Interrupt, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Sta => match self.read_operand(opcode.mode) {
@@ -434,27 +434,27 @@ impl Cpu {
             },
             M::Tax => {
                 self.x = self.a;
-                self.update_sr_z_n(self.x);
+                self.update_p_z_n(self.x);
             }
             M::Tay => {
                 self.y = self.a;
-                self.update_sr_z_n(self.y);
+                self.update_p_z_n(self.y);
             }
             M::Tsx => {
                 self.x = self.sp;
-                self.update_sr_z_n(self.x);
+                self.update_p_z_n(self.x);
             }
             M::Txa => {
                 self.a = self.x;
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
             M::Txs => {
                 self.sp = self.x;
-                self.update_sr_z_n(self.sp);
+                self.update_p_z_n(self.sp);
             }
             M::Tya => {
                 self.a = self.y;
-                self.update_sr_z_n(self.a);
+                self.update_p_z_n(self.a);
             }
         }
     }
@@ -535,29 +535,29 @@ impl Cpu {
         }
     }
 
-    /// Update the Status Register's Zero and Negative bits based on the specified value.
-    fn update_sr_z_n(&mut self, val: u8) {
-        self.set_sr_bit(StatusMask::Zero, val == 0);
-        self.set_sr_bit(StatusMask::Negative, (val as i8) < 0);
+    /// Update the Processor Status' Zero and Negative bits based on the specified value.
+    fn update_p_z_n(&mut self, val: u8) {
+        self.set_p_bit(StatusMask::Zero, val == 0);
+        self.set_p_bit(StatusMask::Negative, (val as i8) < 0);
     }
 
-    pub fn set_sr_bit(&mut self, mask: StatusMask, val: bool) {
+    pub fn set_p_bit(&mut self, mask: StatusMask, val: bool) {
         let m = mask as u8;
         if val {
-            self.sr |= m
+            self.p |= m
         } else {
-            self.sr &= !m
+            self.p &= !m
         }
     }
 
-    pub fn get_sr_bit(&mut self, mask: StatusMask) -> bool {
-        self.sr & mask as u8 != 0
+    pub fn get_p_bit(&mut self, mask: StatusMask) -> bool {
+        self.p & mask as u8 != 0
     }
 
     fn carry(&mut self) -> u8 {
         let bit = StatusBit::Carry as u8;
         let mask = StatusMask::Carry as u8;
-        (self.sr & mask) >> bit
+        (self.p & mask) >> bit
     }
 
     fn push_addr(&mut self, addr: u16) {
@@ -584,22 +584,22 @@ impl Cpu {
 
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        let stat = stat(&self.sr);
+        let stat = stat(&self.p);
         f.write_fmt(format_args!(
-            "Cpu {{ SR: {} PC: ${:04X} SP: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
+            "Cpu {{ P: {} PC: ${:04X} SP: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
             stat, self.pc, self.sp, self.a, self.x, self.y,
         ))
     }
 }
 
-// a string representation of the 8-bit status register;
+// a string representation of the 8-bit processor status register;
 // enabled bits are upper case, disabled bits are lower case.
-pub fn stat(sr: &u8) -> String {
+pub fn stat(p: &u8) -> String {
     "nv-bdizc"
         .chars()
         .enumerate()
         .map(|(i, x)| {
-            if sr >> (7 - i) & 1 == 1 {
+            if p >> (7 - i) & 1 == 1 {
                 x.to_ascii_uppercase()
             } else {
                 x
