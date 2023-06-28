@@ -2,20 +2,18 @@ mod asm;
 mod bus;
 mod cpu;
 mod isa;
+mod sys;
 
 fn main() {
     // syntax brevity for Assembler args
     use asm::{branch, label, val, Operand::*};
-
-    // prepare an address bus
-    let mut bus = bus::Bus::default();
 
     // assemble a nonsense demo program using diverse instructions
     let org: u16 = 0x1234;
     let mut asm = asm::Assembler::new();
     asm.org(org)
         .ldx(Imm(0xFF))
-        //.txs()
+        .txs()
         .lda(Imm(0xAA))
         .ldx(Imm(0x10))
         .ldy(Imm(0xAA))
@@ -80,23 +78,22 @@ fn main() {
         .label("subroutine")
         .rts()
         .label("interrupt")
-        .rti();
+        .rti()
+        .print_listing();
 
-    asm.print_listing();
+    let mut sys = sys::Sys::new();
 
     // preload program to RAM
-    bus.load(asm.org, asm.assemble().unwrap());
+    sys.bus.load(asm.org, asm.assemble().unwrap());
 
     // set reset vector to program address
-    bus.write(0xFFFC, asm.org as u8);
-    bus.write(0xFFFD, (asm.org >> 8) as u8);
+    sys.bus.write(0xFFFC, asm.org as u8);
+    sys.bus.write(0xFFFD, (asm.org >> 8) as u8);
 
-    let mut cpu = cpu::Cpu::new();
-    cpu.reset(&bus);
-    cpu.s = 0xFF; // TODO: use LDX, TXS in ASM
+    sys.reset();
 
     // run some instructions
     for _ in 0..80 {
-        cpu.step(&mut bus);
+        sys.step();
     }
 }
