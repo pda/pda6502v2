@@ -1,9 +1,11 @@
 use crate::bus::Bus;
 use crate::cpu::Cpu;
+use crate::mon::Monitor;
 
 pub struct Sys {
     pub bus: Bus,
     cpu: Cpu,
+    monitor: Monitor,
 }
 
 impl Sys {
@@ -11,6 +13,7 @@ impl Sys {
         Self {
             bus: Bus::default(),
             cpu: Cpu::new(),
+            monitor: Monitor::new(),
         }
     }
 
@@ -19,6 +22,7 @@ impl Sys {
     }
 
     pub fn step(&mut self) {
-        self.cpu.step(&mut self.bus)
+        self.monitor.step(&mut self.bus, &self.cpu);
+        self.cpu.step(&mut self.bus);
     }
 }

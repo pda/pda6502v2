@@ -1,3 +1,5 @@
+use std::fmt;
+
 const RAM_SIZE: usize = 512 * 1024;
 
 // Bus maps memory read/write to different devices based on the address.
@@ -32,5 +34,11 @@ impl Default for Bus {
         Bus {
             ram: [0x00; RAM_SIZE],
         }
+    }
+}
+
+impl fmt::Debug for Bus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("Bus {{ RAM: {} KiB }}", RAM_SIZE / 1024))
     }
 }

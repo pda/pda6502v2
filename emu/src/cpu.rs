@@ -38,9 +38,13 @@ impl Cpu {
         self.p = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
     }
 
+    pub fn fetch(&self, bus: &bus::Bus) -> Option<isa::Opcode> {
+        self.optab[bus.read(self.pc) as usize]
+    }
+
     // Load and execute a single instruction.
     pub fn step(&mut self, bus: &mut bus::Bus) {
-        match self.optab[self.read_pc_u8(bus) as usize] {
+        match self.fetch(bus) {
             None => panic!("illegal opcode"),
             Some(opcode) => self.execute(opcode, bus),
         }
@@ -51,6 +55,9 @@ impl Cpu {
         use isa::AddressMode::*;
         use isa::Mnemonic as M;
         use isa::OpValue;
+
+        // progress PC for the fetched opcode
+        self.pc = self.pc.wrapping_add(1);
 
         match opcode.mnemonic {
             M::Adc => {

@@ -2,6 +2,7 @@ mod asm;
 mod bus;
 mod cpu;
 mod isa;
+mod mon;
 mod sys;
 
 fn main() {
