@@ -52,7 +52,6 @@ impl Cpu {
         use isa::Mnemonic as M;
         use isa::OpValue;
 
-        println!("{:?}", opcode);
         match opcode.mnemonic {
             M::Adc => {
                 let a = self.a;
