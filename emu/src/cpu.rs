@@ -5,7 +5,6 @@ use crate::isa;
 
 // A 65C02-like CPU
 pub struct Cpu {
-    pub bus: bus::Bus,
     pub pc: u16, // program counter
     pub s: u8,   // stack pointer
     pub a: u8,   // accumulator
@@ -17,9 +16,8 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(bus: bus::Bus) -> Cpu {
+    pub fn new() -> Cpu {
         Cpu {
-            bus,
             pc: 0,
             s: 0,
             a: 0,
@@ -31,8 +29,8 @@ impl Cpu {
     }
 
     // Reset internal CPU state, as if the reset line had been asserted.
-    pub fn reset(&mut self) {
-        self.pc = self.read_u16(VEC_RES);
+    pub fn reset(&mut self, bus: &bus::Bus) {
+        self.pc = self.read_u16(bus, VEC_RES);
         self.s = 0x00;
         self.a = 0x00;
         self.x = 0x00;
@@ -41,15 +39,15 @@ impl Cpu {
     }
 
     // Load and execute a single instruction.
-    pub fn step(&mut self) {
-        match self.optab[self.read_pc_u8() as usize] {
+    pub fn step(&mut self, bus: &mut bus::Bus) {
+        match self.optab[self.read_pc_u8(bus) as usize] {
             None => panic!("illegal opcode"),
-            Some(opcode) => self.execute(opcode),
+            Some(opcode) => self.execute(opcode, bus),
         }
     }
 
     // Execute an instruction, reading the operands for its address mode from the bus.
-    fn execute(&mut self, opcode: isa::Opcode) {
+    fn execute(&mut self, opcode: isa::Opcode, bus: &mut bus::Bus) {
         use isa::AddressMode::*;
         use isa::Mnemonic as M;
         use isa::OpValue;
@@ -58,7 +56,7 @@ impl Cpu {
         match opcode.mnemonic {
             M::Adc => {
                 let a = self.a;
-                let b = self.read_operand_value(opcode);
+                let b = self.read_operand_value(bus, opcode);
                 let sum16 = (self.carry() as u16) + (a as u16) + (b as u16);
                 let sum = sum16 as u8;
                 self.a = sum;
@@ -81,23 +79,23 @@ impl Cpu {
                 self.set_p_bit(StatusMask::Overflow, ((a ^ sum) & (b ^ sum)) >> 7 != 0);
             }
             M::And => {
-                self.a &= self.read_operand_value(opcode);
+                self.a &= self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.a);
             }
             M::Asl => {
                 let result: u8;
                 let carry: u8;
-                match self.read_operand(opcode.mode) {
+                match self.read_operand(bus, opcode.mode) {
                     OpValue::None => {
                         result = self.a << 1;
                         carry = self.a >> 7;
                         self.a = result;
                     }
                     OpValue::U16(addr) => {
-                        let x = self.bus.read(addr);
+                        let x = bus.read(addr);
                         result = x << 1;
                         carry = x >> 7;
-                        self.bus.write(addr, result);
+                        bus.write(addr, result);
                     }
                     _ => panic!("illegal AddressMode: {:?}", opcode),
                 }
@@ -106,7 +104,7 @@ impl Cpu {
             }
             M::Bcc => {
                 if !self.get_p_bit(StatusMask::Carry) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -116,7 +114,7 @@ impl Cpu {
             }
             M::Bcs => {
                 if self.get_p_bit(StatusMask::Carry) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -126,7 +124,7 @@ impl Cpu {
             }
             M::Beq => {
                 if self.get_p_bit(StatusMask::Zero) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -135,7 +133,7 @@ impl Cpu {
                 }
             }
             M::Bit => {
-                let operand = self.read_operand_value(opcode);
+                let operand = self.read_operand_value(bus, opcode);
                 let r = self.a & operand;
                 self.set_p_bit(StatusMask::Negative, r & StatusMask::Negative as u8 != 0);
                 self.set_p_bit(StatusMask::Overflow, r & StatusMask::Overflow as u8 != 0);
@@ -143,7 +141,7 @@ impl Cpu {
             }
             M::Bmi => {
                 if self.get_p_bit(StatusMask::Negative) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -153,7 +151,7 @@ impl Cpu {
             }
             M::Bne => {
                 if !self.get_p_bit(StatusMask::Zero) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -163,7 +161,7 @@ impl Cpu {
             }
             M::Bpl => {
                 if !self.get_p_bit(StatusMask::Negative) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -173,16 +171,16 @@ impl Cpu {
             }
             M::Brk => match opcode.mode {
                 Implied => {
-                    self.push_addr(self.pc + 1);
-                    self.push(self.p | StatusMask::Break as u8);
+                    self.push_addr(bus, self.pc + 1);
+                    self.push(bus, self.p | StatusMask::Break as u8);
                     self.p |= StatusMask::Interrupt as u8;
-                    self.pc = self.read_u16(VEC_IRQ);
+                    self.pc = self.read_u16(bus, VEC_IRQ);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Bvc => {
                 if !self.get_p_bit(StatusMask::Overflow) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -192,7 +190,7 @@ impl Cpu {
             }
             M::Bvs => {
                 if self.get_p_bit(StatusMask::Overflow) {
-                    match self.read_operand(opcode.mode) {
+                    match self.read_operand(bus, opcode.mode) {
                         OpValue::U16(addr) => self.pc = addr,
                         _ => panic!("illegal AddressMode: {:?}", opcode),
                     }
@@ -217,24 +215,24 @@ impl Cpu {
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Cmp => {
-                let result = self.a.wrapping_sub(self.read_operand_value(opcode));
+                let result = self.a.wrapping_sub(self.read_operand_value(bus, opcode));
                 self.update_p_z_n(result);
                 self.set_p_bit(StatusMask::Carry, result > self.a);
             }
             M::Cpx => {
-                let result = self.x.wrapping_sub(self.read_operand_value(opcode));
+                let result = self.x.wrapping_sub(self.read_operand_value(bus, opcode));
                 self.update_p_z_n(result);
                 self.set_p_bit(StatusMask::Carry, result > self.x);
             }
             M::Cpy => {
-                let result = self.y.wrapping_sub(self.read_operand_value(opcode));
+                let result = self.y.wrapping_sub(self.read_operand_value(bus, opcode));
                 self.update_p_z_n(result);
                 self.set_p_bit(StatusMask::Carry, result > self.y);
             }
-            M::Dec => match self.read_operand(opcode.mode) {
+            M::Dec => match self.read_operand(bus, opcode.mode) {
                 OpValue::U16(addr) => {
-                    let result = self.bus.read(addr).wrapping_sub(1);
-                    self.bus.write(addr, result);
+                    let result = bus.read(addr).wrapping_sub(1);
+                    bus.write(addr, result);
                     self.update_p_z_n(result);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
@@ -254,13 +252,13 @@ impl Cpu {
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
             M::Eor => {
-                self.a ^= self.read_operand_value(opcode);
+                self.a ^= self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.a);
             }
-            M::Inc => match self.read_operand(opcode.mode) {
+            M::Inc => match self.read_operand(bus, opcode.mode) {
                 OpValue::U16(addr) => {
-                    let result = self.bus.read(addr).wrapping_add(1);
-                    self.bus.write(addr, result);
+                    let result = bus.read(addr).wrapping_add(1);
+                    bus.write(addr, result);
                     self.update_p_z_n(result);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
@@ -279,27 +277,27 @@ impl Cpu {
                 }
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            M::Jmp => match self.read_operand(opcode.mode) {
+            M::Jmp => match self.read_operand(bus, opcode.mode) {
                 OpValue::U16(addr) => self.pc = addr,
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            M::Jsr => match self.read_operand(opcode.mode) {
+            M::Jsr => match self.read_operand(bus, opcode.mode) {
                 OpValue::U16(addr) => {
-                    self.push_addr(self.pc);
+                    self.push_addr(bus, self.pc);
                     self.pc = addr;
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Lda => {
-                self.a = self.read_operand_value(opcode);
+                self.a = self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.a);
             }
             M::Ldx => {
-                self.x = self.read_operand_value(opcode);
+                self.x = self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.x);
             }
             M::Ldy => {
-                self.y = self.read_operand_value(opcode);
+                self.y = self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.y);
             }
             M::Lsr => match opcode.mode {
@@ -310,11 +308,11 @@ impl Cpu {
                     self.update_p_z_n(after);
                     self.set_p_bit(StatusMask::Carry, before & 1 == 1);
                 }
-                _ => match self.read_operand(opcode.mode) {
+                _ => match self.read_operand(bus, opcode.mode) {
                     OpValue::U16(addr) => {
-                        let before = self.bus.read(addr);
+                        let before = bus.read(addr);
                         let after = before >> 1;
-                        self.bus.write(addr, after);
+                        bus.write(addr, after);
                         self.update_p_z_n(after);
                         self.set_p_bit(StatusMask::Carry, before & 1 == 1);
                     }
@@ -323,16 +321,16 @@ impl Cpu {
             },
             M::Nop => {}
             M::Ora => {
-                self.a |= self.read_operand_value(opcode);
+                self.a |= self.read_operand_value(bus, opcode);
                 self.update_p_z_n(self.a);
             }
-            M::Pha => self.push(self.a),
-            M::Php => self.push(self.p | 0b00110000),
+            M::Pha => self.push(bus, self.a),
+            M::Php => self.push(bus, self.p | 0b00110000),
             M::Pla => {
-                self.a = self.pop();
+                self.a = self.pop(bus);
                 self.update_p_z_n(self.a);
             }
-            M::Plp => self.p = self.pop() & !0b00110000,
+            M::Plp => self.p = self.pop(bus) & !0b00110000,
             M::Rol => match opcode.mode {
                 Accumulator => {
                     let before = self.a;
@@ -341,11 +339,11 @@ impl Cpu {
                     self.update_p_z_n(after);
                     self.set_p_bit(StatusMask::Carry, before & 0b10000000 != 0);
                 }
-                _ => match self.read_operand(opcode.mode) {
+                _ => match self.read_operand(bus, opcode.mode) {
                     OpValue::U16(addr) => {
-                        let before = self.bus.read(addr);
+                        let before = bus.read(addr);
                         let after = before << 1 | self.get_p_bit(StatusMask::Carry) as u8;
-                        self.bus.write(addr, after);
+                        bus.write(addr, after);
                         self.update_p_z_n(after);
                         self.set_p_bit(StatusMask::Carry, before & 0b10000000 != 0);
                     }
@@ -360,11 +358,11 @@ impl Cpu {
                     self.update_p_z_n(after);
                     self.set_p_bit(StatusMask::Carry, before & 0b00000001 != 0);
                 }
-                _ => match self.read_operand(opcode.mode) {
+                _ => match self.read_operand(bus, opcode.mode) {
                     OpValue::U16(addr) => {
-                        let before = self.bus.read(addr);
+                        let before = bus.read(addr);
                         let after = before >> 1 | (self.get_p_bit(StatusMask::Carry) as u8) << 7;
-                        self.bus.write(addr, after);
+                        bus.write(addr, after);
                         self.update_p_z_n(after);
                         self.set_p_bit(StatusMask::Carry, before & 0b00000001 != 0);
                     }
@@ -373,18 +371,18 @@ impl Cpu {
             },
             M::Rti => match opcode.mode {
                 Implied => {
-                    self.p = self.pop() & !(StatusMask::Break as u8) | 1 << 5;
-                    self.pc = self.pop_addr();
+                    self.p = self.pop(bus) & !(StatusMask::Break as u8) | 1 << 5;
+                    self.pc = self.pop_addr(bus);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Rts => match opcode.mode {
-                Implied => self.pc = self.pop_addr(),
+                Implied => self.pc = self.pop_addr(bus),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Sbc => {
                 let a = self.a;
-                let b = self.read_operand_value(opcode);
+                let b = self.read_operand_value(bus, opcode);
                 let sum16 = (a as i16) - (b as i16) - (!self.get_p_bit(StatusMask::Carry) as i16);
                 let sum = sum16 as u8;
                 self.a = sum;
@@ -420,16 +418,16 @@ impl Cpu {
                 Implied => self.set_p_bit(StatusMask::Interrupt, true),
                 _ => panic!("illegal AddressMode: {:?}", opcode),
             },
-            M::Sta => match self.read_operand(opcode.mode) {
-                OpValue::U16(addr) => self.bus.write(addr, self.a),
+            M::Sta => match self.read_operand(bus, opcode.mode) {
+                OpValue::U16(addr) => bus.write(addr, self.a),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            M::Stx => match self.read_operand(opcode.mode) {
-                OpValue::U16(addr) => self.bus.write(addr, self.x),
+            M::Stx => match self.read_operand(bus, opcode.mode) {
+                OpValue::U16(addr) => bus.write(addr, self.x),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
-            M::Sty => match self.read_operand(opcode.mode) {
-                OpValue::U16(addr) => self.bus.write(addr, self.y),
+            M::Sty => match self.read_operand(bus, opcode.mode) {
+                OpValue::U16(addr) => bus.write(addr, self.y),
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
             M::Tax => {
@@ -460,77 +458,77 @@ impl Cpu {
     }
 
     /// Read a u16 in little-endian order from the bus, crossing page boundaries.
-    fn read_u16(&self, addr: u16) -> u16 {
-        let lo = self.bus.read(addr) as u16;
-        let hi = self.bus.read(addr.wrapping_add(1)) as u16;
+    fn read_u16(&self, bus: &bus::Bus, addr: u16) -> u16 {
+        let lo = bus.read(addr) as u16;
+        let hi = bus.read(addr.wrapping_add(1)) as u16;
         hi << 8 | lo
     }
 
     /// Read a u16 in little-endian order from the bus, wrapping within a page.
-    fn read_u16_zp(&self, addr: u8) -> u16 {
-        let lo = self.bus.read(addr as u16) as u16;
-        let hi = self.bus.read(addr.wrapping_add(1) as u16) as u16;
+    fn read_u16_zp(&self, bus: &bus::Bus, addr: u8) -> u16 {
+        let lo = bus.read(addr as u16) as u16;
+        let hi = bus.read(addr.wrapping_add(1) as u16) as u16;
         hi << 8 | lo
     }
 
     /// Read u8 from address pointed to by PC, incrementing PC
-    fn read_pc_u8(&mut self) -> u8 {
-        let val = self.bus.read(self.pc);
+    fn read_pc_u8(&mut self, bus: &bus::Bus) -> u8 {
+        let val = bus.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         val
     }
 
     /// Read u16 from address pointed to by PC, incrementing PC
-    fn read_pc_u16(&mut self) -> u16 {
-        let val = self.read_u16(self.pc);
+    fn read_pc_u16(&mut self, bus: &bus::Bus) -> u16 {
+        let val = self.read_u16(bus, self.pc);
         self.pc = self.pc.wrapping_add(2);
         val
     }
 
-    /// Reads the operand from self.bus, following indirection/indexing where necessary, returning
+    /// Reads the operand from bus, following indirection/indexing where necessary, returning
     /// an address or immediate value, and incrementing PC.
-    fn read_operand(&mut self, mode: isa::AddressMode) -> isa::OpValue {
+    fn read_operand(&mut self, bus: &bus::Bus, mode: isa::AddressMode) -> isa::OpValue {
         use isa::AddressMode::*;
         use isa::OpValue as OV;
 
         match mode {
-            Absolute => OV::U16(self.read_pc_u16()),
-            AbsoluteX => OV::U16(self.read_pc_u16().wrapping_add(self.x as u16)),
-            AbsoluteY => OV::U16(self.read_pc_u16().wrapping_add(self.y as u16)),
+            Absolute => OV::U16(self.read_pc_u16(bus)),
+            AbsoluteX => OV::U16(self.read_pc_u16(bus).wrapping_add(self.x as u16)),
+            AbsoluteY => OV::U16(self.read_pc_u16(bus).wrapping_add(self.y as u16)),
             Accumulator => OV::None,
-            Immediate => OV::U8(self.read_pc_u8()),
+            Immediate => OV::U8(self.read_pc_u8(bus)),
             Implied => OV::None,
             Indirect => {
-                let ptr = self.read_pc_u16();
-                OV::U16(self.read_u16(ptr))
+                let ptr = self.read_pc_u16(bus);
+                OV::U16(self.read_u16(bus, ptr))
             }
             IndirectY => {
-                let ptr = self.read_pc_u8();
-                let addr = self.read_u16_zp(ptr).wrapping_add(self.y as u16);
+                let ptr = self.read_pc_u8(bus);
+                let addr = self.read_u16_zp(bus, ptr).wrapping_add(self.y as u16);
                 OV::U16(addr)
             }
             Relative => {
                 // #![feature(mixed_integer_ops)]
-                // OV::U16(self.pc.wrapping_add_signed(self.read_pc_u8().into()))
-                let offset: i16 = (self.read_pc_u8() as i8).into();
+                // OV::U16(self.pc.wrapping_add_signed(self.read_pc_u8(bus).into()))
+                let offset: i16 = (self.read_pc_u8(bus) as i8).into();
                 let base = self.pc as i16;
                 OV::U16((base + offset) as u16)
             }
             XIndirect => {
-                let ptr = self.read_pc_u8().wrapping_add(self.x);
-                OV::U16(self.read_u16_zp(ptr))
+                let ptr = self.read_pc_u8(bus).wrapping_add(self.x);
+                OV::U16(self.read_u16_zp(bus, ptr))
             }
-            Zeropage => OV::U16(self.read_pc_u8() as u16),
-            ZeropageX => OV::U16(self.read_pc_u8().wrapping_add(self.x) as u16),
-            ZeropageY => OV::U16(self.read_pc_u8().wrapping_add(self.y) as u16),
+            Zeropage => OV::U16(self.read_pc_u8(bus) as u16),
+            ZeropageX => OV::U16(self.read_pc_u8(bus).wrapping_add(self.x) as u16),
+            ZeropageY => OV::U16(self.read_pc_u8(bus).wrapping_add(self.y) as u16),
         }
     }
 
-    fn read_operand_value(&mut self, opcode: isa::Opcode) -> u8 {
+    fn read_operand_value(&mut self, bus: &bus::Bus, opcode: isa::Opcode) -> u8 {
         use isa::OpValue;
-        match self.read_operand(opcode.mode) {
+        match self.read_operand(bus, opcode.mode) {
             OpValue::U8(val) => val,
-            OpValue::U16(addr) => self.bus.read(addr),
+            OpValue::U16(addr) => bus.read(addr),
             OpValue::None => panic!("illegal AddressMode: {:?}", opcode),
         }
     }
@@ -560,25 +558,25 @@ impl Cpu {
         (self.p & mask) >> bit
     }
 
-    fn push_addr(&mut self, addr: u16) {
-        self.push((addr >> 8) as u8); // hi
-        self.push(addr as u8); // lo
+    fn push_addr(&mut self, bus: &mut bus::Bus, addr: u16) {
+        self.push(bus, (addr >> 8) as u8); // hi
+        self.push(bus, addr as u8); // lo
     }
 
-    fn push(&mut self, val: u8) {
-        self.bus.write(0x0100 | self.s as u16, val);
+    fn push(&mut self, bus: &mut bus::Bus, val: u8) {
+        bus.write(0x0100 | self.s as u16, val);
         self.s = self.s.wrapping_sub(1);
     }
 
-    fn pop_addr(&mut self) -> u16 {
-        let lo = self.pop() as u16;
-        let hi = self.pop() as u16;
+    fn pop_addr(&mut self, bus: &bus::Bus) -> u16 {
+        let lo = self.pop(bus) as u16;
+        let hi = self.pop(bus) as u16;
         hi << 8 | lo
     }
 
-    fn pop(&mut self) -> u8 {
+    fn pop(&mut self, bus: &bus::Bus) -> u8 {
         self.s = self.s.wrapping_add(1);
-        self.bus.read(0x0100 | self.s as u16)
+        bus.read(0x0100 | self.s as u16)
     }
 }
 

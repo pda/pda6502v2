@@ -29,8 +29,8 @@ macro_rules! assert_eq_hex16 {
 }
 
 macro_rules! step_and_assert {
-    ($cpu:expr, $reg:ident, $val:expr, $stat:literal) => {
-        $cpu.step();
+    ($cpu:expr, $bus:expr, $reg:ident, $val:expr, $stat:literal) => {
+        $cpu.step($bus);
         println!("{:?}", $cpu);
         assert_eq_hex!($cpu.$reg, $val);
         assert_eq!(stat(&$cpu.p), $stat);
@@ -38,35 +38,36 @@ macro_rules! step_and_assert {
 }
 
 macro_rules! step_and_assert_mem {
-    ($cpu:expr, $addr:expr, $val:expr, $stat:literal) => {
-        $cpu.step();
+    ($cpu:expr, $bus:expr, $addr:expr, $val:expr, $stat:literal) => {
+        $cpu.step($bus);
         println!("{:?}", $cpu);
-        assert_eq_hex!($cpu.bus.read($addr), $val);
+        assert_eq_hex!($bus.read($addr), $val);
         assert_eq!(stat(&$cpu.p), $stat);
     };
 }
 
 #[test]
 fn test_adc() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.a = 0x10; // starting value
     cpu.x = 0x21; // for testing X-indexed address modes
     cpu.y = 0x46; // for testing Y-indexed address modes
-    cpu.bus.write(0x00F0, 0xEF); // for testing zero-page address mode
-    cpu.bus.write(0x00F1, 0x70); // for testing zp,X address mode
-    cpu.bus.write(0x00F2, 0x37); // for testing X,ind address mode (ptr LO)
-    cpu.bus.write(0x00F3, 0x12); // for testing X,ind address mode (ptr HI)
-    cpu.bus.write(0x00F4, 0xF2); // for testing ind,Y address mode (ptr LO)
-    cpu.bus.write(0x00F5, 0x11); // for testing ind,Y address mode (ptr HI)
-    cpu.bus.write(0x1234, 0x84); // for testing absolute address mode
-    cpu.bus.write(0x1235, 0xFA); // for testing abs,X address mode
-    cpu.bus.write(0x1236, 0x00); // for testing abs,X address mode
-    cpu.bus.write(0x1237, 0x42); // for testing X,ind address mode (val)
-    cpu.bus.write(0x1238, 0xBC); // for testing ind,Y address mode (val)
+    bus.write(0x00F0, 0xEF); // for testing zero-page address mode
+    bus.write(0x00F1, 0x70); // for testing zp,X address mode
+    bus.write(0x00F2, 0x37); // for testing X,ind address mode (ptr LO)
+    bus.write(0x00F3, 0x12); // for testing X,ind address mode (ptr HI)
+    bus.write(0x00F4, 0xF2); // for testing ind,Y address mode (ptr LO)
+    bus.write(0x00F5, 0x11); // for testing ind,Y address mode (ptr HI)
+    bus.write(0x1234, 0x84); // for testing absolute address mode
+    bus.write(0x1235, 0xFA); // for testing abs,X address mode
+    bus.write(0x1236, 0x00); // for testing abs,X address mode
+    bus.write(0x1237, 0x42); // for testing X,ind address mode (val)
+    bus.write(0x1238, 0xBC); // for testing ind,Y address mode (val)
 
     use Operand::{Abs, AbsX, AbsY, Imm, IndY, XInd, Z, ZX};
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.adc(Imm(0x11)) //          C:0+A:$10+#$11                            =$21+C:0
             .adc(Z(0xF0)) //           C:0+A:$21+[$F0→#$EF]                      =$10+C:1
@@ -81,40 +82,42 @@ fn test_adc() {
             .unwrap(),
     );
 
-    step_and_assert!(cpu, a, 0x21, "nv-bdizc"); // ADC #$11
-    step_and_assert!(cpu, a, 0x10, "nv-bdizC"); // ADC $F0
-    step_and_assert!(cpu, a, 0x81, "NV-bdizc"); // ADC $D0,X
-    step_and_assert!(cpu, a, 0x05, "nV-bdizC"); // ADC $1234
-    step_and_assert!(cpu, a, 0x00, "nv-bdiZC"); // ADC $1214,X
-    step_and_assert!(cpu, a, 0x01, "nv-bdizc"); // ADC $12F0,Y
-    step_and_assert!(cpu, a, 0x43, "nv-bdizc"); // ADC ($D1,X)
-    step_and_assert!(cpu, a, 0xFF, "Nv-bdizc"); // ADC ($F4),Y
+    step_and_assert!(cpu, bus, a, 0x21, "nv-bdizc"); // ADC #$11
+    step_and_assert!(cpu, bus, a, 0x10, "nv-bdizC"); // ADC $F0
+    step_and_assert!(cpu, bus, a, 0x81, "NV-bdizc"); // ADC $D0,X
+    step_and_assert!(cpu, bus, a, 0x05, "nV-bdizC"); // ADC $1234
+    step_and_assert!(cpu, bus, a, 0x00, "nv-bdiZC"); // ADC $1214,X
+    step_and_assert!(cpu, bus, a, 0x01, "nv-bdizc"); // ADC $12F0,Y
+    step_and_assert!(cpu, bus, a, 0x43, "nv-bdizc"); // ADC ($D1,X)
+    step_and_assert!(cpu, bus, a, 0xFF, "Nv-bdizc"); // ADC ($F4),Y
 }
 
 #[test]
 fn test_and() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.a = 0b10011001; // starting value
 
     use Operand::Imm;
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.and(Imm(0b11110000)).print_listing().assemble().unwrap(),
     );
 
-    step_and_assert!(cpu, a, 0b10010000, "Nv-bdizc"); // ADC #$A0
+    step_and_assert!(cpu, bus, a, 0b10010000, "Nv-bdizc"); // ADC #$A0
 }
 
 #[test]
 fn test_asl() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.a = 0b01000000; // for testing Accumulator address mode
     cpu.x = 0x01; // for testing zp,X address mode
-    cpu.bus.write(0xF1, 0b11011011); // for testing zp,X address mode
+    bus.write(0xF1, 0b11011011); // for testing zp,X address mode
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.asl(Operand::A)
             .asl(Operand::A)
@@ -127,24 +130,25 @@ fn test_asl() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Carry, true);
-    step_and_assert!(cpu, a, 0b10000000, "Nv-bdizc"); // ASL A
+    step_and_assert!(cpu, bus, a, 0b10000000, "Nv-bdizc"); // ASL A
 
     cpu.set_p_bit(StatusMask::Carry, true);
-    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ASL A
+    step_and_assert!(cpu, bus, a, 0b00000000, "nv-bdiZC"); // ASL A
 
-    cpu.step(); // ASL $F0,X
+    cpu.step(bus); // ASL $F0,X
     println!("{:?}", cpu);
-    let val = cpu.bus.read(0xF1);
+    let val = bus.read(0xF1);
     assert_eq_hex!(val, 0b10110110);
     assert_eq!(stat(&cpu.p), "Nv-bdizC");
 }
 
 #[test]
 fn test_bcc() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.bcc(Operand::Rel(BranchTarget::Offset(0x10)))
             .bcc(Operand::Rel(BranchTarget::Offset(0x20)))
@@ -156,13 +160,13 @@ fn test_bcc() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Carry, true);
-    cpu.step(); // BCC 0x10 (don't branch)
+    cpu.step(bus); // BCC 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.p), "nv-bdizC");
 
     cpu.set_p_bit(StatusMask::Carry, false);
-    cpu.step(); // BCC 0x20 (do branch)
+    cpu.step(bus); // BCC 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
@@ -170,9 +174,10 @@ fn test_bcc() {
 
 #[test]
 fn test_bcs() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.bcs(Operand::Rel(BranchTarget::Offset(0x10)))
             .bcs(Operand::Rel(BranchTarget::Offset(0x20)))
@@ -184,13 +189,13 @@ fn test_bcs() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Carry, false);
-    cpu.step(); // BCS 0x10 (don't branch)
+    cpu.step(bus); // BCS 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.set_p_bit(StatusMask::Carry, true);
-    cpu.step(); // BCS 0x20 (do branch)
+    cpu.step(bus); // BCS 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.p), "nv-bdizC");
@@ -198,9 +203,10 @@ fn test_bcs() {
 
 #[test]
 fn test_beq() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.beq(Operand::Rel(BranchTarget::Offset(0x10)))
             .beq(Operand::Rel(BranchTarget::Offset(0x20)))
@@ -212,13 +218,13 @@ fn test_beq() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Zero, false);
-    cpu.step(); // BEQ 0x10 (don't branch)
+    cpu.step(bus); // BEQ 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.set_p_bit(StatusMask::Zero, true);
-    cpu.step(); // BEQ 0x20 (do branch)
+    cpu.step(bus); // BEQ 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
@@ -226,9 +232,10 @@ fn test_beq() {
 
 #[test]
 fn test_bit() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .label("data")
@@ -243,13 +250,13 @@ fn test_bit() {
     cpu.pc += 2; // skip the data
 
     cpu.a = 0xFF;
-    cpu.step(); // BIT $00 (#$FF)
+    cpu.step(bus); // BIT $00 (#$FF)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0004);
     assert_eq!(stat(&cpu.p), "NV-bdizc"); // 0b11111111 AND 0b11111111 = 0b11111111 = z
 
     cpu.a = 0x00;
-    cpu.step(); // BIT $0001 (#$00)
+    cpu.step(bus); // BIT $0001 (#$00)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0007);
     assert_eq!(stat(&cpu.p), "nv-bdiZc"); // 0b00000000 AND 0b00000000 = 0b00000000 = Z
@@ -257,9 +264,10 @@ fn test_bit() {
 
 #[test]
 fn test_bmi() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.ldx(Operand::Imm(0xFF)) // P N=1
             .label("a")
@@ -274,22 +282,23 @@ fn test_bmi() {
             .unwrap(),
     );
 
-    cpu.step(); // LDX #$FF
+    cpu.step(bus); // LDX #$FF
     println!("{cpu:?}");
-    cpu.step(); // BMI b
+    cpu.step(bus); // BMI b
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0005);
-    cpu.step(); // LDX #$10
-    cpu.step(); // BMI a
+    cpu.step(bus); // LDX #$10
+    cpu.step(bus); // BMI a
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
 fn test_bne() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.label("a")
             .ldx(Operand::Imm(0x01))
@@ -304,22 +313,23 @@ fn test_bne() {
             .unwrap(),
     );
 
-    cpu.step(); // LDX #$01
-    cpu.step(); // BNE b
+    cpu.step(bus); // LDX #$01
+    cpu.step(bus); // BNE b
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0005);
 
-    cpu.step(); // LDX #$00
-    cpu.step(); // BNE a
+    cpu.step(bus); // LDX #$00
+    cpu.step(bus); // BNE a
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
 fn test_bpl() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.label("a")
             .ldx(Operand::Imm(0x10)) // P N=0
@@ -334,25 +344,26 @@ fn test_bpl() {
             .unwrap(),
     );
 
-    cpu.step(); // LDX #$10
-    cpu.step(); // BPL b
+    cpu.step(bus); // LDX #$10
+    cpu.step(bus); // BPL b
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0005);
-    cpu.step(); // LDX #$F0
-    cpu.step(); // BPL a
+    cpu.step(bus); // LDX #$F0
+    cpu.step(bus); // BPL a
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0009);
 }
 
 #[test]
 fn test_brk_rti() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     let mut asmirq = Assembler::new();
 
     cpu.pc = 0x1000;
 
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .brk()
@@ -365,10 +376,10 @@ fn test_brk_rti() {
     );
 
     // set the interrupt vector to 0x2000 which is the "irq" label
-    cpu.bus.write(0xFFFE, 0x00); // IRQ vector (lo)
-    cpu.bus.write(0xFFFF, 0x20); // IRQ vector (hi)
+    bus.write(0xFFFE, 0x00); // IRQ vector (lo)
+    bus.write(0xFFFF, 0x20); // IRQ vector (hi)
 
-    cpu.bus.load(
+    bus.load(
         0x2000,
         asmirq
             .org(0x2000)
@@ -383,22 +394,23 @@ fn test_brk_rti() {
 
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    step_and_assert!(cpu, s, 0xF5, "nv-bdIzc"); // BRK
+    step_and_assert!(cpu, bus, s, 0xF5, "nv-bdIzc"); // BRK
     assert_eq_hex16!(cpu.pc, 0x2000);
-    assert_eq_hex!(cpu.bus.read(0x01F8), 0x10); // S hi
-    assert_eq_hex!(cpu.bus.read(0x01F7), 0x02); // S lo
-    assert_eq!(stat(&cpu.bus.read(0x01F6)), "nv-Bdizc");
+    assert_eq_hex!(bus.read(0x01F8), 0x10); // S hi
+    assert_eq_hex!(bus.read(0x01F7), 0x02); // S lo
+    assert_eq!(stat(&bus.read(0x01F6)), "nv-Bdizc");
 
-    step_and_assert!(cpu, s, 0xF8, "nv-bdizc"); // RTI
+    step_and_assert!(cpu, bus, s, 0xF8, "nv-bdizc"); // RTI
     assert_eq_hex16!(cpu.pc, 0x1002);
 }
 
 #[test]
 fn test_bvc() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.bvc(Operand::Rel(BranchTarget::Offset(0x10)))
             .bvc(Operand::Rel(BranchTarget::Offset(0x20)))
@@ -410,13 +422,13 @@ fn test_bvc() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Overflow, true);
-    cpu.step(); // BVC 0x10 (don't branch)
+    cpu.step(bus); // BVC 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.p), "nV-bdizc");
 
     cpu.set_p_bit(StatusMask::Overflow, false);
-    cpu.step(); // BVC 0x20 (do branch)
+    cpu.step(bus); // BVC 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
@@ -424,10 +436,11 @@ fn test_bvc() {
 
 #[test]
 fn test_bvs() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.bvs(Operand::Rel(BranchTarget::Offset(0x10)))
             .bvs(Operand::Rel(BranchTarget::Offset(0x20)))
@@ -439,13 +452,13 @@ fn test_bvs() {
     use pda6502v2emu::cpu::StatusMask;
 
     cpu.set_p_bit(StatusMask::Overflow, false);
-    cpu.step(); // BVS 0x10 (don't branch)
+    cpu.step(bus); // BVS 0x10 (don't branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0002);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
     cpu.set_p_bit(StatusMask::Overflow, true);
-    cpu.step(); // BVS 0x20 (do branch)
+    cpu.step(bus); // BVS 0x20 (do branch)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x0024);
     assert_eq!(stat(&cpu.p), "nV-bdizc");
@@ -453,12 +466,13 @@ fn test_bvs() {
 
 #[test]
 fn test_cmp() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.pc = 0x0200;
     cpu.a = 0xC0;
     cpu.x = 0x03;
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .label("prog")
@@ -471,11 +485,11 @@ fn test_cmp() {
             .unwrap(),
     );
 
-    cpu.step(); // CMP data
+    cpu.step(bus); // CMP data
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0203);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
-    cpu.step(); // CMP data,X
+    cpu.step(bus); // CMP data,X
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0206);
     assert_eq!(stat(&cpu.p), "Nv-bdizC");
@@ -483,12 +497,13 @@ fn test_cmp() {
 
 #[test]
 fn test_cpx_and_cpy() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.pc = 0x0200;
     cpu.x = 0x04;
     cpu.y = 0x04;
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .label("prog")
@@ -499,11 +514,11 @@ fn test_cpx_and_cpy() {
             .unwrap(),
     );
 
-    cpu.step(); // CPX #$04
+    cpu.step(bus); // CPX #$04
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0202);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
-    cpu.step(); // CPY #$08
+    cpu.step(bus); // CPY #$08
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0204);
     assert_eq!(stat(&cpu.p), "Nv-bdizC");
@@ -511,15 +526,16 @@ fn test_cpx_and_cpy() {
 
 #[test]
 fn test_dec() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.pc = 0x1000;
     cpu.x = 0x10;
-    cpu.bus.write(0x0010, 100);
-    cpu.bus.write(0x0020, 200);
-    cpu.bus.write(0x2000, 1);
-    cpu.bus.write(0x2010, 200);
+    bus.write(0x0010, 100);
+    bus.write(0x0020, 200);
+    bus.write(0x2000, 1);
+    bus.write(0x2010, 200);
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .dec(Operand::Z(0x10))
@@ -531,39 +547,40 @@ fn test_dec() {
             .unwrap(),
     );
 
-    cpu.step(); // DEC 0x10
+    cpu.step(bus); // DEC 0x10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1002);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
-    assert_eq!(cpu.bus.read(0x0010), 99);
+    assert_eq!(bus.read(0x0010), 99);
 
-    cpu.step(); // DEC 0x10,X where X=10
+    cpu.step(bus); // DEC 0x10,X where X=10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1004);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
-    assert_eq!(cpu.bus.read(0x0020), 199);
+    assert_eq!(bus.read(0x0020), 199);
 
-    cpu.step(); // DEC 0x2000
+    cpu.step(bus); // DEC 0x2000
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x1007);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
-    assert_eq!(cpu.bus.read(0x2000), 0);
+    assert_eq!(bus.read(0x2000), 0);
 
-    cpu.step(); // DEC 0x2000,X where X=10
+    cpu.step(bus); // DEC 0x2000,X where X=10
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x100A);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
-    assert_eq!(cpu.bus.read(0x2010), 199);
+    assert_eq!(bus.read(0x2010), 199);
 }
 
 #[test]
 fn test_dex_and_dey() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x2000;
     cpu.x = 1;
     cpu.y = 1;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.dex()
             .dex()
@@ -574,25 +591,25 @@ fn test_dex_and_dey() {
             .unwrap(),
     );
 
-    cpu.step(); // DEX
+    cpu.step(bus); // DEX
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2001);
     assert_eq!(cpu.x, 0x00);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
-    cpu.step(); // DEX
+    cpu.step(bus); // DEX
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2002);
     assert_eq!(cpu.x, 0xFF);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // DEY
+    cpu.step(bus); // DEY
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2003);
     assert_eq!(cpu.y, 0x00);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
-    cpu.step(); // DEY
+    cpu.step(bus); // DEY
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x2004);
     assert_eq!(cpu.y, 0xFF);
@@ -601,7 +618,8 @@ fn test_dex_and_dey() {
 
 #[test]
 fn test_eor() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
 
@@ -626,16 +644,16 @@ fn test_eor() {
     cpu.a = 0b00000000; // [0]
     cpu.x = 0x02; // [3, 5, 7]
     cpu.y = 0x04; // [6, 8]
-    cpu.bus.write(0x0010, 0b11111111); // [2]
-    cpu.bus.write(0x12, 0b10101010); // [3]
-    cpu.bus.write(0x22, 0x80); // [7] ptr LL
-    cpu.bus.write(0x23, 0x20); // [7] ptr HH
-    cpu.bus.write(0x2080, 0b00111100); // [7]
-    cpu.bus.write(0x20, 0x81); // [8] ptr LL
-    cpu.bus.write(0x21, 0x20); // [8] ptr HH
-    cpu.bus.write(0x2085, 0b11000011); // [8]
+    bus.write(0x0010, 0b11111111); // [2]
+    bus.write(0x12, 0b10101010); // [3]
+    bus.write(0x22, 0x80); // [7] ptr LL
+    bus.write(0x23, 0x20); // [7] ptr HH
+    bus.write(0x2080, 0b00111100); // [7]
+    bus.write(0x20, 0x81); // [8] ptr LL
+    bus.write(0x21, 0x20); // [8] ptr HH
+    bus.write(0x2085, 0b11000011); // [8]
 
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .eor(Operand::Imm(0x01)) // [1]
@@ -653,42 +671,42 @@ fn test_eor() {
             .unwrap(),
     );
 
-    cpu.step(); // EOR immediate
+    cpu.step(bus); // EOR immediate
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000001); // [1a]
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.step(); // EOR zeropage
+    cpu.step(bus); // EOR zeropage
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11111110); // [2a]
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // EOR zeropage,X
+    cpu.step(bus); // EOR zeropage,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b01010100); // [3a]
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.step(); // EOR absolute
+    cpu.step(bus); // EOR absolute
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000000); // [4a]
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
-    cpu.step(); // EOR absolute,X
+    cpu.step(bus); // EOR absolute,X
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11110000); // [5a]
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // EOR absolute,Y
+    cpu.step(bus); // EOR absolute,Y
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11111111); // [6a]
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // EOR (indirect,X)
+    cpu.step(bus); // EOR (indirect,X)
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b11000011); // [7a]
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // EOR (indirect),Y
+    cpu.step(bus); // EOR (indirect),Y
     println!("{cpu:?}");
     assert_eq_hex!(cpu.a, 0b00000000); // [8a]
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
@@ -696,14 +714,15 @@ fn test_eor() {
 
 #[test]
 fn test_inc() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.x = 0x10;
-    cpu.bus.write(0x0040, 0x00);
-    cpu.bus.write(0x0050, 0xFF);
-    cpu.bus.write(0x8000, 0x7F);
-    cpu.bus.write(0x8010, 0x80);
-    cpu.bus.load(
+    bus.write(0x0040, 0x00);
+    bus.write(0x0050, 0xFF);
+    bus.write(0x8000, 0x7F);
+    bus.write(0x8010, 0x80);
+    bus.load(
         cpu.pc,
         asm.inc(Operand::Z(0x40))
             .inc(Operand::ZX(0x40))
@@ -714,34 +733,35 @@ fn test_inc() {
             .unwrap(),
     );
 
-    cpu.step(); // INC zeropage
+    cpu.step(bus); // INC zeropage
     println!("{cpu:?}");
-    assert_eq_hex!(cpu.bus.read(0x0040), 0x01);
+    assert_eq_hex!(bus.read(0x0040), 0x01);
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 
-    cpu.step(); // INC zeropage,X
+    cpu.step(bus); // INC zeropage,X
     println!("{cpu:?}");
-    assert_eq_hex!(cpu.bus.read(0x0050), 0x00);
+    assert_eq_hex!(bus.read(0x0050), 0x00);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
-    cpu.step(); // INC absolute
+    cpu.step(bus); // INC absolute
     println!("{cpu:?}");
-    assert_eq_hex!(cpu.bus.read(0x8000), 0x80);
+    assert_eq_hex!(bus.read(0x8000), 0x80);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // INC absolute,X
+    cpu.step(bus); // INC absolute,X
     println!("{cpu:?}");
-    assert_eq_hex!(cpu.bus.read(0x8010), 0x81);
+    assert_eq_hex!(bus.read(0x8010), 0x81);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 }
 
 #[test]
 fn test_inx_and_iny() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.x = 0xFE;
     cpu.y = 0xFE;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.inx()
             .inx()
@@ -752,32 +772,33 @@ fn test_inx_and_iny() {
             .unwrap(),
     );
 
-    cpu.step(); // INX
+    cpu.step(bus); // INX
     assert_eq!(cpu.x, 0xFF);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // INX
+    cpu.step(bus); // INX
     assert_eq!(cpu.x, 0x00);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 
-    cpu.step(); // INY
+    cpu.step(bus); // INY
     assert_eq!(cpu.y, 0xFF);
     assert_eq!(stat(&cpu.p), "Nv-bdizc");
 
-    cpu.step(); // INY
+    cpu.step(bus); // INY
     assert_eq!(cpu.y, 0x00);
     assert_eq!(stat(&cpu.p), "nv-bdiZc");
 }
 
 #[test]
 fn test_jmp() {
-    let mut cpu = Cpu::new(Bus::default());
-    cpu.bus.write(0xFFFC, 0x00);
-    cpu.bus.write(0xFFFD, 0x80);
-    cpu.reset(); // reset vector 0x8000
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
+    bus.write(0xFFFC, 0x00);
+    bus.write(0xFFFD, 0x80);
+    cpu.reset(bus); // reset vector 0x8000
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .jmp(Operand::Abs(label("testlabel")))
@@ -789,13 +810,13 @@ fn test_jmp() {
             .unwrap(),
     );
 
-    cpu.step(); // JMP testlabel
+    cpu.step(bus); // JMP testlabel
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x8004);
     assert_eq!(stat(&cpu.p), "nv-BdIzc"); // unchanged
 
     cpu.p = !cpu.p;
-    cpu.step(); // JMP ($FFFC)
+    cpu.step(bus); // JMP ($FFFC)
     println!("{:?}", cpu);
     assert_eq_hex16!(cpu.pc, 0x8000);
     assert_eq!(stat(&cpu.p), "NV-bDiZC"); // unchanged
@@ -803,11 +824,12 @@ fn test_jmp() {
 
 #[test]
 fn test_jsr_and_rts() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
     cpu.s = 0xFF;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .jsr(Operand::Abs(label("first")))
@@ -823,23 +845,23 @@ fn test_jsr_and_rts() {
     );
 
     println!("{cpu:?}");
-    cpu.step(); // JP first
+    cpu.step(bus); // JP first
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x4017);
     assert_eq_hex!(cpu.s, 0xFD);
-    assert_eq_hex!(cpu.bus.read(0x01FF), 0x40); // HH
-    assert_eq_hex!(cpu.bus.read(0x01FE), 0x03); // LL
-    cpu.step(); // JP second
+    assert_eq_hex!(bus.read(0x01FF), 0x40); // HH
+    assert_eq_hex!(bus.read(0x01FE), 0x03); // LL
+    cpu.step(bus); // JP second
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x401B);
     assert_eq_hex!(cpu.s, 0xFB);
-    assert_eq_hex!(cpu.bus.read(0x01FD), 0x40); // HH
-    assert_eq_hex!(cpu.bus.read(0x01FC), 0x1A); // LL (TODO: wrong?)
-    cpu.step(); // RTS (from second)
+    assert_eq_hex!(bus.read(0x01FD), 0x40); // HH
+    assert_eq_hex!(bus.read(0x01FC), 0x1A); // LL (TODO: wrong?)
+    cpu.step(bus); // RTS (from second)
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x401A);
     assert_eq_hex!(cpu.s, 0xFD);
-    cpu.step(); // RTS (from first)
+    cpu.step(bus); // RTS (from first)
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x4003);
     assert_eq_hex!(cpu.s, 0xFF);
@@ -847,10 +869,11 @@ fn test_jsr_and_rts() {
 
 #[test]
 fn test_lda() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .lda(Operand::Imm(0x00)) // 0x00
@@ -870,38 +893,39 @@ fn test_lda() {
 
     cpu.x = 0x04;
     cpu.y = 0x05;
-    cpu.bus.write(0x00B0, 0x22);
-    cpu.bus.write(0x00B4, 0x44);
+    bus.write(0x00B0, 0x22);
+    bus.write(0x00B4, 0x44);
 
     // (indirect,X): operand 0xC0 + x=0x04 = (0xC4) -> 0x00C6 = 0xCC
-    cpu.bus.write(0x00C4, 0xC6); // LL
-    cpu.bus.write(0x00C5, 0x00); // HH
-    cpu.bus.write(0x00C6, 0xCC);
+    bus.write(0x00C4, 0xC6); // LL
+    bus.write(0x00C5, 0x00); // HH
+    bus.write(0x00C6, 0xCC);
 
     // (indirect),Y: operand 0xC0 -> 0x00BD + y=0x05 = 0x00C2 = 0xEE
-    cpu.bus.write(0x00C0, 0xBD); // LL
-    cpu.bus.write(0x00C1, 0x00); // HH
-    cpu.bus.write(0x00C2, 0xEE);
+    bus.write(0x00C0, 0xBD); // LL
+    bus.write(0x00C1, 0x00); // HH
+    bus.write(0x00C2, 0xEE);
 
-    step_and_assert!(cpu, a, 0x00, "nv-bdiZc");
-    step_and_assert!(cpu, a, 0x22, "nv-bdizc");
-    step_and_assert!(cpu, a, 0x44, "nv-bdizc");
-    step_and_assert!(cpu, a, 0x66, "nv-bdizc");
-    step_and_assert!(cpu, a, 0x88, "Nv-bdizc");
-    step_and_assert!(cpu, a, 0xAA, "Nv-bdizc");
-    step_and_assert!(cpu, a, 0xCC, "Nv-bdizc");
-    step_and_assert!(cpu, a, 0xEE, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0x00, "nv-bdiZc");
+    step_and_assert!(cpu, bus, a, 0x22, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0x44, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0x66, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0x88, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0xAA, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0xCC, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0xEE, "Nv-bdizc");
 }
 
 #[test]
 fn test_ldx() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
-    cpu.bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
-    cpu.bus.write(0x0201, 0x22); // for testing AddressMode::AbsoluteY
+    bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
+    bus.write(0x0201, 0x22); // for testing AddressMode::AbsoluteY
 
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.ldx(Operand::Imm(0xAA))
             .ldx(Operand::Imm(0x00))
@@ -914,20 +938,21 @@ fn test_ldx() {
             .unwrap(),
     );
 
-    step_and_assert!(cpu, x, 0xAA, "Nv-bdizc"); // LDX #$AA
-    step_and_assert!(cpu, x, 0x00, "nv-bdiZc"); // LDX #$00
-    step_and_assert!(cpu, x, 0xA6, "Nv-bdizc"); // LDX $04
-    step_and_assert!(cpu, x, 0xB6, "Nv-bdizc"); // LDX $04,Y
-    step_and_assert!(cpu, x, 0x11, "nv-bdizc"); // LDX $01FF ; Y=2
-    step_and_assert!(cpu, x, 0x22, "nv-bdizc"); // LDX $01FF,Y ; Y=2
+    step_and_assert!(cpu, bus, x, 0xAA, "Nv-bdizc"); // LDX #$AA
+    step_and_assert!(cpu, bus, x, 0x00, "nv-bdiZc"); // LDX #$00
+    step_and_assert!(cpu, bus, x, 0xA6, "Nv-bdizc"); // LDX $04
+    step_and_assert!(cpu, bus, x, 0xB6, "Nv-bdizc"); // LDX $04,Y
+    step_and_assert!(cpu, bus, x, 0x11, "nv-bdizc"); // LDX $01FF ; Y=2
+    step_and_assert!(cpu, bus, x, 0x22, "nv-bdizc"); // LDX $01FF,Y ; Y=2
 }
 
 #[test]
 fn test_ldy() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .ldy(Operand::Imm(0x00)) // 0x00
@@ -943,22 +968,23 @@ fn test_ldy() {
     );
 
     cpu.x = 0x04;
-    cpu.bus.write(0x00B0, 0x22);
-    cpu.bus.write(0x00B4, 0x44);
+    bus.write(0x00B0, 0x22);
+    bus.write(0x00B4, 0x44);
 
-    step_and_assert!(cpu, y, 0x00, "nv-bdiZc");
-    step_and_assert!(cpu, y, 0x22, "nv-bdizc");
-    step_and_assert!(cpu, y, 0x44, "nv-bdizc");
-    step_and_assert!(cpu, y, 0x66, "nv-bdizc");
-    step_and_assert!(cpu, y, 0x88, "Nv-bdizc");
+    step_and_assert!(cpu, bus, y, 0x00, "nv-bdiZc");
+    step_and_assert!(cpu, bus, y, 0x22, "nv-bdizc");
+    step_and_assert!(cpu, bus, y, 0x44, "nv-bdizc");
+    step_and_assert!(cpu, bus, y, 0x66, "nv-bdizc");
+    step_and_assert!(cpu, bus, y, 0x88, "Nv-bdizc");
 }
 
 #[test]
 fn test_lsr() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .lsr(Operand::A)
@@ -975,24 +1001,25 @@ fn test_lsr() {
 
     cpu.a = 0b11110001;
     cpu.x = 0xAA;
-    cpu.bus.write(0x0000, 0b11111111);
-    cpu.bus.write(0x00AA, 0b00000000);
-    cpu.bus.write(0x2000, 0b10101010);
-    cpu.bus.write(0x20AA, 0b01010101);
+    bus.write(0x0000, 0b11111111);
+    bus.write(0x00AA, 0b00000000);
+    bus.write(0x2000, 0b10101010);
+    bus.write(0x20AA, 0b01010101);
 
-    step_and_assert!(cpu, a, 0b01111000, "nv-bdizC");
-    step_and_assert_mem!(cpu, 0x0000, 0b01111111, "nv-bdizC");
-    step_and_assert_mem!(cpu, 0x00AA, 0b00000000, "nv-bdiZc");
-    step_and_assert_mem!(cpu, 0x2000, 0b01010101, "nv-bdizc");
-    step_and_assert_mem!(cpu, 0x20AA, 0b00101010, "nv-bdizC");
+    step_and_assert!(cpu, bus, a, 0b01111000, "nv-bdizC");
+    step_and_assert_mem!(cpu, bus, 0x0000, 0b01111111, "nv-bdizC");
+    step_and_assert_mem!(cpu, bus, 0x00AA, 0b00000000, "nv-bdiZc");
+    step_and_assert_mem!(cpu, bus, 0x2000, 0b01010101, "nv-bdizc");
+    step_and_assert_mem!(cpu, bus, 0x20AA, 0b00101010, "nv-bdizC");
 }
 
 #[test]
 fn test_ora() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .ora(Operand::Imm(0x00))
@@ -1013,73 +1040,74 @@ fn test_ora() {
     cpu.a = 0b00000000;
     cpu.x = 0x02;
     cpu.y = 0x04;
-    cpu.bus.write(0x00A0, 0b00000001);
-    cpu.bus.write(0x00A2, 0b00000100);
+    bus.write(0x00A0, 0b00000001);
+    bus.write(0x00A2, 0b00000100);
 
     // XInd(0x00+x:0x02)
-    cpu.bus.write(0x0002, 0x10); // LL
-    cpu.bus.write(0x0003, 0x32); // HH
-    cpu.bus.write(0x3210, 0b01000000);
+    bus.write(0x0002, 0x10); // LL
+    bus.write(0x0003, 0x32); // HH
+    bus.write(0x3210, 0b01000000);
 
     // IndY(0x00)+y:0x04 = (0x3224)
-    cpu.bus.write(0x0000, 0x20); // LL
-    cpu.bus.write(0x0001, 0x32); // HH
-    cpu.bus.write(0x3224, 0b11111111);
+    bus.write(0x0000, 0x20); // LL
+    bus.write(0x0001, 0x32); // HH
+    bus.write(0x3224, 0b11111111);
 
-    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZc");
-    step_and_assert!(cpu, a, 0b00000001, "nv-bdizc");
-    step_and_assert!(cpu, a, 0b00000101, "nv-bdizc");
-    step_and_assert!(cpu, a, 0b00010101, "nv-bdizc");
-    step_and_assert!(cpu, a, 0b00111101, "nv-bdizc");
-    step_and_assert!(cpu, a, 0b10111101, "Nv-bdizc");
-    step_and_assert!(cpu, a, 0b11111101, "Nv-bdizc");
-    step_and_assert!(cpu, a, 0b11111111, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b00000000, "nv-bdiZc");
+    step_and_assert!(cpu, bus, a, 0b00000001, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b00000101, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b00010101, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b00111101, "nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b10111101, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b11111101, "Nv-bdizc");
+    step_and_assert!(cpu, bus, a, 0b11111111, "Nv-bdizc");
 }
 
 #[test]
 fn test_pha_pla() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus
-        .load(0, asm.pha().pla().print_listing().assemble().unwrap());
+    bus.load(0, asm.pha().pla().print_listing().assemble().unwrap());
 
     cpu.s = 0xA8;
     cpu.a = 0xF0;
 
-    step_and_assert!(cpu, s, 0xA7, "nv-bdizc"); // PHA
-    assert_eq_hex!(cpu.bus.read(0x01A8), 0xF0);
+    step_and_assert!(cpu, bus, s, 0xA7, "nv-bdizc"); // PHA
+    assert_eq_hex!(bus.read(0x01A8), 0xF0);
 
     cpu.a = 0xAA;
 
-    step_and_assert!(cpu, s, 0xA8, "Nv-bdizc"); // PLA
+    step_and_assert!(cpu, bus, s, 0xA8, "Nv-bdizc"); // PLA
     assert_eq_hex!(cpu.a, 0xF0);
 }
 
 #[test]
 fn test_php_plp() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus
-        .load(0, asm.php().plp().print_listing().assemble().unwrap());
+    bus.load(0, asm.php().plp().print_listing().assemble().unwrap());
 
     cpu.p = 0b00000100;
     cpu.s = 0xA8;
 
-    step_and_assert!(cpu, s, 0xA7, "nv-bdIzc"); // PHP
-    assert_eq_hex!(cpu.bus.read(0x01A8), 0b00110100);
+    step_and_assert!(cpu, bus, s, 0xA7, "nv-bdIzc"); // PHP
+    assert_eq_hex!(bus.read(0x01A8), 0b00110100);
 
     cpu.p = 0b11111111;
     assert_eq!(stat(&cpu.p), "NV-BDIZC");
 
-    step_and_assert!(cpu, s, 0xA8, "nv-bdIzc"); // PLP
+    step_and_assert!(cpu, bus, s, 0xA8, "nv-bdIzc"); // PLP
 }
 
 #[test]
 fn test_rol_ror() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.rol(Operand::A)
             .rol(Operand::A)
@@ -1099,31 +1127,32 @@ fn test_rol_ror() {
 
     cpu.a = 0b10000000;
     cpu.x = 0x42;
-    cpu.bus.write(0x0080, 0b11110000);
-    cpu.bus.write(0x00C2, 0b01010101);
-    cpu.bus.write(0x2000, 0b11001100);
-    cpu.bus.write(0x2042, 0b10101010);
+    bus.write(0x0080, 0b11110000);
+    bus.write(0x00C2, 0b01010101);
+    bus.write(0x2000, 0b11001100);
+    bus.write(0x2042, 0b10101010);
 
-    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ROL A
-    step_and_assert!(cpu, a, 0b00000001, "nv-bdizc"); // ROL A
-    step_and_assert_mem!(cpu, 0x0080, 0b11100000, "Nv-bdizC"); // ROL $80
-    step_and_assert_mem!(cpu, 0x00C2, 0b10101011, "Nv-bdizc"); // ROL $80,X
-    step_and_assert_mem!(cpu, 0x2000, 0b10011000, "Nv-bdizC"); // ROL $2000
-    step_and_assert_mem!(cpu, 0x2042, 0b01010101, "nv-bdizC"); // ROL $2000,X
+    step_and_assert!(cpu, bus, a, 0b00000000, "nv-bdiZC"); // ROL A
+    step_and_assert!(cpu, bus, a, 0b00000001, "nv-bdizc"); // ROL A
+    step_and_assert_mem!(cpu, bus, 0x0080, 0b11100000, "Nv-bdizC"); // ROL $80
+    step_and_assert_mem!(cpu, bus, 0x00C2, 0b10101011, "Nv-bdizc"); // ROL $80,X
+    step_and_assert_mem!(cpu, bus, 0x2000, 0b10011000, "Nv-bdizC"); // ROL $2000
+    step_and_assert_mem!(cpu, bus, 0x2042, 0b01010101, "nv-bdizC"); // ROL $2000,X
 
-    step_and_assert_mem!(cpu, 0x2042, 0b10101010, "Nv-bdizC"); // ROR $2000,X
-    step_and_assert_mem!(cpu, 0x2000, 0b11001100, "Nv-bdizc"); // ROR $2000
-    step_and_assert_mem!(cpu, 0x00C2, 0b01010101, "nv-bdizC"); // ROR $80,X
-    step_and_assert_mem!(cpu, 0x0080, 0b11110000, "Nv-bdizc"); // ROR $80
-    step_and_assert!(cpu, a, 0b00000000, "nv-bdiZC"); // ROR A
+    step_and_assert_mem!(cpu, bus, 0x2042, 0b10101010, "Nv-bdizC"); // ROR $2000,X
+    step_and_assert_mem!(cpu, bus, 0x2000, 0b11001100, "Nv-bdizc"); // ROR $2000
+    step_and_assert_mem!(cpu, bus, 0x00C2, 0b01010101, "nv-bdizC"); // ROR $80,X
+    step_and_assert_mem!(cpu, bus, 0x0080, 0b11110000, "Nv-bdizc"); // ROR $80
+    step_and_assert!(cpu, bus, a, 0b00000000, "nv-bdiZC"); // ROR A
 }
 
 #[test]
 fn test_sbc() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .sec()
@@ -1144,47 +1173,49 @@ fn test_sbc() {
     cpu.x = 0x02;
     cpu.y = 0x04;
 
-    cpu.bus.write(0x0000, 0x32);
-    cpu.bus.write(0x0002, 0x20);
-    cpu.bus.write(0x2000, 0xFF);
-    cpu.bus.write(0x2002, 0x1D);
-    cpu.bus.write(0x2004, 0x01);
+    bus.write(0x0000, 0x32);
+    bus.write(0x0002, 0x20);
+    bus.write(0x2000, 0xFF);
+    bus.write(0x2002, 0x1D);
+    bus.write(0x2004, 0x01);
 
     // X=2; ($10,X) -> ($12) -> $3210 -> #$40
-    cpu.bus.write(0x0012, 0x10); // LL
-    cpu.bus.write(0x0013, 0x32); // HH
-    cpu.bus.write(0x3210, 0x40);
+    bus.write(0x0012, 0x10); // LL
+    bus.write(0x0013, 0x32); // HH
+    bus.write(0x3210, 0x40);
 
     // Y=4; ($20),Y -> $4321,Y -> $4325 -> #$3F
-    cpu.bus.write(0x0020, 0x21); // LL
-    cpu.bus.write(0x0021, 0x43); // HH
-    cpu.bus.write(0x4325, 0x3F);
+    bus.write(0x0020, 0x21); // LL
+    bus.write(0x0021, 0x43); // HH
+    bus.write(0x4325, 0x3F);
 
-    step_and_assert!(cpu, a, 0x00, "nv-bdizC"); // SEC
-    step_and_assert!(cpu, a, 0xF0, "Nv-bdizc"); // SBC #$10     ; 0x00 - 0x10     = 0xF0 (c)
-    step_and_assert!(cpu, a, 0xBD, "Nv-bdizC"); // SBC $00      ; 0xF0 - 0x32 - 1 = 0xBD
-    step_and_assert!(cpu, a, 0x9D, "Nv-bdizC"); // SBC $00,X    ; 0xBD - 0x20     = 0x9D
-    step_and_assert!(cpu, a, 0x9E, "Nv-bdizc"); // SBC $2000    ; 0x9D - 0xFF     = 0x9E (c)
-    step_and_assert!(cpu, a, 0x80, "Nv-bdizC"); // SBC $2000,X  ; 0x9E - 0x1D - 1 = 0x80
-    step_and_assert!(cpu, a, 0x7F, "nV-bdizC"); // SBC $2000,Y  ; 0x80 - 0x01     = 0x7F
-    step_and_assert!(cpu, a, 0x3F, "nv-bdizC"); // SBC ($10,X)  ; 0x7F - 0x40     = 0x3F
-    step_and_assert!(cpu, a, 0x00, "nv-bdiZC"); // SBC ($20),Y  ; 0x3F - 0x3F     = 0x00
+    step_and_assert!(cpu, bus, a, 0x00, "nv-bdizC"); // SEC
+    step_and_assert!(cpu, bus, a, 0xF0, "Nv-bdizc"); // SBC #$10     ; 0x00 - 0x10     = 0xF0 (c)
+    step_and_assert!(cpu, bus, a, 0xBD, "Nv-bdizC"); // SBC $00      ; 0xF0 - 0x32 - 1 = 0xBD
+    step_and_assert!(cpu, bus, a, 0x9D, "Nv-bdizC"); // SBC $00,X    ; 0xBD - 0x20     = 0x9D
+    step_and_assert!(cpu, bus, a, 0x9E, "Nv-bdizc"); // SBC $2000    ; 0x9D - 0xFF     = 0x9E (c)
+    step_and_assert!(cpu, bus, a, 0x80, "Nv-bdizC"); // SBC $2000,X  ; 0x9E - 0x1D - 1 = 0x80
+    step_and_assert!(cpu, bus, a, 0x7F, "nV-bdizC"); // SBC $2000,Y  ; 0x80 - 0x01     = 0x7F
+    step_and_assert!(cpu, bus, a, 0x3F, "nv-bdizC"); // SBC ($10,X)  ; 0x7F - 0x40     = 0x3F
+    step_and_assert!(cpu, bus, a, 0x00, "nv-bdiZC"); // SBC ($20),Y  ; 0x3F - 0x3F     = 0x00
 }
 
 #[test]
 fn test_nop() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(cpu.pc, asm.nop().assemble().unwrap());
-    cpu.step();
+    bus.load(cpu.pc, asm.nop().assemble().unwrap());
+    cpu.step(bus);
     assert_eq_hex16!(cpu.pc, 0x0001);
 }
 
 #[test]
 fn test_set_and_clear_flags() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.sec()
             .sed()
@@ -1203,35 +1234,36 @@ fn test_set_and_clear_flags() {
 
     assert_eq!(stat(&cpu.p), "nV-bdizc");
 
-    cpu.step(); // SEC
+    cpu.step(bus); // SEC
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bdizC");
-    cpu.step(); // SED
+    cpu.step(bus); // SED
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bDizC");
-    cpu.step(); // SEI
+    cpu.step(bus); // SEI
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bDIzC");
-    cpu.step(); // CLC
+    cpu.step(bus); // CLC
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bDIzc");
-    cpu.step(); // CLD
+    cpu.step(bus); // CLD
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bdIzc");
-    cpu.step(); // CLI
+    cpu.step(bus); // CLI
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nV-bdizc");
-    cpu.step(); // CLV
+    cpu.step(bus); // CLV
     println!("{cpu:?}");
     assert_eq!(stat(&cpu.p), "nv-bdizc");
 }
 
 #[test]
 fn test_sta_stx_sty() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.sta(Operand::Z(0x00))
             .sta(Operand::ZX(0x00))
@@ -1256,36 +1288,37 @@ fn test_sta_stx_sty() {
     cpu.y = 0x04;
 
     // ($10,X) -> $1234
-    cpu.bus.write(0x0012, 0x34);
-    cpu.bus.write(0x0013, 0x12);
+    bus.write(0x0012, 0x34);
+    bus.write(0x0013, 0x12);
 
     // ($20),Y -> $5678
-    cpu.bus.write(0x0020, 0x74);
-    cpu.bus.write(0x0021, 0x56);
+    bus.write(0x0020, 0x74);
+    bus.write(0x0021, 0x56);
 
-    step_and_assert_mem!(cpu, 0x0000, 0xAA, "nv-bdizc"); // STA $00
-    step_and_assert_mem!(cpu, 0x0002, 0xAA, "nv-bdizc"); // STA $00,X
-    step_and_assert_mem!(cpu, 0x2000, 0xAA, "nv-bdizc"); // STA $2000
-    step_and_assert_mem!(cpu, 0x2002, 0xAA, "nv-bdizc"); // STA $2000,X
-    step_and_assert_mem!(cpu, 0x2004, 0xAA, "nv-bdizc"); // STA $2000,Y
-    step_and_assert_mem!(cpu, 0x1234, 0xAA, "nv-bdizc"); // STA ($10,X)
-    step_and_assert_mem!(cpu, 0x5678, 0xAA, "nv-bdizc"); // STA ($20),Y
+    step_and_assert_mem!(cpu, bus, 0x0000, 0xAA, "nv-bdizc"); // STA $00
+    step_and_assert_mem!(cpu, bus, 0x0002, 0xAA, "nv-bdizc"); // STA $00,X
+    step_and_assert_mem!(cpu, bus, 0x2000, 0xAA, "nv-bdizc"); // STA $2000
+    step_and_assert_mem!(cpu, bus, 0x2002, 0xAA, "nv-bdizc"); // STA $2000,X
+    step_and_assert_mem!(cpu, bus, 0x2004, 0xAA, "nv-bdizc"); // STA $2000,Y
+    step_and_assert_mem!(cpu, bus, 0x1234, 0xAA, "nv-bdizc"); // STA ($10,X)
+    step_and_assert_mem!(cpu, bus, 0x5678, 0xAA, "nv-bdizc"); // STA ($20),Y
 
-    step_and_assert_mem!(cpu, 0x0030, 0x02, "nv-bdizc"); // STX $30
-    step_and_assert_mem!(cpu, 0x0034, 0x02, "nv-bdizc"); // STX $30,Y
-    step_and_assert_mem!(cpu, 0x3000, 0x02, "nv-bdizc"); // STX $3000
-                                                         //
-    step_and_assert_mem!(cpu, 0x0040, 0x04, "nv-bdizc"); // STY $40
-    step_and_assert_mem!(cpu, 0x0042, 0x04, "nv-bdizc"); // STY $40,X
-    step_and_assert_mem!(cpu, 0x5000, 0x04, "nv-bdizc"); // STY $5000
+    step_and_assert_mem!(cpu, bus, 0x0030, 0x02, "nv-bdizc"); // STX $30
+    step_and_assert_mem!(cpu, bus, 0x0034, 0x02, "nv-bdizc"); // STX $30,Y
+    step_and_assert_mem!(cpu, bus, 0x3000, 0x02, "nv-bdizc"); // STX $3000
+                                                              //
+    step_and_assert_mem!(cpu, bus, 0x0040, 0x04, "nv-bdizc"); // STY $40
+    step_and_assert_mem!(cpu, bus, 0x0042, 0x04, "nv-bdizc"); // STY $40,X
+    step_and_assert_mem!(cpu, bus, 0x5000, 0x04, "nv-bdizc"); // STY $5000
 }
 
 #[test]
 fn test_tax_tay_tsx_txa_txs_tya() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.tax()
             .tay()
@@ -1302,24 +1335,25 @@ fn test_tax_tay_tsx_txa_txs_tya() {
     cpu.x = 0x7F;
     cpu.y = 0xBF;
     cpu.s = 0xFF;
-    step_and_assert!(cpu, x, 0x00, "nv-bdiZc"); // TAX
-    step_and_assert!(cpu, y, 0x00, "nv-bdiZc"); // TAY
-    step_and_assert!(cpu, x, 0xFF, "Nv-bdizc"); // TSX
+    step_and_assert!(cpu, bus, x, 0x00, "nv-bdiZc"); // TAX
+    step_and_assert!(cpu, bus, y, 0x00, "nv-bdiZc"); // TAY
+    step_and_assert!(cpu, bus, x, 0xFF, "Nv-bdizc"); // TSX
     cpu.a = 0x00;
     cpu.x = 0x7F;
     cpu.y = 0xBF;
     cpu.s = 0xFF;
-    step_and_assert!(cpu, a, 0x7F, "nv-bdizc"); // TXA
-    step_and_assert!(cpu, s, 0x7F, "nv-bdizc"); // TXS
-    step_and_assert!(cpu, a, 0xBF, "Nv-bdizc"); // TYA
+    step_and_assert!(cpu, bus, a, 0x7F, "nv-bdizc"); // TXA
+    step_and_assert!(cpu, bus, s, 0x7F, "nv-bdizc"); // TXS
+    step_and_assert!(cpu, bus, a, 0xBF, "Nv-bdizc"); // TYA
 }
 
 #[test]
 fn test_address_modes_at_page_boundaries() {
-    let mut cpu = Cpu::new(Bus::default());
+    let bus = &mut Bus::default();
+    let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x10FE; // opcode @ $10FE, LL @ 0x10FF, operand:HH @ 0x1100 (next page)
-    cpu.bus.load(
+    bus.load(
         cpu.pc,
         asm.org(cpu.pc)
             .lda(Operand::Abs(val(0x2000))) // absolute operand crosses page
@@ -1339,20 +1373,20 @@ fn test_address_modes_at_page_boundaries() {
     cpu.x = 0x02;
     cpu.y = 0x04;
 
-    cpu.bus.write(0x2000, 0x11);
-    step_and_assert!(cpu, a, 0x11, "nv-bdizc"); // LDA $2000
+    bus.write(0x2000, 0x11);
+    step_and_assert!(cpu, bus, a, 0x11, "nv-bdizc"); // LDA $2000
 
-    cpu.bus.write(0x2101, 0x22); // $20FF + X
-    step_and_assert!(cpu, a, 0x22, "nv-bdizc"); // LDA $20FF,X
-                                                //
-    cpu.bus.write(0x2103, 0x33); // $20FF + Y
-    step_and_assert!(cpu, a, 0x33, "nv-bdizc"); // LDA $20FF,Y
+    bus.write(0x2101, 0x22); // $20FF + X
+    step_and_assert!(cpu, bus, a, 0x22, "nv-bdizc"); // LDA $20FF,X
+                                                     //
+    bus.write(0x2103, 0x33); // $20FF + Y
+    step_and_assert!(cpu, bus, a, 0x33, "nv-bdizc"); // LDA $20FF,Y
 
     // JMP is the only (non-indexed) indirect addressing instruction,
     // so use that to test a page-crossing indirect pointer.
-    cpu.bus.write(0x30FF, 0x01); // indirect:LL
-    cpu.bus.write(0x3100, 0x31); // indirect:HH
-    cpu.bus.load(
+    bus.write(0x30FF, 0x01); // indirect:LL
+    bus.write(0x3100, 0x31); // indirect:HH
+    bus.load(
         0x3101,
         Assembler::new()
             .org(0x3101)
@@ -1361,29 +1395,29 @@ fn test_address_modes_at_page_boundaries() {
             .assemble()
             .unwrap(),
     );
-    step_and_assert!(cpu, pc, 0x3101, "nv-bdizc"); // JMP ($30FF)
-    step_and_assert!(cpu, pc, 0x110A, "nv-bdizc"); // JMP $110A (back to where we were)
+    step_and_assert!(cpu, bus, pc, 0x3101, "nv-bdizc"); // JMP ($30FF)
+    step_and_assert!(cpu, bus, pc, 0x110A, "nv-bdizc"); // JMP $110A (back to where we were)
 
     // ($FD,X) where X=0x02
-    cpu.bus.write(0x00FF, 0x21); // LL
-    cpu.bus.write(0x0000, 0x43); // HH
-    cpu.bus.write(0x4321, 0x44);
-    step_and_assert!(cpu, a, 0x44, "nv-bdizc"); // LDA ($FF,X)
+    bus.write(0x00FF, 0x21); // LL
+    bus.write(0x0000, 0x43); // HH
+    bus.write(0x4321, 0x44);
+    step_and_assert!(cpu, bus, a, 0x44, "nv-bdizc"); // LDA ($FF,X)
 
     // ($FF,X) where X=0x02
-    cpu.bus.write(0x0001, 0x21); // LL
-    cpu.bus.write(0x0002, 0x43); // HH
-    cpu.bus.write(0x4321, 0x55);
-    step_and_assert!(cpu, a, 0x55, "nv-bdizc"); // LDA ($FF,X)
+    bus.write(0x0001, 0x21); // LL
+    bus.write(0x0002, 0x43); // HH
+    bus.write(0x4321, 0x55);
+    step_and_assert!(cpu, bus, a, 0x55, "nv-bdizc"); // LDA ($FF,X)
 
-    cpu.bus.write(0x00FF, 0x32); // LL
-    cpu.bus.write(0x0000, 0x54); // HH
-    cpu.bus.write(0x5436, 0x66); // 0x5432 + Y:4
-    step_and_assert!(cpu, a, 0x66, "nv-bdizc"); // LDA ($FF),Y
+    bus.write(0x00FF, 0x32); // LL
+    bus.write(0x0000, 0x54); // HH
+    bus.write(0x5436, 0x66); // 0x5432 + Y:4
+    step_and_assert!(cpu, bus, a, 0x66, "nv-bdizc"); // LDA ($FF),Y
 
-    cpu.bus.write(0x0001, 0x77);
-    step_and_assert!(cpu, a, 0x77, "nv-bdizc"); // LDA $FF,X
+    bus.write(0x0001, 0x77);
+    step_and_assert!(cpu, bus, a, 0x77, "nv-bdizc"); // LDA $FF,X
 
-    cpu.bus.write(0x0003, 0x88);
-    step_and_assert!(cpu, x, 0x88, "Nv-bdizc"); // LDX $FF,Y
+    bus.write(0x0003, 0x88);
+    step_and_assert!(cpu, bus, x, 0x88, "Nv-bdizc"); // LDX $FF,Y
 }

@@ -91,13 +91,12 @@ fn main() {
     bus.write(0xFFFC, asm.org as u8);
     bus.write(0xFFFD, (asm.org >> 8) as u8);
 
-    let mut cpu = cpu::Cpu::new(bus);
-    cpu.reset();
+    let mut cpu = cpu::Cpu::new();
+    cpu.reset(&bus);
     cpu.s = 0xFF; // TODO: use LDX, TXS in ASM
 
     // run some instructions
-    for _ in 0..20 {
-        println!("{:?}", cpu);
-        cpu.step();
+    for _ in 0..80 {
+        cpu.step(&mut bus);
     }
 }
