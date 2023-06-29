@@ -1,6 +1,7 @@
 mod asm;
 mod bus;
 mod cpu;
+mod dec;
 mod isa;
 mod mon;
 mod sys;

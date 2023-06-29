@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::bus;
+use crate::dec;
 use crate::isa;
 
 // A 65C02-like CPU
@@ -12,7 +13,7 @@ pub struct Cpu {
     pub y: u8,   // Y register
     pub p: u8,   // processor status
 
-    optab: [Option<isa::Opcode>; 256],
+    decoder: dec::Decoder,
 }
 
 impl Cpu {
@@ -24,7 +25,7 @@ impl Cpu {
             x: 0,
             y: 0,
             p: 0,
-            optab: build_opcode_table(),
+            decoder: dec::Decoder::new(),
         }
     }
 
@@ -39,7 +40,7 @@ impl Cpu {
     }
 
     pub fn fetch(&self, bus: &bus::Bus) -> Option<isa::Opcode> {
-        self.optab[bus.read(self.pc) as usize]
+        self.decoder.opcode(bus.read(self.pc))
     }
 
     // Load and execute a single instruction.
@@ -610,15 +611,6 @@ pub fn stat(p: &u8) -> String {
             }
         })
         .collect()
-}
-
-// Build an array of isa::Opcode indexed by by their u8 opcode.
-pub fn build_opcode_table() -> [Option<isa::Opcode>; 256] {
-    let mut optab = [None; 256];
-    for opcode in isa::opcode_list() {
-        optab[opcode.code as usize] = Some(opcode);
-    }
-    optab
 }
 
 // TODO: maybe StatusBit and StatusMask belong in isa.rs
