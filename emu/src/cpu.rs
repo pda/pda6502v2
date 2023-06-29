@@ -31,7 +31,7 @@ impl Cpu {
 
     // Reset internal CPU state, as if the reset line had been asserted.
     pub fn reset(&mut self, bus: &bus::Bus) {
-        self.pc = self.read_u16(bus, VEC_RES);
+        self.pc = bus.read_u16(VEC_RES);
         self.s = 0x00;
         self.a = 0x00;
         self.x = 0x00;
@@ -39,13 +39,9 @@ impl Cpu {
         self.p = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
     }
 
-    pub fn fetch(&self, bus: &bus::Bus) -> Option<isa::Opcode> {
-        self.decoder.opcode(bus.read(self.pc))
-    }
-
     // Load and execute a single instruction.
     pub fn step(&mut self, bus: &mut bus::Bus) {
-        match self.fetch(bus) {
+        match self.decoder.opcode(bus.read(self.pc)) {
             None => panic!("illegal opcode"),
             Some(opcode) => self.execute(opcode, bus),
         }
@@ -181,7 +177,7 @@ impl Cpu {
                     self.push_addr(bus, self.pc + 1);
                     self.push(bus, self.p | StatusMask::Break as u8);
                     self.p |= StatusMask::Interrupt as u8;
-                    self.pc = self.read_u16(bus, VEC_IRQ);
+                    self.pc = bus.read_u16(VEC_IRQ);
                 }
                 _ => panic!("illegal AddressMode: {opcode:?}"),
             },
@@ -464,13 +460,6 @@ impl Cpu {
         }
     }
 
-    /// Read a u16 in little-endian order from the bus, crossing page boundaries.
-    fn read_u16(&self, bus: &bus::Bus, addr: u16) -> u16 {
-        let lo = bus.read(addr) as u16;
-        let hi = bus.read(addr.wrapping_add(1)) as u16;
-        hi << 8 | lo
-    }
-
     /// Read a u16 in little-endian order from the bus, wrapping within a page.
     fn read_u16_zp(&self, bus: &bus::Bus, addr: u8) -> u16 {
         let lo = bus.read(addr as u16) as u16;
@@ -487,7 +476,7 @@ impl Cpu {
 
     /// Read u16 from address pointed to by PC, incrementing PC
     fn read_pc_u16(&mut self, bus: &bus::Bus) -> u16 {
-        let val = self.read_u16(bus, self.pc);
+        let val = bus.read_u16(self.pc);
         self.pc = self.pc.wrapping_add(2);
         val
     }
@@ -507,7 +496,7 @@ impl Cpu {
             Implied => OV::None,
             Indirect => {
                 let ptr = self.read_pc_u16(bus);
-                OV::U16(self.read_u16(bus, ptr))
+                OV::U16(bus.read_u16(ptr))
             }
             IndirectY => {
                 let ptr = self.read_pc_u8(bus);

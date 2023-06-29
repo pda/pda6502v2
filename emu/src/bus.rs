@@ -15,6 +15,13 @@ impl Bus {
         val
     }
 
+    /// Read a u16 in little-endian order from the bus, crossing page boundaries.
+    pub fn read_u16(&self, addr: u16) -> u16 {
+        let lo = self.read(addr) as u16;
+        let hi = self.read(addr.wrapping_add(1)) as u16;
+        hi << 8 | lo
+    }
+
     pub fn write(&mut self, addr: u16, data: u8) {
         self.ram[addr as usize] = data;
         //println!("Bus write(${:04X}) ← ${:02X}", addr, data);

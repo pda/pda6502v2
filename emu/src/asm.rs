@@ -359,7 +359,7 @@ impl Assembler {
             match line {
                 Line::Instruction(line) => {
                     bin.push(line.instruction?.code);
-                    match self.op_value(addr, &line.operand, &labtab)? {
+                    match op_value(addr, &line.operand, &labtab)? {
                         OpValue::None => {}
                         OpValue::U8(x) => bin.push(x),
                         OpValue::U16(x) => {
@@ -385,76 +385,7 @@ impl Assembler {
         for line in self.lines.iter() {
             let base_addr = addr;
             addr += line.size();
-            match line {
-                Line::Instruction(line) => {
-                    let instruction = line.instruction?;
-                    let mut err: Option<Error> = None;
-                    let ophex = match self.op_value(addr, &line.operand, &labtab) {
-                        Ok(x) => match x {
-                            OpValue::None => String::new(),
-                            OpValue::U8(x) => format!("{:02X}", x),
-                            OpValue::U16(x) => format!("{:02X} {:02X}", x & 0xFF, (x >> 8)),
-                        },
-                        Err(e) => {
-                            err = Some(e);
-                            format!("?? ??")
-                        }
-                    };
-                    let label = match &line.label {
-                        Some(label) => format!("{}:", label),
-                        None => String::from(""),
-                    };
-                    let op_prefix = match instruction.mode {
-                        AddressMode::Immediate => "#",
-                        _ => "",
-                    };
-                    let err_string = match err {
-                        Some(e) => format!(" ; {e:?}"),
-                        None => String::from(""),
-                    };
-                    writeln!(
-                        f,
-                        "{:04X} | {:02X} {:5} | {:16} {} {}{}{}",
-                        base_addr,
-                        instruction.code,
-                        ophex,
-                        label,
-                        instruction.mnemonic,
-                        op_prefix,
-                        line.operand,
-                        err_string,
-                    )?;
-                }
-                Line::Data(line) => {
-                    let label = match &line.label {
-                        Some(label) => format!("{}:", label),
-                        None => String::from(""),
-                    };
-                    writeln!(f, "                  {:16}", label)?;
-                    let mut addr = base_addr;
-                    for linechunk in line.data.chunks(16) {
-                        let hex = linechunk
-                            .chunks(8)
-                            .map(|half| {
-                                half.iter()
-                                    .map(|x| format!("{:02X}", x))
-                                    .collect::<Vec<String>>()
-                                    .join(" ")
-                            })
-                            .collect::<Vec<String>>()
-                            .join("  ");
-
-                        let ascii: String = linechunk
-                            .iter()
-                            .map(|&x| if x >= 32 && x <= 126 { x as char } else { '.' })
-                            .collect();
-
-                        writeln!(f, "{:04X}  {:49} |{}|", addr, hex, ascii)?;
-
-                        addr += linechunk.len() as u16;
-                    }
-                }
-            }
+            line.fmt(&mut f, base_addr, addr, &labtab)?;
         }
         Ok(f)
     }
@@ -471,43 +402,6 @@ impl Assembler {
             operand: op,
         }));
         self
-    }
-
-    fn op_value(
-        &self,
-        addr: u16,
-        op: &Operand,
-        labtab: &HashMap<&str, u16>,
-    ) -> Result<OpValue, Error> {
-        use Operand::*;
-        match op {
-            A | Impl => Ok(OpValue::None),
-            Abs(x) | AbsX(x) | AbsY(x) | Ind(x) => match x {
-                Addr::Literal(x) => Ok(OpValue::U16(*x)),
-                Addr::Label(x) => match labtab.get(x.as_str()) {
-                    Some(addr) => Ok(OpValue::U16(*addr)),
-                    None => Err(Error::LabelNotFound),
-                },
-            },
-            Rel(x) => match x {
-                BranchTarget::Offset(x) => Ok(OpValue::U8(*x as u8)),
-                BranchTarget::Label(x) => {
-                    let target_addr = match labtab.get(x.as_str()) {
-                        Some(addr) => *addr,
-                        None => return Err(Error::LabelNotFound),
-                    };
-                    let rel16: i16 = target_addr.wrapping_sub(addr) as i16;
-                    let rel8: i8 = match rel16.try_into() {
-                        Ok(x) => x,
-                        Err(_) => {
-                            return Err(Error::RelativeAddressOutOfRange(rel16));
-                        }
-                    };
-                    Ok(OpValue::U8(rel8 as u8))
-                }
-            },
-            Imm(x) | XInd(x) | IndY(x) | Z(x) | ZX(x) | ZY(x) => Ok(OpValue::U8(*x)),
-        }
     }
 
     fn build_label_table(&self) -> HashMap<&str, u16> {
@@ -569,20 +463,20 @@ impl fmt::Display for BranchTarget {
 }
 
 #[derive(Debug)]
-enum Line {
+pub enum Line {
     Instruction(InstructionLine),
     Data(DataLine),
 }
 
 #[derive(Debug)]
-struct InstructionLine {
-    label: Option<String>,
-    instruction: Result<Opcode, Error>,
-    operand: Operand,
+pub struct InstructionLine {
+    pub label: Option<String>,
+    pub instruction: Result<Opcode, Error>,
+    pub operand: Operand,
 }
 
 #[derive(Debug)]
-struct DataLine {
+pub struct DataLine {
     label: Option<String>,
     data: Vec<u8>,
 }
@@ -601,11 +495,93 @@ impl Line {
             Line::Data(line) => line.data.len().try_into().unwrap(),
         }
     }
+
+    pub fn fmt(
+        &self,
+        f: &mut String,
+        base_addr: u16,
+        addr: u16,
+        labtab: &HashMap<&str, u16>,
+    ) -> Result<(), Error> {
+        use std::fmt::Write;
+
+        match self {
+            Line::Instruction(line) => {
+                let instruction = line.instruction.unwrap();
+                let mut err: Option<Error> = None;
+                let ophex = match op_value(addr, &line.operand, &labtab) {
+                    Ok(x) => match x {
+                        OpValue::None => String::new(),
+                        OpValue::U8(x) => format!("{:02X}", x),
+                        OpValue::U16(x) => format!("{:02X} {:02X}", x & 0xFF, (x >> 8)),
+                    },
+                    Err(e) => {
+                        err = Some(e);
+                        format!("?? ??")
+                    }
+                };
+                let label = match &line.label {
+                    Some(label) => format!("{}:", label),
+                    None => String::from(""),
+                };
+                let op_prefix = match instruction.mode {
+                    AddressMode::Immediate => "#",
+                    _ => "",
+                };
+                let err_string = match err {
+                    Some(e) => format!(" ; {e:?}"),
+                    None => String::from(""),
+                };
+                writeln!(
+                    f,
+                    "{:04X} | {:02X} {:5} | {:16} {} {}{}{}",
+                    base_addr,
+                    instruction.code,
+                    ophex,
+                    label,
+                    instruction.mnemonic,
+                    op_prefix,
+                    line.operand,
+                    err_string,
+                )?;
+            }
+            Line::Data(line) => {
+                let label = match &line.label {
+                    Some(label) => format!("{}:", label),
+                    None => String::from(""),
+                };
+                writeln!(f, "                  {:16}", label)?;
+                let mut addr = base_addr;
+                for linechunk in line.data.chunks(16) {
+                    let hex = linechunk
+                        .chunks(8)
+                        .map(|half| {
+                            half.iter()
+                                .map(|x| format!("{:02X}", x))
+                                .collect::<Vec<String>>()
+                                .join(" ")
+                        })
+                        .collect::<Vec<String>>()
+                        .join("  ");
+
+                    let ascii: String = linechunk
+                        .iter()
+                        .map(|&x| if x >= 32 && x <= 126 { x as char } else { '.' })
+                        .collect();
+
+                    writeln!(f, "{:04X}  {:49} |{}|", addr, hex, ascii)?;
+
+                    addr += linechunk.len() as u16;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // Opcode Operands
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum Operand {
     A,
     Abs(Addr),
@@ -693,5 +669,37 @@ impl From<isa::Error> for Error {
         match err {
             isa::Error::IllegalAddressMode(m, am) => Error::IllegalAddressMode(m, am),
         }
+    }
+}
+
+fn op_value(addr: u16, op: &Operand, labtab: &HashMap<&str, u16>) -> Result<OpValue, Error> {
+    use Operand::*;
+    match op {
+        A | Impl => Ok(OpValue::None),
+        Abs(x) | AbsX(x) | AbsY(x) | Ind(x) => match x {
+            Addr::Literal(x) => Ok(OpValue::U16(*x)),
+            Addr::Label(x) => match labtab.get(x.as_str()) {
+                Some(addr) => Ok(OpValue::U16(*addr)),
+                None => Err(Error::LabelNotFound),
+            },
+        },
+        Rel(x) => match x {
+            BranchTarget::Offset(x) => Ok(OpValue::U8(*x as u8)),
+            BranchTarget::Label(x) => {
+                let target_addr = match labtab.get(x.as_str()) {
+                    Some(addr) => *addr,
+                    None => return Err(Error::LabelNotFound),
+                };
+                let rel16: i16 = target_addr.wrapping_sub(addr) as i16;
+                let rel8: i8 = match rel16.try_into() {
+                    Ok(x) => x,
+                    Err(_) => {
+                        return Err(Error::RelativeAddressOutOfRange(rel16));
+                    }
+                };
+                Ok(OpValue::U8(rel8 as u8))
+            }
+        },
+        Imm(x) | XInd(x) | IndY(x) | Z(x) | ZX(x) | ZY(x) => Ok(OpValue::U8(*x)),
     }
 }
