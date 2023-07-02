@@ -400,6 +400,7 @@ impl Assembler {
             label: self.next_label.take(),
             instruction: self.opcode_map.get(mnemonic, op.mode()).map_err(Into::into),
             operand: op,
+            comment: None,
         }));
         self
     }
@@ -473,6 +474,7 @@ pub struct InstructionLine {
     pub label: Option<String>,
     pub instruction: Result<Opcode, Error>,
     pub operand: Operand,
+    pub comment: Option<String>,
 }
 
 #[derive(Debug)]
@@ -532,9 +534,13 @@ impl Line {
                     Some(e) => format!(" ; {e:?}"),
                     None => String::from(""),
                 };
+                let comment = match &line.comment {
+                    Some(c) => format!(" ; {c}"),
+                    None => String::new(),
+                };
                 writeln!(
                     f,
-                    "{:04X} | {:02X} {:5} | {:16} {} {}{}{}",
+                    "{:04X} | {:02X} {:5} | {:16} {} {}{}{}{}",
                     base_addr,
                     instruction.code,
                     ophex,
@@ -543,6 +549,7 @@ impl Line {
                     op_prefix,
                     line.operand,
                     err_string,
+                    comment,
                 )?;
             }
             Line::Data(line) => {

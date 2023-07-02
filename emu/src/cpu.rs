@@ -580,8 +580,8 @@ impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         let stat = stat(&self.p);
         f.write_fmt(format_args!(
-            "Cpu {{ P: {} PC: ${:04X} S: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} }}",
-            stat, self.pc, self.s, self.a, self.x, self.y,
+            "CPU PC:${:04X} S:${:02X} A:${:02X} X:${:02X} Y:${:02X} P:{}",
+            self.pc, self.s, self.a, self.x, self.y, stat
         ))
     }
 }
