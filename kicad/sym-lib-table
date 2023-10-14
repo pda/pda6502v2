@@ -1,4 +1,5 @@
 (sym_lib_table
-  (lib (name 65xx)(type Legacy)(uri /Users/pda/code/6502-kicad-library/65xx.lib)(options "")(descr ""))
+  (version 7)
+  (lib (name "65xx")(type "KiCad")(uri "/Users/pda/code/6502-kicad-library/symbols/65xx-library.kicad_sym")(options "")(descr "https://github.com/Alarm-Siren/6502-kicad-library"))
   (lib (name pda6502v2)(type Legacy)(uri ${KIPRJMOD}/pda6502v2.lib)(options "")(descr ""))
 )
