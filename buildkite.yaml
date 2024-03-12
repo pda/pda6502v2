@@ -1,0 +1,6 @@
+steps:
+
+  - label: ":rust: emu tests"
+    command:
+      - cd emu
+      - cargo test
