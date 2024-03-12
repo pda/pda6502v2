@@ -3,4 +3,5 @@ steps:
   - label: ":rust: emu tests"
     command:
       - cd emu
-      - cargo test
+      - cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json
+      - buildkite-test-collector < cargo-test.json
