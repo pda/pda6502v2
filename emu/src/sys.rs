@@ -1,3 +1,5 @@
+use std::fs;
+
 use crate::bus::Bus;
 use crate::cpu::Cpu;
 use crate::mon::Monitor;
@@ -18,6 +20,8 @@ impl Sys {
     }
 
     pub fn reset(&mut self) {
+        self.bus.load(0xF000, fs::read("../os/os.rom").unwrap());
+        self.monitor.reset(&mut self.bus);
         self.cpu.reset(&self.bus)
     }
 

@@ -8,6 +8,21 @@ mod mon;
 mod sys;
 
 fn main() {
+    let mut sys = sys::Sys::new();
+    sys.reset();
+
+    // go away for now, rust unused code detector
+    if false {
+        oldmain();
+    }
+
+    // run some instructions
+    loop {
+        sys.step();
+    }
+}
+
+fn oldmain() {
     // syntax brevity for Assembler args
     use asm::{branch, label, val, Operand::*};
 

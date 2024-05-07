@@ -637,6 +637,6 @@ pub enum StatusMask {
 }
 
 #[allow(unused)]
-const VEC_NMI: u16 = 0xFFFA;
-const VEC_RES: u16 = 0xFFFC;
-const VEC_IRQ: u16 = 0xFFFE;
+pub const VEC_NMI: u16 = 0xFFFA;
+pub const VEC_RES: u16 = 0xFFFC;
+pub const VEC_IRQ: u16 = 0xFFFE;
