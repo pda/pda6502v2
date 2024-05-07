@@ -67,9 +67,13 @@ pub enum Mnemonic {
     Nop, // no operation
     Ora, // or with accumulator
     Pha, // push accumulator
+    Phx, // push X
+    Phy, // push Y
     Php, // push processor status (P)
     Pla, // pull accumulator
     Plp, // pull processor status (P)
+    Plx, // pull X
+    Ply, // pull Y
     Rol, // rotate left
     Ror, // rotate right
     Rti, // return from interrupt
@@ -243,8 +247,12 @@ pub fn opcode_list() -> Vec<Opcode> {
         new(Ora, ZeropageX, 0x15),
         new(Pha, Implied, 0x48),
         new(Php, Implied, 0x08),
+        new(Phx, Implied, 0xDA),
+        new(Phy, Implied, 0x5A),
         new(Pla, Implied, 0x68),
         new(Plp, Implied, 0x28),
+        new(Plx, Implied, 0xFA),
+        new(Ply, Implied, 0x7A),
         new(Rol, Absolute, 0x2E),
         new(Rol, AbsoluteX, 0x3E),
         new(Rol, Accumulator, 0x2A),

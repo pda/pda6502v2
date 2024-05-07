@@ -329,11 +329,21 @@ impl Cpu {
             }
             M::Pha => self.push(bus, self.a),
             M::Php => self.push(bus, self.p | 0b00110000),
+            M::Phx => self.push(bus, self.x),
+            M::Phy => self.push(bus, self.y),
             M::Pla => {
                 self.a = self.pop(bus);
                 self.update_p_z_n(self.a);
             }
             M::Plp => self.p = self.pop(bus) & !0b00110000,
+            M::Plx => {
+                self.x = self.pop(bus);
+                self.update_p_z_n(self.x);
+            }
+            M::Ply => {
+                self.y = self.pop(bus);
+                self.update_p_z_n(self.y);
+            }
             M::Rol => match opcode.mode {
                 Accumulator => {
                     let before = self.a;
