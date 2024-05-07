@@ -1,6 +1,7 @@
 mod asm;
 mod bus;
 mod cpu;
+mod dbginfo;
 mod dec;
 mod isa;
 mod mon;
