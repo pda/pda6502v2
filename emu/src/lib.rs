@@ -6,3 +6,4 @@ pub mod dec;
 pub mod isa;
 pub mod mon;
 pub mod sys;
+pub mod uart;

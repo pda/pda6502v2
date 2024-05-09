@@ -13,7 +13,7 @@ pub struct Sys {
 impl Sys {
     pub fn new() -> Self {
         Self {
-            bus: Bus::default(),
+            bus: Bus::new(),
             cpu: Cpu::new(),
             monitor: Monitor::new(),
         }

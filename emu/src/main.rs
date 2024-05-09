@@ -6,6 +6,7 @@ mod dec;
 mod isa;
 mod mon;
 mod sys;
+mod uart;
 
 fn main() {
     let mut sys = sys::Sys::new();

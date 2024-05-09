@@ -1,3 +1,6 @@
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::asm;
 use crate::cpu;
 use crate::dbginfo;
@@ -7,17 +10,55 @@ use crate::bus::Bus;
 use crate::cpu::Cpu;
 use crate::dec::Decoder;
 
+lazy_static! {
+    static ref STAT_INACTIVE_RE: Regex = Regex::new(r"[NVBDIZC]").unwrap();
+    static ref LINE_RE: Regex = Regex::new(
+        r"(?x)
+        (?<addr>[0-9A-Z]{4})
+        \s\|\s
+        (?<bytecode>(?:[0-9A-Z\s]{2}\s?){3})
+        \|\s
+        (?<label>\S+:)?
+        (?<labelpad>\s+)
+        (?<mnemonic>[A-Z]{3})?
+        (?<operand>\s\S+)?
+        (?<comment>\s;.*)?
+        "
+    )
+    .unwrap();
+}
+
 pub struct Monitor {
     decoder: Decoder,
 
+    prev_reg: Reg,
+
     #[allow(unused)]
     dbginfo: dbginfo::Info,
+}
+
+#[derive(Default)]
+struct Reg {
+    s: u8,
+    a: u8,
+    x: u8,
+    y: u8,
+}
+
+impl Reg {
+    fn update(&mut self, cpu: &Cpu) {
+        self.s = cpu.s;
+        self.a = cpu.a;
+        self.x = cpu.x;
+        self.y = cpu.y;
+    }
 }
 
 impl Monitor {
     pub fn new() -> Self {
         Self {
             decoder: Decoder::new(),
+            prev_reg: Reg::default(),
             dbginfo: dbginfo::load("../os/debug.out").unwrap(),
         }
     }
@@ -33,21 +74,37 @@ impl Monitor {
         );
     }
 
-    pub fn step(&self, bus: &mut Bus, cpu: &Cpu) {
-        print!("[{cpu:?}] ");
+    pub fn step(&mut self, bus: &mut Bus, cpu: &Cpu) {
+        print!(
+            "\x1b[2mPC:{:04X} S:{} A:{} X:{} Y:{} P:{}\x1b[0m  ",
+            cpu.pc,
+            diff(cpu.s, self.prev_reg.s, "22;32", "2;39"),
+            diff(cpu.a, self.prev_reg.a, "22;32", "2;39"),
+            diff(cpu.x, self.prev_reg.x, "22;32", "2;39"),
+            diff(cpu.y, self.prev_reg.y, "22;32", "2;39"),
+            STAT_INACTIVE_RE.replace_all(&cpu::stat(&cpu.p), "\x1b[22;94m${0}\x1b[2;39m")
+        );
+        self.prev_reg.update(cpu);
+
         let code = bus.read(cpu.pc);
         let opcode = self.decoder.opcode(code);
 
         match opcode {
             None => println!("  illegal opcode: {code:02X}"),
-            Some(opcode) => print!("{}", self.describe_opcode(&opcode, cpu, &bus)),
+            Some(opcode) => print!(
+                "{}",
+                LINE_RE.replace(
+                    &self.describe_opcode(&opcode, cpu, &bus),
+                    "${addr} \x1b[2m${bytecode} \x1b[22;33m${label}\x1b[39m${labelpad}${mnemonic}${operand}\x1b[2m${comment}\x1b[22m"
+                )
+            ),
         }
     }
 
-    fn label(&self, addr: u16, lpad: &str, rpad: &str) -> String {
+    fn label(&self, addr: u16) -> String {
         self.dbginfo
             .label(addr)
-            .map(|x| lpad.to_owned() + x + rpad)
+            .map(|x| "\x1b[22;33m".to_owned() + x + "\x1b[2;39m ")
             .unwrap_or("".to_string())
     }
 
@@ -80,24 +137,32 @@ impl Monitor {
         let comment: Option<String> = match operand {
             asm::Operand::A => Some(format!("A:#${0:02X}:{0:#010b}", cpu.a)),
             asm::Operand::Abs(ref addr) => match addr {
-                asm::Addr::Literal(val) => Some(format!(
-                    "→ {}#${:02X}",
-                    self.label(*val, "", " "),
-                    bus.read(*val)
-                )),
+                asm::Addr::Literal(val) => {
+                    Some(format!("→ {}{}", self.label(*val), bus.name_for_read(*val)))
+                }
                 asm::Addr::Label(_text) => todo!(),
             },
             asm::Operand::AbsX(ref addr) => match addr {
                 asm::Addr::Literal(val) => {
                     let indexed = val.wrapping_add(cpu.x as u16);
-                    Some(format!("→ ${:04X} -> #${:02X}", indexed, bus.read(indexed)))
+                    Some(format!(
+                        "→ ${:04X} -> {}{}",
+                        indexed,
+                        self.label(indexed),
+                        bus.name_for_read(indexed)
+                    ))
                 }
                 asm::Addr::Label(_text) => todo!(),
             },
             asm::Operand::AbsY(ref addr) => match addr {
                 asm::Addr::Literal(val) => {
                     let indexed = val.wrapping_add(cpu.y as u16);
-                    Some(format!("→ ${:04X} -> #${:02X}", indexed, bus.read(indexed)))
+                    Some(format!(
+                        "→ ${:04X} -> {}{}",
+                        indexed,
+                        self.label(indexed),
+                        bus.name_for_read(indexed)
+                    ))
                 }
                 asm::Addr::Label(_text) => todo!(),
             },
@@ -169,5 +234,13 @@ impl Monitor {
         line.fmt(&mut buf, cpu.pc, addr, &HashMap::new()).unwrap();
 
         buf
+    }
+}
+
+fn diff(a: u8, b: u8, style: &str, reset: &str) -> String {
+    if a == b {
+        format!("{a:02X}")
+    } else {
+        format!("\x1b[{style}m{a:02X}\x1b[{reset}m")
     }
 }
