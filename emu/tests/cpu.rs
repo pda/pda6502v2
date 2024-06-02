@@ -48,7 +48,7 @@ macro_rules! step_and_assert_mem {
 
 #[test]
 fn test_adc() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.a = 0x10; // starting value
     cpu.x = 0x21; // for testing X-indexed address modes
@@ -94,7 +94,7 @@ fn test_adc() {
 
 #[test]
 fn test_and() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.a = 0b10011001; // starting value
 
@@ -110,7 +110,7 @@ fn test_and() {
 
 #[test]
 fn test_asl() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.a = 0b01000000; // for testing Accumulator address mode
     cpu.x = 0x01; // for testing zp,X address mode
@@ -144,7 +144,7 @@ fn test_asl() {
 
 #[test]
 fn test_bcc() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
@@ -174,7 +174,7 @@ fn test_bcc() {
 
 #[test]
 fn test_bcs() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -203,7 +203,7 @@ fn test_bcs() {
 
 #[test]
 fn test_beq() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -232,7 +232,7 @@ fn test_beq() {
 
 #[test]
 fn test_bit() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -264,7 +264,7 @@ fn test_bit() {
 
 #[test]
 fn test_bmi() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -295,7 +295,7 @@ fn test_bmi() {
 
 #[test]
 fn test_bne() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -326,7 +326,7 @@ fn test_bne() {
 
 #[test]
 fn test_bpl() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -356,7 +356,7 @@ fn test_bpl() {
 
 #[test]
 fn test_brk_rti() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     let mut asmirq = Assembler::new();
@@ -406,7 +406,7 @@ fn test_brk_rti() {
 
 #[test]
 fn test_bvc() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
@@ -436,7 +436,7 @@ fn test_bvc() {
 
 #[test]
 fn test_bvs() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
 
     let mut asm = Assembler::new();
@@ -466,7 +466,7 @@ fn test_bvs() {
 
 #[test]
 fn test_cmp() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.pc = 0x0200;
     cpu.a = 0xC0;
@@ -497,7 +497,7 @@ fn test_cmp() {
 
 #[test]
 fn test_cpx_and_cpy() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.pc = 0x0200;
     cpu.x = 0x04;
@@ -526,7 +526,7 @@ fn test_cpx_and_cpy() {
 
 #[test]
 fn test_dec() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.pc = 0x1000;
     cpu.x = 0x10;
@@ -574,7 +574,7 @@ fn test_dec() {
 
 #[test]
 fn test_dex_and_dey() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x2000;
@@ -618,7 +618,7 @@ fn test_dex_and_dey() {
 
 #[test]
 fn test_eor() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -714,7 +714,7 @@ fn test_eor() {
 
 #[test]
 fn test_inc() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.x = 0x10;
@@ -756,7 +756,7 @@ fn test_inc() {
 
 #[test]
 fn test_inx_and_iny() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.x = 0xFE;
@@ -791,7 +791,7 @@ fn test_inx_and_iny() {
 
 #[test]
 fn test_jmp() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     bus.write(0xFFFC, 0x00);
     bus.write(0xFFFD, 0x80);
@@ -824,7 +824,7 @@ fn test_jmp() {
 
 #[test]
 fn test_jsr_and_rts() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
@@ -869,7 +869,7 @@ fn test_jsr_and_rts() {
 
 #[test]
 fn test_lda() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -918,7 +918,7 @@ fn test_lda() {
 
 #[test]
 fn test_ldx() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     cpu.y = 0x02; // for testing AddressMode::ZeropageY & AddressMode::AbsoluteY
     bus.write(0x01FF, 0x11); // for testing AddressMode::Absolute
@@ -948,7 +948,7 @@ fn test_ldx() {
 
 #[test]
 fn test_ldy() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -980,7 +980,7 @@ fn test_ldy() {
 
 #[test]
 fn test_lsr() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -1015,7 +1015,7 @@ fn test_lsr() {
 
 #[test]
 fn test_ora() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -1065,7 +1065,7 @@ fn test_ora() {
 
 #[test]
 fn test_pha_pla() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(0, asm.pha().pla().print_listing().assemble().unwrap());
@@ -1084,7 +1084,7 @@ fn test_pha_pla() {
 
 #[test]
 fn test_php_plp() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(0, asm.php().plp().print_listing().assemble().unwrap());
@@ -1103,7 +1103,7 @@ fn test_php_plp() {
 
 #[test]
 fn test_rol_ror() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -1148,7 +1148,7 @@ fn test_rol_ror() {
 
 #[test]
 fn test_sbc() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x1000;
@@ -1202,7 +1202,7 @@ fn test_sbc() {
 
 #[test]
 fn test_nop() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(cpu.pc, asm.nop().assemble().unwrap());
@@ -1212,7 +1212,7 @@ fn test_nop() {
 
 #[test]
 fn test_set_and_clear_flags() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     bus.load(
@@ -1259,7 +1259,7 @@ fn test_set_and_clear_flags() {
 
 #[test]
 fn test_sta_stx_sty() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
@@ -1314,7 +1314,7 @@ fn test_sta_stx_sty() {
 
 #[test]
 fn test_tax_tay_tsx_txa_txs_tya() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x4000;
@@ -1349,7 +1349,7 @@ fn test_tax_tay_tsx_txa_txs_tya() {
 
 #[test]
 fn test_address_modes_at_page_boundaries() {
-    let bus = &mut Bus::default();
+    let bus = &mut Bus::new();
     let mut cpu = Cpu::new();
     let mut asm = Assembler::new();
     cpu.pc = 0x10FE; // opcode @ $10FE, LL @ 0x10FF, operand:HH @ 0x1100 (next page)

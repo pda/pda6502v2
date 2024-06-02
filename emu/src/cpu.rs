@@ -30,13 +30,24 @@ impl Cpu {
     }
 
     // Reset internal CPU state, as if the reset line had been asserted.
-    pub fn reset(&mut self, bus: &bus::Bus) {
+    pub fn reset(&mut self, bus: &mut bus::Bus) {
         self.pc = bus.read_u16(VEC_RES);
         self.s = 0x00;
         self.a = 0x00;
         self.x = 0x00;
         self.y = 0x00;
         self.p = 0b00110100; // W65C02S manual §3.1 Reset says xx1101xx
+    }
+
+    pub fn interrupt(&mut self, bus: &mut bus::Bus) {
+        if self.get_p_bit(StatusMask::Interrupt) {
+            return;
+        }
+        // TODO: check this is the right order
+        self.push_addr(bus, self.pc);
+        self.push(bus, self.p);
+        self.set_p_bit(StatusMask::Interrupt, true);
+        self.pc = bus.read_u16(VEC_IRQ);
     }
 
     // Load and execute a single instruction.
@@ -471,21 +482,21 @@ impl Cpu {
     }
 
     /// Read a u16 in little-endian order from the bus, wrapping within a page.
-    fn read_u16_zp(&self, bus: &bus::Bus, addr: u8) -> u16 {
+    fn read_u16_zp(&self, bus: &mut bus::Bus, addr: u8) -> u16 {
         let lo = bus.read(addr as u16) as u16;
         let hi = bus.read(addr.wrapping_add(1) as u16) as u16;
         hi << 8 | lo
     }
 
     /// Read u8 from address pointed to by PC, incrementing PC
-    fn read_pc_u8(&mut self, bus: &bus::Bus) -> u8 {
+    fn read_pc_u8(&mut self, bus: &mut bus::Bus) -> u8 {
         let val = bus.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         val
     }
 
     /// Read u16 from address pointed to by PC, incrementing PC
-    fn read_pc_u16(&mut self, bus: &bus::Bus) -> u16 {
+    fn read_pc_u16(&mut self, bus: &mut bus::Bus) -> u16 {
         let val = bus.read_u16(self.pc);
         self.pc = self.pc.wrapping_add(2);
         val
@@ -493,7 +504,7 @@ impl Cpu {
 
     /// Reads the operand from bus, following indirection/indexing where necessary, returning
     /// an address or immediate value, and incrementing PC.
-    fn read_operand(&mut self, bus: &bus::Bus, mode: isa::AddressMode) -> isa::OpValue {
+    fn read_operand(&mut self, bus: &mut bus::Bus, mode: isa::AddressMode) -> isa::OpValue {
         use isa::AddressMode::*;
         use isa::OpValue as OV;
 
@@ -530,7 +541,7 @@ impl Cpu {
         }
     }
 
-    fn read_operand_value(&mut self, bus: &bus::Bus, opcode: isa::Opcode) -> u8 {
+    fn read_operand_value(&mut self, bus: &mut bus::Bus, opcode: isa::Opcode) -> u8 {
         use isa::OpValue;
         match self.read_operand(bus, opcode.mode) {
             OpValue::U8(val) => val,
@@ -574,13 +585,13 @@ impl Cpu {
         self.s = self.s.wrapping_sub(1);
     }
 
-    fn pop_addr(&mut self, bus: &bus::Bus) -> u16 {
+    fn pop_addr(&mut self, bus: &mut bus::Bus) -> u16 {
         let lo = self.pop(bus) as u16;
         let hi = self.pop(bus) as u16;
         hi << 8 | lo
     }
 
-    fn pop(&mut self, bus: &bus::Bus) -> u8 {
+    fn pop(&mut self, bus: &mut bus::Bus) -> u8 {
         self.s = self.s.wrapping_add(1);
         bus.read(0x0100 | self.s as u16)
     }

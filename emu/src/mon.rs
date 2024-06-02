@@ -94,7 +94,7 @@ impl Monitor {
             Some(opcode) => print!(
                 "{}",
                 LINE_RE.replace(
-                    &self.describe_opcode(&opcode, cpu, &bus),
+                    &self.describe_opcode(&opcode, cpu, bus),
                     "${addr} \x1b[2m${bytecode} \x1b[22;33m${label}\x1b[39m${labelpad}${mnemonic}${operand}\x1b[2m${comment}\x1b[22m"
                 )
             ),
@@ -108,7 +108,7 @@ impl Monitor {
             .unwrap_or("".to_string())
     }
 
-    fn describe_opcode(&self, opcode: &isa::Opcode, cpu: &Cpu, bus: &Bus) -> String {
+    fn describe_opcode(&self, opcode: &isa::Opcode, cpu: &Cpu, bus: &mut Bus) -> String {
         use std::collections::HashMap;
 
         let addr = cpu.pc + 1; // operand address; one byte after the opcode

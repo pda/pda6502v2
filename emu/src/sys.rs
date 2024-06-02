@@ -20,12 +20,17 @@ impl Sys {
     }
 
     pub fn reset(&mut self) {
+        self.bus.reset();
         self.bus.load(0xF000, fs::read("../os/os.rom").unwrap());
         self.monitor.reset(&mut self.bus);
-        self.cpu.reset(&self.bus)
+        self.cpu.reset(&mut self.bus)
     }
 
     pub fn step(&mut self) {
+        self.bus.step();
+        if self.bus.is_interrupt() {
+            self.cpu.interrupt(&mut self.bus);
+        }
         self.monitor.step(&mut self.bus, &self.cpu);
         self.cpu.step(&mut self.bus);
     }

@@ -165,6 +165,7 @@ pub fn opcode_list() -> Vec<Opcode> {
         new(Bcs, Relative, 0xB0),
         new(Beq, Relative, 0xF0),
         new(Bit, Absolute, 0x2C),
+        new(Bit, AbsoluteX, 0x3C),
         new(Bit, Zeropage, 0x24),
         new(Bmi, Relative, 0x30),
         new(Bne, Relative, 0xD0),
