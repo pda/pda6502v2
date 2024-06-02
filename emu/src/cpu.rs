@@ -220,7 +220,7 @@ impl Cpu {
             M::Cmp => {
                 let result = self.a.wrapping_sub(self.read_operand_value(bus, opcode));
                 self.update_p_z_n(result);
-                self.set_p_bit(StatusMask::Carry, result > self.a);
+                self.set_p_bit(StatusMask::Carry, result < self.a);
             }
             M::Cpx => {
                 let result = self.x.wrapping_sub(self.read_operand_value(bus, opcode));

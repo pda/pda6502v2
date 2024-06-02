@@ -488,11 +488,11 @@ fn test_cmp() {
     cpu.step(bus); // CMP data
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0203);
-    assert_eq!(stat(&cpu.p), "nv-bdizc");
+    assert_eq!(stat(&cpu.p), "nv-bdizC");
     cpu.step(bus); // CMP data,X
     println!("{cpu:?}");
     assert_eq_hex16!(cpu.pc, 0x0206);
-    assert_eq!(stat(&cpu.p), "Nv-bdizC");
+    assert_eq!(stat(&cpu.p), "Nv-bdizc");
 }
 
 #[test]
