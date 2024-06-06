@@ -10,7 +10,7 @@ steps:
       rustlang/rust:nightly
       sh -c "
       env | grep BUILDKITE_ANALYTICS_TOKEN;
-      echo BUILDKITE_ANALYTICS_TOKEN length: $#BUILDKITE_ANALYTICS_TOKEN;
+      echo BUILDKITE_ANALYTICS_TOKEN length: $$#BUILDKITE_ANALYTICS_TOKEN;
       cargo install buildkite-test-collector;
       echo +++ :rust: cargo test;
       cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json;
