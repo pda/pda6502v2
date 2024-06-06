@@ -4,16 +4,16 @@ steps:
     command: >
       docker run
       --tty
-      --env BUILDKITE_ANALYTICS_TOKEN="$$(buildkite-agent secret get ta_token_pda6502v2)"
-      --env TEST_BUILDKITE_SECRETS="$$(buildkite-agent secret get test --debug)"
+      --env BUILDKITE_ANALYTICS_TOKEN="$$(buildkite-agent secret get ta_token_pda6502v2 --debug)"
       --volume "$$(pwd)/emu:/app"
       --workdir /app
       rustlang/rust:nightly
       sh -c "
-      env | grep TEST_BUILDKITE_SECRETS &&
-      cargo install buildkite-test-collector &&
-      echo +++ :rust: cargo test &&
-      cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json &&
-      echo +++ :buildkite: test analytics &&
-      buildkite-test-collector < cargo-test.json
+      env | grep BUILDKITE_ANALYTICS_TOKEN;
+      echo BUILDKITE_ANALYTICS_TOKEN length: $#BUILDKITE_ANALYTICS_TOKEN;
+      cargo install buildkite-test-collector;
+      echo +++ :rust: cargo test;
+      cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json;
+      echo +++ :buildkite: test analytics;
+      buildkite-test-collector < cargo-test.json;
       "
