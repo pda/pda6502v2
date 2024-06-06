@@ -4,6 +4,7 @@ steps:
     plugins:
       - docker#v5.11.0:
           image: "rustlang/rust:nightly" # nightly needed for --format json
+          mount-buildkite-agent: true
     command:
       - cargo install buildkite-test-collector
       - cd emu
