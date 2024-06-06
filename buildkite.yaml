@@ -1,6 +1,9 @@
 steps:
 
   - label: ":rust: emu tests"
+    plugins:
+      - docker#v5.11.0:
+          image: "rust:1.78-alpine"
     command:
       - cd emu
       - cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json
