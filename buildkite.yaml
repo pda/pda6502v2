@@ -4,17 +4,22 @@ steps:
     command: >
       docker run
       --tty
-      --env BUILDKITE_ANALYTICS_TOKEN="$$(buildkite-agent secret get ta_token_pda6502v2 --debug)"
+      --env BUILDKITE_ANALYTICS_TOKEN="$$(buildkite-agent secret get ta_token_pda6502v2)"
       --env CI
+      --env BUILDKITE_BUILD_ID
+      --env BUILDKITE_BUILD_URL
+      --env BUILDKITE_BRANCH
+      --env BUILDKITE_COMMIT
+      --env BUILDKITE_BUILD_NUMBER
+      --env BUILDKITE_JOB_ID
+      --env BUILDKITE_MESSAGE
       --volume "$$(pwd)/emu:/app"
       --workdir /app
       rustlang/rust:nightly
       sh -c "
-      env | grep BUILDKITE_ANALYTICS_TOKEN;
-      echo BUILDKITE_ANALYTICS_TOKEN length: $$#BUILDKITE_ANALYTICS_TOKEN;
-      cargo install buildkite-test-collector;
       echo +++ :rust: cargo test;
       cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json;
       echo +++ :buildkite: test analytics;
+      cargo install buildkite-test-collector;
       buildkite-test-collector < cargo-test.json;
       "
