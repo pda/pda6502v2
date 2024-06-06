@@ -5,6 +5,7 @@ steps:
       docker run
       --tty
       --env BUILDKITE_ANALYTICS_TOKEN="$$(buildkite-agent secret get ta_token_pda6502v2 --debug)"
+      --env CI
       --volume "$$(pwd)/emu:/app"
       --workdir /app
       rustlang/rust:nightly
