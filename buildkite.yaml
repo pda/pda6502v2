@@ -1,13 +1,13 @@
 steps:
 
   - label: ":rust: emu tests"
-    plugins:
-      - docker#v5.11.0:
-          image: "rustlang/rust:nightly" # nightly needed for --format json
-          mount-buildkite-agent: true
-    command:
-      - cargo install buildkite-test-collector
-      - cd emu
-      - cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json
-      - buildkite-agent secret get test
-      - BUILDKITE_ANALYTICS_TOKEN=$(buildkite-agent secret get ta_token_pda6502v2) buildkite-test-collector < cargo-test.json
+    command: >
+      docker run
+        --tty
+        --env BUILDKITE_ANALYTICS_TOKEN=$$(buildkite-agent secret get ta_token_pda6502v2)
+        rustlang/rust:nightly sh -c "
+          cargo install buildkite-test-collector &&
+          cd emu &&
+          cargo test -- -Z unstable-options --format json --report-time | tee cargo-test.json &&
+          buildkite-test-collector < cargo-test.json
+        "
